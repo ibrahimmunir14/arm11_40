@@ -4,27 +4,30 @@
 
 \begin{document}
 
-\title{ARM Checkpoint... }
-\author{TODO}
+\title{ARM Project Checkpoint}
+\author{Group 40 - Amelia Khavari, Ibrahim Munir-Zubair, Luke Texon, Umer Hasan}
 
 \maketitle
 
 \section{Group Organisation}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+We have prioritised splitting the work according to each group member's relevant strengths. However, it has been made sure that each group member has the chance to do involved C programming which enables everyone to reach an acceptable standard of proficiency in the language throughout the project. For part 1 this has been relatively straight forward with each member taking one out of four instruction types to be processed. The initial skeleton code and helper functions were written by Umer, Ibrahim, and Luke. We have made sure to set regular meeting times at suitable intervals throughout the timeline which allows for independent work as well as group discussion on strategies for solving future design problems. 
+
+\section {Group Dynamics}
+
+The group is relatively inexperienced in C, however, we have made good progress given that we are helping each other in areas we are more proficient in. Programming good practice is transferable across all languages and previous courses have meant that C has become easier to grasp. The group has set up good communication channels and has defined roles for Part 1. Our schedule approaches each part one by one, moving on only after the previous part has been fully completed. This ensures the code will be efficient, clean and industry standard. As the code base becomes more advanced, it will require extensive checking for merge conflicts between features coded by different group members. This will of course require an enhanced level of communication and team chemistry which will be satisfied by distinctly allocating specific tasks to each member. Creation of further branches for different parts of the projects could also aid in prevention of conflicts. 
 
 \section{Implementation Strategies}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Currently we have defined a struct to represent the state of the ARM Machine. The struct contains a pointer to an array of bytes of memory, a pointer to an array of registers, and variables for the execute, decode and fetch instructions. This state will be continously changed as the program iterates through the pipeline. There is a seperate function for processing each type of instruction which makes development easier and the code modular. Not detailed here are a number of helper functions enabling the pipeline to process instructions correctly. 
+
+\section {Future Implementation Strategies}
+
+Having had all group members code features in C, one challenge ahead may be interfacing with the Raspberry Pi. Although the operating system is based on Linux, only one group member has utilised the product beforehand. Umer will therefore, seek to address any queries other members have regarding the operations of the Pi. Quite possibly the biggest challenge of the project will be the optional extension. Finding the correct idea which can be implemented given the time and experience level of the team will be quite challenging to pull off, let alone physically implementing the idea itself using C and the Pi. 
+
+\section {TODO}
+
+WHICH BITS WILL WE RE-USE FOR THE ASSEMBLER?  \newline
+MENTION 1 JMC, 3 COMP IN GROUP DYNNAMICS
 
 \end{document}
