@@ -9,14 +9,14 @@ enum CondFlag {V=1, C=2, Z=4, N=8};
 
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 
-struct state
+typedef struct
 {
     int *memory;
     int *registers;
     int executeInst;
     int decodeInst;
-    int fetchInst;
-};
+    int fetchInstIndex;
+} State;
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -25,18 +25,44 @@ int main(int argc, char **argv) {
 
   int zero = 0;
 
-  struct state currentState;
+  State currentState;
   int registers[17];
   init_regs(registers);
   currentState.registers = &registers;
   int *size = &zero;
   int *words = &zero;
   currentState.memory = make_array(argv, size, words);
-  while (currentState.fetchInst < size) {
-    
+  while (currentState.fetchInstIndex < size) {
+
   }
 
   return EXIT_SUCCESS;
+}
+
+void update_pipeline(State* currentState) {
+//  possible ideas for code below
+//  currentState.executeInst = currentState.decodeInst;
+//  currentState.decodeInst = currentState.memory[currentState.fetchInstIndex];
+//  currentState.fetchInstIndex ++;
+  return;
+}
+
+void parse_data_processing(State* currentState) {
+
+}
+
+void parse_multiply(State* currentState) {
+
+}
+
+void parse_single_data_transfer(State* currentState) {
+
+}
+
+void parse_branch(State* currentState) {
+  // this instruction will not update the pipeline in the usual way
+  // it will clear the pipeline
+  // and then set the new variables
 }
 
 int * make_array(char **argv, int *size, int *words) {
