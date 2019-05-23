@@ -1,30 +1,50 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+int * make_array(char **argv, int *size, int *words);
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     return EXIT_FAILURE;
   }
+
+  int zero = 0;
+  int *size = &zero;
+  int *words = &zero;
+
+  words = make_array(argv, size, words);
+
+  printf("%d\n", *words);
+
+  for (int i = 0; i < *size; i ++) {
+    printf("%d\n", words[i]);
+  }
+
+  return EXIT_SUCCESS;
+}
+
+int * make_array(char **argv, int *size, int *words) {
   FILE *fPointer;
   char *fileName = argv[1];
   fPointer = fopen(fileName, "r");
 
   fseek(fPointer, 0, SEEK_END);
-  int size = ftell(fPointer);
+  *size = (int) ftell(fPointer);
   fseek(fPointer, 0, SEEK_SET);
 
-  int words[size];
+  words = (int *) malloc(*size * sizeof(int));
   int i;
 
-  for (i = 0; i < size; i ++) {
+  for (i = 0; i < *size; i ++) {
     words[i] = getc(fPointer);
     printf("%d\n", words[i]);
   }
 
+  printf("%d\n", *words);
+
   fclose(fPointer);
 
-
-  return EXIT_SUCCESS;
+  return words;
 }
 
 
