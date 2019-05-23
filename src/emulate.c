@@ -1,71 +1,52 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
-int * make_array(char **argv, int *size, int *words);
-void init_regs(int regs[17]);
+//Defines some types of our own. note: base these on platform independent types defined in <stdint.h>
+typedef uint32_t REGISTER;		//registers are 32 bits
+typedef uint32_t WORD;			//words are 32 bits
+typedef uint8_t BYTE;			//bytes are 8 bits
+typedef uint8_t BIT;			//define bit data type
 
-struct state
-{
-    int *mem;
-    int regs[17];
-    int fetchedInstruction;
-};
+//store registers in an array of register
+// R13 = SP; R14 = LR; R15 = PC; R16 = CPSR
+REGISTER registers[17];
+//64kb memory capacity, 1 word is 4 bytes
+WORD memory[16384];
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    return EXIT_FAILURE;
-  }
+    // ensure we have one argument, the filename
+    if (argc != 2) { return EXIT_FAILURE; }
 
-//  struct state currentState;
-  int regs[17];
-  init_regs(regs);
-//  *currentState.regs = &regs;
+    // initialize registers to 0s
+    for (int i = 0; i < 17; i++) { registers[i] = 0; }
 
-  int zero = 0;
-  int *size = &zero;
-  int *words = &zero;
+    // set up memory array with instructions
+    FILE *fPointer;
+    char *fileName = argv[1];
+    fPointer = fopen(fileName, "rb");
 
-  words = make_array(argv, size, words);
+    fseek(fPointer, 0, SEEK_END);
+    int size = (int) ftell(fPointer) / sizeof(int);
+    fseek(fPointer, 0, SEEK_SET);
 
-  for (int i = 0; i < *size; i ++) {
-    printf("%d\n", words[i]);
-  }
-
-  return EXIT_SUCCESS;
-}
-
-int * make_array(char **argv, int *size, int *words) {
-
-  FILE *fPointer;
-  char *fileName = argv[1];
-  fPointer = fopen(fileName, "r");
-
-  fseek(fPointer, 0, SEEK_END);
-  *size = (int) ftell(fPointer) / sizeof(int);
-  fseek(fPointer, 0, SEEK_SET);
-
-  words = (int *) malloc(*size * sizeof(int));
-  int i;
-
-  for (i = 0; i < *size; i ++) {
-    int word[sizeof(int)];
-    for (int j = 0; j < sizeof(int); j ++) {
-      word[j] = getc(fPointer);
+    for (int i = 0; i < size; i++) {
+        int word[sizeof(int)];
+        for (int j = 0; j < sizeof(int); j ++) {
+            word[j] = getc(fPointer);
+        }
+        memory[i] = word[0] << 24 | word[1] << 16 | word[2] << 8 | word[3];
     }
-    words[i] = word[0] << 24 | word[1] << 16 | word[2] << 8 | word[3];
-  }
 
-  fclose(fPointer);
+    fclose(fPointer);
 
-  return words;
-}
-
-void init_regs(int regs[17]) {
-    for (int i = 0; i < 17; i++) {
-        regs[i] = 0;
+    // print contents of memory
+    for (int i = 0; i < size; i++) {
+        printf("%d\n", memory[i]);
     }
-}
 
+    return EXIT_SUCCESS;
+}
 
 /* CHECKLIST
  *
