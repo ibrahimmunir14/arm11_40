@@ -9,7 +9,6 @@ struct state
     int *mem;
     int regs[17];
     int fetchedInstruction;
-
 };
 
 int main(int argc, char **argv) {
@@ -17,18 +16,16 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  struct state currentState;
+//  struct state currentState;
   int regs[17];
   init_regs(regs);
-  *currentState.regs = &regs;
+//  *currentState.regs = &regs;
 
   int zero = 0;
   int *size = &zero;
   int *words = &zero;
 
   words = make_array(argv, size, words);
-
-  printf("%d\n", *words);
 
   for (int i = 0; i < *size; i ++) {
     printf("%d\n", words[i]);
@@ -44,17 +41,19 @@ int * make_array(char **argv, int *size, int *words) {
   fPointer = fopen(fileName, "r");
 
   fseek(fPointer, 0, SEEK_END);
-  *size = (int) ftell(fPointer);
+  *size = (int) ftell(fPointer) / sizeof(int);
   fseek(fPointer, 0, SEEK_SET);
 
   words = (int *) malloc(*size * sizeof(int));
   int i;
 
   for (i = 0; i < *size; i ++) {
-    words[i] = getc(fPointer);
+    int word[sizeof(int)];
+    for (int j = 0; j < sizeof(int); j ++) {
+      word[j] = getc(fPointer);
+    }
+    words[i] = word[0] << 24 | word[1] << 16 | word[2] << 8 | word[3];
   }
-
-  printf("%d\n", *words);
 
   fclose(fPointer);
 
