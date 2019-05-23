@@ -2,11 +2,25 @@
 #include <stdio.h>
 
 int * make_array(char **argv, int *size, int *words);
+void init_regs(int regs[17]);
+
+struct state
+{
+    int *mem;
+    int regs[17];
+    int fetchedInstruction;
+
+};
 
 int main(int argc, char **argv) {
   if (argc != 2) {
     return EXIT_FAILURE;
   }
+
+  struct state currentState;
+  int regs[17];
+  init_regs(regs);
+  *currentState.regs = &regs;
 
   int zero = 0;
   int *size = &zero;
@@ -24,6 +38,7 @@ int main(int argc, char **argv) {
 }
 
 int * make_array(char **argv, int *size, int *words) {
+
   FILE *fPointer;
   char *fileName = argv[1];
   fPointer = fopen(fileName, "r");
@@ -37,7 +52,6 @@ int * make_array(char **argv, int *size, int *words) {
 
   for (i = 0; i < *size; i ++) {
     words[i] = getc(fPointer);
-    printf("%d\n", words[i]);
   }
 
   printf("%d\n", *words);
@@ -45,6 +59,12 @@ int * make_array(char **argv, int *size, int *words) {
   fclose(fPointer);
 
   return words;
+}
+
+void init_regs(int regs[17]) {
+    for (int i = 0; i < 17; i++) {
+        regs[i] = 0;
+    }
 }
 
 
