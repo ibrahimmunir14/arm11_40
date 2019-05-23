@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <math.h>
 
 //Defines some types of our own. note: base these on platform independent types defined in <stdint.h>
 typedef uint32_t REGISTER;		//registers are 32 bits
@@ -13,6 +14,18 @@ typedef uint8_t BIT;			//define bit data type
 REGISTER registers[17];
 //64kb memory capacity, 1 word is 4 bytes
 WORD memory[16384];
+
+enum CondFlag {V=1, C=2, Z=4, N=8};
+enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
+enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
+
+typedef struct {
+    int *memory;
+    int *registers;
+    int executeInst;
+    int decodeInst;
+    int fetchInstIndex;
+} State;
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -32,21 +45,57 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < size; i++) {
         int word[sizeof(int)];
-        for (int j = 0; j < sizeof(int); j ++) {
+        for (int j = 0; j < sizeof(int); j++) {
             word[j] = getc(fPointer);
         }
         memory[i] = word[0] << 24 | word[1] << 16 | word[2] << 8 | word[3];
     }
 
-    fclose(fPointer);
-
-    // print contents of memory
-    for (int i = 0; i < size; i++) {
+    // output contents for testing purposes
+    for (int i = 0; i < size; i ++) {
         printf("%d\n", memory[i]);
     }
 
+    // main pipeline loop
+    State currentState;
+    //currentState.registers = &registers;
+    //while (currentState.fetchInstIndex < size) {
+
+    //}
+
     return EXIT_SUCCESS;
 }
+
+void update_pipeline(State* currentState) {
+//  possible ideas for code below
+//  currentState.executeInst = currentState.decodeInst;
+//  currentState.decodeInst = currentState.memory[currentState.fetchInstIndex];
+//  currentState.fetchInstIndex ++;
+  return;
+}
+
+void parse_data_processing(State* currentState) {
+
+}
+
+void parse_multiply(State* currentState) {
+
+}
+
+void parse_single_data_transfer(State* currentState) {
+
+}
+
+void parse_branch(State* currentState) {
+  // this instruction will not update the pipeline in the usual way
+  // it will clear the pipeline
+  // and then set the new variables
+}
+
+int check_code(int instruction, int cpsr) {
+    return instruction >> 28 == cpsr >> 28;
+}
+
 
 /* CHECKLIST
  *
