@@ -1,8 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 int * make_array(char **argv, int *size, int *words);
 void init_regs(int regs[17]);
+
+enum CondFlag {V=1, C=2, Z=4, N=8};
+
+enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 
 struct state
 {
@@ -64,6 +69,10 @@ void init_regs(int regs[17]) {
     for (int i = 0; i < 17; i++) {
         regs[i] = 0;
     }
+}
+
+int check_code(int instruction, int cpsr) {
+    return instruction >> 28 == cpsr >> 28;
 }
 
 
