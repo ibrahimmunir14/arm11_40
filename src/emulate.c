@@ -6,9 +6,11 @@ void init_regs(int regs[17]);
 
 struct state
 {
-    int *mem;
-    int regs[17];
-    int fetchedInstruction;
+    int *memory;
+    int *registers;
+    int executeInst;
+    int decodeInst;
+    int fetchInst;
 };
 
 int main(int argc, char **argv) {
@@ -16,19 +18,17 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-//  struct state currentState;
-  int regs[17];
-  init_regs(regs);
-//  *currentState.regs = &regs;
-
   int zero = 0;
+
+  struct state currentState;
+  int registers[17];
+  init_regs(registers);
+  currentState.registers = &registers;
   int *size = &zero;
   int *words = &zero;
-
-  words = make_array(argv, size, words);
-
-  for (int i = 0; i < *size; i ++) {
-    printf("%d\n", words[i]);
+  currentState.memory = make_array(argv, size, words);
+  while (currentState.fetchInst < size) {
+    
   }
 
   return EXIT_SUCCESS;
