@@ -9,7 +9,10 @@ int main(int argc, char **argv) {
   char *fileName = argv[1];
   fPointer = fopen(fileName, "r");
 
+  printf("%d\n", getc(fPointer));
+
   fclose(fPointer);
+
 
   return EXIT_SUCCESS;
 }
