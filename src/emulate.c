@@ -1,10 +1,28 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void init_regs(int regs[17]);
+
+struct state
+{
+    int *mem;
+    int regs[17];
+    int fetchedInstruction;
+
+};
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     return EXIT_FAILURE;
   }
+
+
+  struct state currentState;
+  int regs[17];
+  init_regs(regs);
+  *currentState.regs = &regs;
+
+
   FILE *fPointer;
   char *fileName = argv[1];
   fPointer = fopen(fileName, "r");
@@ -18,7 +36,6 @@ int main(int argc, char **argv) {
 
   for (i = 0; i < size; i ++) {
     words[i] = getc(fPointer);
-    printf("%d\n", words[i]);
   }
 
   fclose(fPointer);
@@ -26,6 +43,13 @@ int main(int argc, char **argv) {
 
   return EXIT_SUCCESS;
 }
+
+void init_regs(int regs[17]) {
+    for (int i = 0; i < 17; i++) {
+        regs[i] = 0;
+    }
+}
+
 
 
 /* CHECKLIST
