@@ -3,17 +3,38 @@
 #include <stdint.h>
 #include <math.h>
 
-//Defines some types of our own. note: base these on platform independent types defined in <stdint.h>
+// define types to aid readability
 typedef uint32_t REGISTER;		//registers are 32 bits
 typedef uint32_t WORD;			//words are 32 bits
 typedef uint8_t BYTE;			//bytes are 8 bits
 typedef uint8_t BIT;			//define bit data type
 
-//store registers in an array of register
-// R13 = SP; R14 = LR; R15 = PC; R16 = CPSR
+// store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
 REGISTER registers[17];
-//64kb memory capacity, 1 word is 4 bytes
+// store memory as array of word, 64kb memory capacity, 1 word is 4 bytes
 WORD memory[16384];
+
+// define CSPR status bits
+#define STATUS_NEG (1<<7) // negative bit
+#define STATUS_ZER (1<<6) // zero bit
+#define STATUS_CAR (1<<5) // carry bit
+#define STATUS_OVF (1<<4) // overflow bit
+BYTE statusRegister = 0; // byte corresponding to status register
+
+// helper functions related to cspr status flags
+int isSet(int flag) {
+    // flag is set if bitwise 'and' operation results in flag,
+    //  i.e. appropriate bit in statusRegister is set
+    return (statusRegister & flag) == flag;
+}
+void setFlag(int flag) {
+    // perform bitwise 'or' to update appropriate bit in statusRegister
+    statusRegister = statusRegister | flag;
+}
+void clearFlag(int flag) {
+    // perform bitwise 'and' to update appropriate bits in statusRegister
+    statusRegister = statusRegister & (~flag);
+}
 
 enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
