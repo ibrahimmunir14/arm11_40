@@ -9,7 +9,17 @@ int main(int argc, char **argv) {
   char *fileName = argv[1];
   fPointer = fopen(fileName, "r");
 
-  printf("%d\n", getc(fPointer));
+  fseek(fPointer, 0, SEEK_END);
+  int size = ftell(fPointer);
+  fseek(fPointer, 0, SEEK_SET);
+
+  int words[size];
+  int i;
+
+  for (i = 0; i < size; i ++) {
+    words[i] = getc(fPointer);
+    printf("%d\n", words[i]);
+  }
 
   fclose(fPointer);
 
