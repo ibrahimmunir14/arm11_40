@@ -14,14 +14,14 @@ REGISTER registers[17];
 // store memory as array of word, 64kb memory capacity, 1 word is 4 bytes
 WORD memory[16384];
 
-// define CSPR status bits
+// define CPSR status bits
 #define STATUS_NEG (1<<7) // negative bit
 #define STATUS_ZER (1<<6) // zero bit
 #define STATUS_CAR (1<<5) // carry bit
 #define STATUS_OVF (1<<4) // overflow bit
 BYTE statusRegister = 0; // byte corresponding to status register
 
-// helper functions related to cspr status flags
+// helper functions related to CPSR status flags
 int isSet(int flag) {
     // flag is set if bitwise 'and' operation results in flag,
     //  i.e. appropriate bit in statusRegister is set
@@ -47,6 +47,8 @@ typedef struct {
     int decodeInst;
     int fetchInstIndex;
 } State;
+
+void printResults(void);
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -84,7 +86,23 @@ int main(int argc, char **argv) {
 
     //}
 
+    printResults();
     return EXIT_SUCCESS;
+}
+
+void printResults(void) {
+    printf("Registers:\n");
+    // print contents of general registers R0-R12
+    for (int i = 0; i <= 12; i++) {
+        printf("$%-2i : %10i (0x%08x)\n", i, registers[i], registers[i]);
+    }
+    // print contents of pc and cpsr
+    printf("PC  : %10i (0x%08x)\n", registers[15], registers[15]);
+    printf("CPSR: %10i (0x%08x)\n", registers[16], registers[16]);
+    // TODO: print contents of memory
+    printf("Non-zero memory:\n");
+    // This depends on our implementation of memory - store as words or bytes? to dicuss!
+
 }
 
 void update_pipeline(State* currentState) {
