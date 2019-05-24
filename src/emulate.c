@@ -4,10 +4,10 @@
 #include <math.h>
 
 // define types to aid readability
-typedef uint32_t REGISTER;		// registers are 32 bits
-typedef uint32_t WORD;			// words are 32 bits
-typedef uint8_t BYTE;			// bytes are 8 bits
-typedef uint8_t BIT;			// define bit data type
+typedef uint32_t REGISTER;	// registers are 32 bits
+typedef uint32_t WORD;		// words are 32 bits
+typedef uint16_t ADDRESS;   // addresses are 16 bits
+typedef uint8_t BYTE;		// bytes are 8 bits
 
 // store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
 // store memory as array of byte, 64kb memory capacity, 1 word is 4 bytes
@@ -29,6 +29,8 @@ enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 
+// function declarations
+WORD readWord(ADDRESS startAddress);
 void printResults(void);
 
 int main(int argc, char **argv) {
@@ -53,23 +55,18 @@ int main(int argc, char **argv) {
     // output memory contents after loading instructions (for testing)
     printf("Initial Memory Contents:\n");
     for (int i = 0; i < MEM_SIZE; i += 4) {
-        WORD word = memory[i] << 24 | memory[i+1] << 16 | memory[i+2] << 8 | memory[i+3];
+        WORD word = readWord(i);
         if (word != 0) {
             printf("0x%08x: 0x%08x\n", i, word);
         }
     }
     printf("\n");
 
-    // main pipeline loop
-    State currentState;
-    //currentState.registers = &registers;
-    //while (currentState.fetchInstIndex < size) {
-    //}
-
     printResults();
     return EXIT_SUCCESS;
 }
 
+// output the contents of registers and non-zero memory
 void printResults(void) {
     printf("Registers:\n");
     // print contents of general registers R0-R12
@@ -83,37 +80,17 @@ void printResults(void) {
     // print contents of non-zero memory locations
     printf("Non-zero memory:\n");
     for (int i = 0; i < MEM_SIZE; i += 4) {
-        WORD word = memory[i] << 24 | memory[i+1] << 16 | memory[i+2] << 8 | memory[i+3];
+        WORD word = readWord(i);
         if (word != 0) {
             printf("0x%08x: 0x%08x\n", i, word);
         }
     }
 }
 
-void update_pipeline(State* currentState) {
-//  possible ideas for code below
-//  currentState.executeInst = currentState.decodeInst;
-//  currentState.decodeInst = currentState.memory[currentState.fetchInstIndex];
-//  currentState.fetchInstIndex ++;
-  return;
-}
-
-void parse_data_processing(State* currentState) {
-
-}
-
-void parse_multiply(State* currentState) {
-
-}
-
-void parse_single_data_transfer(State* currentState) {
-
-}
-
-void parse_branch(State* currentState) {
-  // this instruction will not update the pipeline in the usual way
-  // it will clear the pipeline
-  // and then set the new variables
+// returns a word (4 bytes) given the address of the first byte
+WORD readWord(ADDRESS startAddress) {
+    return memory[startAddress] << 24 | memory[startAddress+1] << 16
+           | memory[startAddress+2] << 8 | memory[startAddress+3];
 }
 
 // helper functions related to CPSR status flags
