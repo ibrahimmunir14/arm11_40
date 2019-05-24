@@ -19,28 +19,31 @@ typedef int32_t OFFSET;     // offsets are 32 bits, signed
 #define NUM_GENERAL_REG 13
 #define REG_PC 15
 #define REG_CPSR 16
-REGISTER registers[NUM_REG];
-BYTE memory[MEM_SIZE];
+
+struct MachineState {
+    REGISTER registers[NUM_REG];
+    BYTE memory[MEM_SIZE];
+};
 
 enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 
 // function declarations
-void incrementPC(void);
-void printResults(void);
-WORD readWord(ADDRESS);
-bool checkCondition(enum CondCode);
-bool isSet(enum CondFlag);
-void setFlag(enum CondFlag);
-void clearFlag(enum CondFlag);
+void incrementPC(struct MachineState *state);
+void printResults(struct MachineState *state);
+WORD readWord(ADDRESS, struct MachineState *state);
+bool checkCondition(enum CondCode, struct MachineState *state);
+bool isSet(enum CondFlag, struct MachineState *state);
+void setFlag(enum CondFlag, struct MachineState *state);
+void clearFlag(enum CondFlag, struct MachineState *state);
 
-void executeInstruction(WORD);
-void performBranch(OFFSET offset);
-void performSDT(bool iFlag, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset);
-void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm);
-void performDataProcessOp2Register(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE shift, BYTE rm);
-void performDataProcessOp2ImmVal(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal);
+void executeInstruction(WORD, struct MachineState *state);
+void performBranch(OFFSET offset, struct MachineState *state);
+void performSDT(bool iFlag, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state);
+void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state);
+void performDataProcessOp2Register(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE shift, BYTE rm, struct MachineState *state);
+void performDataProcessOp2ImmVal(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal, struct MachineState *state);
 
 // TODO: REMEMBER ENDIANNESS:
 // each byte has its bits stored big-endian, i.e. MSB 01010101 LSB
@@ -51,9 +54,11 @@ int main(int argc, char **argv) {
     // ensure we have one argument, the filename
     if (argc != 2) { return EXIT_FAILURE; }
 
+    struct MachineState state;
+
     // initialize registers, memory to 0s
-    for (int i = 0; i < NUM_REG; i++) { registers[i] = 0; }
-    for (int i = 0; i < MEM_SIZE; i++) { memory[i] = 0; }
+    for (int i = 0; i < NUM_REG; i++) { state.registers[i] = 0; }
+    for (int i = 0; i < MEM_SIZE; i++) { state.memory[i] = 0; }
 
     // set up memory array with instructions
     char *fileName = argv[1];
@@ -62,32 +67,34 @@ int main(int argc, char **argv) {
     int size = (int) ftell(fPointer);
     fseek(fPointer, 0, SEEK_SET);
     for (int i = 0; i < size; i++) {
-        memory[i] = getc(fPointer);
+        state.memory[i] = getc(fPointer);
     }
 
     // output memory contents after loading instructions (for testing)
     printf("Initial Memory Contents:\n");
     for (int i = 0; i < MEM_SIZE; i += 4) {
-        WORD word = readWord(i);
+        WORD word = readWord(i, &state);
         if (word != 0) {
             printf("0x%08x: 0x%08x\n", i, word);
         }
     }
     printf("\n");
 
+
+
     // main pipeline loop
     WORD instrToExecute = 0;
     WORD instrToDecode = 0;
     bool hasInstrToExecute = false;
     bool hasInstrToDecode = false;
-    while (registers[REG_PC] < MEM_SIZE) {
+    while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
         if (hasInstrToExecute) {
             if (instrToExecute == 0) {
                 printf("TERMINATE: All-0 Instruction\n\n");
                 break; // terminate on all-0 instruction
             } else {
-                executeInstruction(instrToExecute);
+                executeInstruction(instrToExecute, &state);
                 printf("Executed Instruction 0x%08x\n", instrToExecute);
             }
         }
@@ -102,39 +109,39 @@ int main(int argc, char **argv) {
         }
 
         // fetch next instruction and put it in instrToDecode
-        instrToDecode = readWord(registers[REG_PC]);
-        printf("Fetched Instruction at 0x%08x : 0x%08x\n", registers[REG_PC], instrToDecode);
+        instrToDecode = readWord(state.registers[REG_PC], &state);
+        printf("Fetched Instruction at 0x%08x : 0x%08x\n", state.registers[REG_PC], instrToDecode);
         hasInstrToDecode = true;
 
         // increment program counter
-        incrementPC();
-        printf("Incremented PC to 0x%08x\n\n", registers[REG_PC]);
+        incrementPC(&state);
+        printf("Incremented PC to 0x%08x\n\n", state.registers[REG_PC]);
     }
 
-    printResults();
+    printResults(&state);
     return EXIT_SUCCESS;
 }
 
 // increment the PC register to the address of the next word instruction
-void incrementPC(void) {
-    registers[REG_PC] += 4;
+void incrementPC(struct MachineState *state) {
+    state->registers[REG_PC] += 4;
 }
 
 // output the contents of registers and non-zero memory
-void printResults(void) {
+void printResults(struct MachineState *state) {
     printf("Registers:\n");
     // print contents of general registers R0-R12
     for (int i = 0; i < NUM_GENERAL_REG; i++) {
-        printf("$%-2i : %10i (0x%08x)\n", i, registers[i], registers[i]);
+        printf("$%-2i : %10i (0x%08x)\n", i, state->registers[i], state->registers[i]);
     }
     // print contents of pc and cpsr
-    printf("PC  : %10i (0x%08x)\n", registers[REG_PC], registers[REG_PC]);
-    printf("CPSR: %10i (0x%08x)\n", registers[REG_CPSR], registers[REG_CPSR]);
+    printf("PC  : %10i (0x%08x)\n", state->registers[REG_PC], state->registers[REG_PC]);
+    printf("CPSR: %10i (0x%08x)\n", state->registers[REG_CPSR], state->registers[REG_CPSR]);
 
     // print contents of non-zero memory locations
     printf("Non-zero memory:\n");
     for (int i = 0; i < MEM_SIZE; i += 4) {
-        WORD word = readWord(i);
+        WORD word = readWord(i, state);
         if (word != 0) {
             printf("0x%08x: 0x%08x\n", i, word);
         }
@@ -142,40 +149,40 @@ void printResults(void) {
 }
 
 // returns a word (4 bytes) given the address of the first byte
-WORD readWord(ADDRESS startAddress) {
-    return memory[startAddress] << 24 | memory[startAddress+1] << 16
-           | memory[startAddress+2] << 8 | memory[startAddress+3];
+WORD readWord(ADDRESS startAddress, struct MachineState *state) {
+    return state->memory[startAddress] << 24 | state->memory[startAddress+1] << 16
+           | state->memory[startAddress+2] << 8 | state->memory[startAddress+3];
 }
 
 // checks whether an instruction should be executed based on condition code
-bool checkCondition(enum CondCode condCode) {
+bool checkCondition(enum CondCode condCode, struct MachineState *state) {
     switch (condCode) {
         case AL : return true;
-        case EQ : return isSet(Z);
-        case NE : return !isSet(Z);
-        case GE : return isSet(N) == isSet(V);
-        case LT : return isSet(N) != isSet(V);
-        case GT : return !isSet(Z) && (isSet(N) == isSet(V));
-        case LE : return isSet(Z) || (isSet(N) != isSet(V));
+        case EQ : return isSet(Z, state);
+        case NE : return !isSet(Z, state);
+        case GE : return isSet(N, state) == isSet(V, state);
+        case LT : return isSet(N, state) != isSet(V, state);
+        case GT : return !isSet(Z, state) && (isSet(N, state) == isSet(V, state));
+        case LE : return isSet(Z, state) || (isSet(N, state) != isSet(V, state));
         default : return false;
     }
 }
 
 // helper functions related to CPSR status flags
-bool isSet(enum CondFlag flag) {
-    return (registers[REG_CPSR] & flag << 4) == flag << 4;
+bool isSet(enum CondFlag flag, struct MachineState *state) {
+    return (state->registers[REG_CPSR] & flag << 4) == flag << 4;
 }
-void setFlag(enum CondFlag flag) {
-    registers[REG_CPSR] = registers[REG_CPSR] | flag << 4;
+void setFlag(enum CondFlag flag, struct MachineState *state) {
+    state->registers[REG_CPSR] = state->registers[REG_CPSR] | flag << 4;
 }
-void clearFlag(enum CondFlag flag) {
-    registers[REG_CPSR] = registers[REG_CPSR] & (~(flag << 4));
+void clearFlag(enum CondFlag flag, struct MachineState *state) {
+    state->registers[REG_CPSR] = state->registers[REG_CPSR] & (~(flag << 4));
 }
 
 // execute the given instruction
-void executeInstruction(WORD instr) {
+void executeInstruction(WORD instr, struct MachineState *state) {
     // check if instruction should be executed
-    bool doExecute = checkCondition((enum CondCode) (instr & (15 << 4))); // first 4 bits of msbyte
+    bool doExecute = checkCondition((enum CondCode) (instr & (15 << 4)), state); // first 4 bits of msbyte
 
     if (doExecute) {
         if (((instr >> 26) & 3) == 2) { // 10 in bits 27-26; branch
@@ -191,3 +198,26 @@ void executeInstruction(WORD instr) {
         }
     }
 }
+
+
+void performBranch(OFFSET offset, struct MachineState *state) {
+
+}
+
+void performSDT(bool iFlag, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
+
+}
+
+void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
+
+}
+
+void performDataProcessOp2Register(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE shift, BYTE rm, struct MachineState *state) {
+
+}
+
+void performDataProcessOp2ImmVal(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal, struct MachineState *state) {
+
+}
+
+
