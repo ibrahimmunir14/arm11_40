@@ -35,8 +35,6 @@ int main(int argc, char **argv) {
     }
     printf("\n");
 
-
-
     // main pipeline loop
     WORD instrToExecute = 0;
     WORD instrToDecode = 0;
@@ -137,42 +135,71 @@ void clearFlag(enum CondFlag flag, struct MachineState *state) {
 // execute the given instruction
 void executeInstruction(WORD instr, struct MachineState *state) {
     // check if instruction should be executed
-    bool doExecute = checkCondition((enum CondCode) (instr & (15 << 4)), state); // first 4 bits of msbyte
+    bool doExecute = checkCondition((enum CondCode) getBitsFromWord(instr, 31, 4), state);
 
     if (doExecute) {
-        if (((instr >> 26) & 3) == 2) { // 10 in bits 27-26; branch
-            // TODO: calculate 32 bit signed offset
-            // TODO: delegate to branch function
-        } else if (((instr >> 26) & 3) == 1) { // 01 in bits 27-26; single data transfer
-            // TODO: calculate I,P,U,L,Rn,Rd,offset
-            // TODO: delegate to single data transfer function
-        } else if (((instr >> 26) & 3) == 2) { // 00 in bits 27-26
-            // TODO: determine whether this is data processing OR multiply
-            // TODO: calculate appropriate offsets, operands, etc.
-            // TODO: delegate to appropriate helper functions
+        switch (getInstrType(instr)) {
+            case instrBranch:
+                // TODO: extract 32 bit signed offset
+                // TODO: delegate to branch function
+            case instrSDT:
+                switch (getSdtType(instr)) {
+                    case sdtOffsetImm:
+                        // TODO: delegate to appropriate function
+                    case sdtOffsetRegShiftConst:
+                        // TODO: delegate to appropriate function
+                    case sdtOffsetRegShiftReg:
+                        // TODO: delegate to appropriate function
+                    default: return;
+                }
+            case instrMultiply:
+                // TODO: extract A,S,Rd,Rn,R,Rm
+                // TODO: delegate to multiply function
+            case instrDataProcessing:
+                switch (getDataProcType(instr)) {
+                    case dataProcOp2Imm:
+                        // TODO: delegate to appropriate function
+                    case dataProcOp2RegShiftConst:
+                        // TODO: delegate to appropriate function
+                    case dataProcOp2RegShiftReg:
+                        // TODO: delegate to appropriate function
+                    default: return;
+                }
+            default: return;
         }
     }
 }
 
-
-void performBranch(OFFSET offset, struct MachineState *state) {
-
+enum instrType getInstrType(WORD instr) {
+    switch (getBitsFromWord(instr, 27, 2)) {
+        case 2: // 10 in bits 27-26; branch
+            return instrBranch;
+        case 1: // 01 in bits 27-26; single data transfer
+            return instrSDT;
+        case 0: { // 00 in bits 27-26
+            bool iFlag = getBitsFromWord(instr, 25, 1);
+            bool seventhBit = getBitsFromWord(instr, 7, 1);
+            bool fourthBit = getBitsFromWord(instr, 4, 1);
+            if (!iFlag && seventhBit && fourthBit) { return instrMultiply; }
+            return instrDataProcessing;
+        }
+        default: // unknown instruction type
+            return instrUnknown;
+    }
 }
 
-void performSDT(bool iFlag, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
-
+enum dataProcType getDataProcType(WORD instr) {
+    bool iFlag = getBitsFromWord(instr, 25, 1);
+    if (iFlag) { return dataProcOp2Imm; }
+    bool fourthBit = getBitsFromWord(instr, 4, 1);
+    if (fourthBit) { return dataProcOp2RegShiftReg; }
+    else { return dataProcOp2RegShiftConst; }
 }
 
-void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
-
+enum sdtType getSdtType(WORD instr) {
+    bool iFlag = getBitsFromWord(instr, 25, 1);
+    if (!iFlag) { return sdtOffsetImm; }
+    bool fourthBit = getBitsFromWord(instr, 4, 1);
+    if (fourthBit) { return sdtOffsetRegShiftReg; }
+    else { return sdtOffsetRegShiftConst; }
 }
-
-void performDataProcessOp2Register(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE shift, BYTE rm, struct MachineState *state) {
-
-}
-
-void performDataProcessOp2ImmVal(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal, struct MachineState *state) {
-
-}
-
-
