@@ -1,4 +1,5 @@
-#include "emulate.h"
+ #include "emulate.h"
+#include "shift.h"
 
 // TODO: REMEMBER ENDIANNESS:
 // each byte has its bits stored big-endian, i.e. MSB 01010101 LSB
@@ -153,13 +154,49 @@ void executeInstruction(WORD instr, struct MachineState *state) {
 }
 
 void performBranch(OFFSET offset, struct MachineState *state) {
+
 }
+
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
+    ADDRESS address = state->registers[rn];
+
+    int offsetValue = sdtType == sdtOffsetImm ?
+            (unsigned int) offset : //Offset is an immediate value
+            shiftRegister(offset, sdtType, state); //Offset is a shifted register value
+
+    //Subtraction if U=0
+    if (~upFlag) {
+        offsetValue = -offsetValue;
+    }
+
+
+    if (pFlag) {
+        //Transfer data using address that has been offset
+        if (ldstFlag) {
+            state->registers[rd] = state->memory[address + offsetValue];
+        } else {
+            state->memory[address + offsetValue] = state->registers[rd];
+        }
+    } else {
+        //Transfer data then update base register
+        if (ldstFlag) {
+            state->registers[rd] = state->memory[address];
+        } else {
+            state->memory[address] = state->registers[rd];
+        }
+
+        state->registers[rn] += offsetValue;
+    }
 }
+
 void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
+
 }
+
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
+
 }
+
 
 
 enum InstrType getInstrType(WORD instr) {
@@ -194,4 +231,25 @@ enum SdtType getSdtType(WORD instr) {
     bool fourthBit = getBitsFromWord(instr, 4, 1);
     if (fourthBit) { return sdtOffsetRegShiftReg; }
     else { return sdtOffsetRegShiftConst; }
+}
+
+int shiftRegister(int bits, int regOperand, struct MachineState *state) {
+    int rm = getBitsFromWord(bits, 0, 4);
+    int rmContents = state->registers[rm];
+    int shiftType = getBitsFromWord(bits, 5, 2);
+    int shamt;
+
+    if (regOperand) {
+        //Shift amount is the last byte in register Rs
+        int rs = state->registers[getBitsFromWord(bits, 8, 4)];
+        shamt = rs & ((1 << 8) - 1);
+
+    } else {
+        //Shift amount is immediate value
+        shamt = getBitsFromWord(bits, 7, 5);
+    }
+
+    //Shift register if shift amount is nonzero
+    return shamt == 0 ? rmContents
+                      : shift(rmContents, shamt, (enum ShiftType) shiftType);
 }

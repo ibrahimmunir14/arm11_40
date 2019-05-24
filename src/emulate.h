@@ -39,8 +39,8 @@ enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
 enum InstrType {instrDataProcessing, instrMultiply, instrSDT, instrBranch, instrUnknown};
-enum DataProcType {dataProcOp2Imm, dataProcOp2RegShiftReg, dataProcOp2RegShiftConst};
-enum SdtType {sdtOffsetImm, sdtOffsetRegShiftReg, sdtOffsetRegShiftConst};
+enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
+enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 
 // function declarations
 void incrementPC(struct MachineState *state);
@@ -63,3 +63,4 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
+int shiftRegister(int bits, int regOperand, struct MachineState *state);
