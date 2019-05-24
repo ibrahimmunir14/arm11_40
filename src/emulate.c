@@ -154,14 +154,23 @@ void executeInstruction(WORD instr, struct MachineState *state) {
     if (doExecute) {
         switch (getInstrType(instr)) {
             case instrBranch:
+                printf("Branch Operation\n");
                 // TODO: delegate to branch function
+                break;
             case instrSDT:
+                printf("SDT Operation\n");
                 // TODO: delegate to appropriate function
+                break;
             case instrMultiply:
+                printf("Multiply Operation\n");
                 // TODO: delegate to multiply function
+                break;
             case instrDataProcessing:
+                printf("DataProcessing Operation\n");
                 // TODO: delegate to appropriate function
-            default: return;
+                break;
+            default:
+                printf("Unknown Operation\n");
         }
     }
 }
@@ -267,8 +276,8 @@ int shiftRegister(int bits, int regOperand, struct MachineState *state) {
 }
 
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
-    WORD andOp = (WORD) (2 ^ numBits) - 1;
-    WORD wordShifted = word << (startBitNo - numBits + 1);
+    BYTE andOp = (BYTE) (pow(2, numBits) - 1);
+    WORD wordShifted = word >> (1 + startBitNo - numBits);
     return andOp & wordShifted;
 }
 
