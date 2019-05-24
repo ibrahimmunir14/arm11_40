@@ -26,10 +26,14 @@ enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 
 // function declarations
-WORD readWord(ADDRESS startAddress);
-void executeInstruction(WORD inst);
+WORD readWord(ADDRESS);
+void executeInstruction(WORD);
 void incrementPC(void);
 void printResults(void);
+bool checkCondition(enum CondCode);
+bool isSet(enum CondFlag flag);
+void setFlag(enum CondFlag flag);
+void clearFlag(enum CondFlag flag);
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -99,12 +103,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-// decode the given instruction and delegate to appropriate helper functions
-void executeInstruction(WORD instr) {
-    // TODO: Implement this function to decode instruction and delegate to appropriate functions
-
-}
-
 // increment the PC register to the address of the next word instruction
 void incrementPC(void) {
     registers[REG_PC] += 4;
@@ -137,19 +135,37 @@ WORD readWord(ADDRESS startAddress) {
            | memory[startAddress+2] << 8 | memory[startAddress+3];
 }
 
+// decode and execute the given instructions
+void executeInstruction(WORD instr) {
+    // check if instruction should be executed
+    bool doExecute = checkCondition((enum CondCode) (instr >> 28));
+
+    if (doExecute) {
+        // TODO: Implement this function to decode instruction and delegate to appropriate functions
+    }
+}
+
+// checks whether an instruction should be executed based on condition code
+bool checkCondition(enum CondCode condCode) {
+    switch (condCode) {
+        case AL : return true;
+        case EQ : return isSet(Z);
+        case NE : return !isSet(Z);
+        case GE : return isSet(N) == isSet(V);
+        case LT : return isSet(N) != isSet(V);
+        case GT : return !isSet(Z) && (isSet(N) == isSet(V));
+        case LE : return isSet(Z) || (isSet(N) != isSet(V));
+    }
+}
+
 // helper functions related to CPSR status flags
-int isSet(int flag) {
-    // flag is set if appropriate bit in statusRegister is set
+bool isSet(enum CondFlag flag) {
     return (registers[REG_CPSR] & flag << 4) == flag << 4;
 }
-void setFlag(int flag) {
-    // perform bitwise 'or' to update appropriate bit in statusRegister
-    registers[REG_CPSR] = registers[REG_CPSR] | flag << 4; }
-void clearFlag(int flag) {
-    // perform bitwise 'and' to update appropriate bits in statusRegister
+void setFlag(enum CondFlag flag) {
+    registers[REG_CPSR] = registers[REG_CPSR] | flag << 4;
+}
+void clearFlag(enum CondFlag flag) {
     registers[REG_CPSR] = registers[REG_CPSR] & (~(flag << 4));
 }
 
-int check_code(int instruction, int cpsr) {
-    return instruction >> 28 == cpsr >> 28;
-}
