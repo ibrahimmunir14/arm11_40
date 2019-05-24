@@ -3,7 +3,6 @@
 // NOTE: Words in memory are stored Big-Endian; Words in registers are stored Big-Endian
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
-//       use readRegister/writeRegister to read/write from Register, auto taking care of conversions
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -159,7 +158,14 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             case instrSDT:
                 printf("SDT Operation\n");
-                // TODO: delegate to appropriate function
+                enum SdtType sdtType = getSdtType(instr);
+                bool pFlag = getBitsFromWord(instr, 24, 1);
+                bool uFlag = getBitsFromWord(instr, 25, 1);
+                bool lFlag = getBitsFromWord(instr, 20, 1);
+                BYTE rn = getBitsFromWord(instr, 19, 4);
+                BYTE rd = getBitsFromWord(instr, 15, 4);
+                OFFSET offset = getBitsFromWord(instr, 11, 4);
+                performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offset, state);
                 break;
             case instrMultiply:
                 printf("Multiply Operation\n");
