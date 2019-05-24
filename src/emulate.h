@@ -53,3 +53,6 @@ void performSDT(bool iFlag, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYT
 void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state);
 void performDataProcessOp2Register(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE shift, BYTE rm, struct MachineState *state);
 void performDataProcessOp2ImmVal(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal, struct MachineState *state);
+// extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
+WORD getBitsFromMemory(ADDRESS memAddress, BYTE startBitNo, BYTE numBits, struct MachineState *state);
+WORD getBitsFromRegister(BYTE regNumber, BYTE startBitNo, BYTE numBits, struct MachineState *state);
