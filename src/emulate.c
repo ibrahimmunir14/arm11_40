@@ -102,6 +102,7 @@ int main(int argc, char **argv) {
 // decode the given instruction and delegate to appropriate helper functions
 void executeInstruction(WORD instr) {
     // TODO: Implement this function to decode instruction and delegate to appropriate functions
+
 }
 
 // increment the PC register to the address of the next word instruction
@@ -139,14 +140,14 @@ WORD readWord(ADDRESS startAddress) {
 // helper functions related to CPSR status flags
 int isSet(int flag) {
     // flag is set if appropriate bit in statusRegister is set
-    return (registers[REG_CPSR] & flag) == flag;
+    return (registers[REG_CPSR] & flag << 4) == flag << 4;
 }
 void setFlag(int flag) {
     // perform bitwise 'or' to update appropriate bit in statusRegister
-    registers[REG_CPSR] = registers[REG_CPSR] | flag; }
+    registers[REG_CPSR] = registers[REG_CPSR] | flag << 4; }
 void clearFlag(int flag) {
     // perform bitwise 'and' to update appropriate bits in statusRegister
-    registers[REG_CPSR] = registers[REG_CPSR] & (~flag);
+    registers[REG_CPSR] = registers[REG_CPSR] & (~(flag << 4));
 }
 
 int check_code(int instruction, int cpsr) {
