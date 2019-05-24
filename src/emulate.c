@@ -136,41 +136,33 @@ void clearFlag(enum CondFlag flag, struct MachineState *state) {
 void executeInstruction(WORD instr, struct MachineState *state) {
     // check if instruction should be executed
     bool doExecute = checkCondition((enum CondCode) getBitsFromWord(instr, 31, 4), state);
-
+    // delegate to relevant helper function
     if (doExecute) {
         switch (getInstrType(instr)) {
             case instrBranch:
-                // TODO: extract 32 bit signed offset
                 // TODO: delegate to branch function
             case instrSDT:
-                switch (getSdtType(instr)) {
-                    case sdtOffsetImm:
-                        // TODO: delegate to appropriate function
-                    case sdtOffsetRegShiftConst:
-                        // TODO: delegate to appropriate function
-                    case sdtOffsetRegShiftReg:
-                        // TODO: delegate to appropriate function
-                    default: return;
-                }
+                // TODO: delegate to appropriate function
             case instrMultiply:
-                // TODO: extract A,S,Rd,Rn,R,Rm
                 // TODO: delegate to multiply function
             case instrDataProcessing:
-                switch (getDataProcType(instr)) {
-                    case dataProcOp2Imm:
-                        // TODO: delegate to appropriate function
-                    case dataProcOp2RegShiftConst:
-                        // TODO: delegate to appropriate function
-                    case dataProcOp2RegShiftReg:
-                        // TODO: delegate to appropriate function
-                    default: return;
-                }
+                // TODO: delegate to appropriate function
             default: return;
         }
     }
 }
 
-enum instrType getInstrType(WORD instr) {
+void performBranch(OFFSET offset, struct MachineState *state) {
+}
+void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
+}
+void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
+}
+void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
+}
+
+
+enum InstrType getInstrType(WORD instr) {
     switch (getBitsFromWord(instr, 27, 2)) {
         case 2: // 10 in bits 27-26; branch
             return instrBranch;
@@ -188,7 +180,7 @@ enum instrType getInstrType(WORD instr) {
     }
 }
 
-enum dataProcType getDataProcType(WORD instr) {
+enum DataProcType getDataProcType(WORD instr) {
     bool iFlag = getBitsFromWord(instr, 25, 1);
     if (iFlag) { return dataProcOp2Imm; }
     bool fourthBit = getBitsFromWord(instr, 4, 1);
@@ -196,7 +188,7 @@ enum dataProcType getDataProcType(WORD instr) {
     else { return dataProcOp2RegShiftConst; }
 }
 
-enum sdtType getSdtType(WORD instr) {
+enum SdtType getSdtType(WORD instr) {
     bool iFlag = getBitsFromWord(instr, 25, 1);
     if (!iFlag) { return sdtOffsetImm; }
     bool fourthBit = getBitsFromWord(instr, 4, 1);

@@ -38,9 +38,9 @@ enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
-enum instrType {instrDataProcessing, instrMultiply, instrSDT, instrBranch, instrUnknown};
-enum dataProcType {dataProcOp2Imm, dataProcOp2RegShiftReg, dataProcOp2RegShiftConst};
-enum sdtType {sdtOffsetImm, sdtOffsetRegShiftReg, sdtOffsetRegShiftConst};
+enum InstrType {instrDataProcessing, instrMultiply, instrSDT, instrBranch, instrUnknown};
+enum DataProcType {dataProcOp2Imm, dataProcOp2RegShiftReg, dataProcOp2RegShiftConst};
+enum SdtType {sdtOffsetImm, sdtOffsetRegShiftReg, sdtOffsetRegShiftConst};
 
 // function declarations
 void incrementPC(struct MachineState *state);
@@ -52,18 +52,14 @@ void setFlag(enum CondFlag, struct MachineState *state);
 void clearFlag(enum CondFlag, struct MachineState *state);
 
 void executeInstruction(WORD, struct MachineState *state);
-enum instrType getInstrType(WORD instr);
-enum dataProcType getDataProcType(WORD instr);
-enum sdtType getSdtType(WORD instr);
+enum InstrType getInstrType(WORD instr);
+enum DataProcType getDataProcType(WORD instr);
+enum SdtType getSdtType(WORD instr);
 
 void performBranch(OFFSET offset, struct MachineState *state);
-void performSdtOffsetImm(bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state);
-void performSdtOffsetRegShiftReg(bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, BYTE rs, enum ShiftType shiftType, struct MachineState *state);
-void performSdtOffsetRegShiftConst(bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, int shiftAmount, enum ShiftType shiftType, struct MachineState *state);
+void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state);
 void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state);
-void performDataProcOp2Imm(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal, struct MachineState *state);
-void performDataProcOp2RegShiftConst(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, int shiftAmount, enum ShiftType shiftType, BYTE rm, struct MachineState *state);
-void performDataProcOp2RegShiftReg(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rs, enum ShiftType shiftType, BYTE rm, struct MachineState *state);
+void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state);
 
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
