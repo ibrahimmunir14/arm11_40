@@ -1,7 +1,3 @@
-//
-// Created by ljt18 on 24/05/19.
-//
-
 #ifndef ARM11_40_EMULATE_H
 #define ARM11_40_EMULATE_H
 
@@ -29,6 +25,8 @@ typedef int32_t OFFSET;     // offsets are 32 bits, signed
 #define REG_PC 15
 #define REG_CPSR 16
 
+#define FULL_BYTE (2^8)-1
+
 struct MachineState {
     REGISTER registers[NUM_REG];
     BYTE memory[MEM_SIZE];
@@ -37,7 +35,7 @@ struct MachineState {
 enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
-enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
+
 enum InstrType {instrDataProcessing, instrMultiply, instrSDT, instrBranch, instrUnknown};
 enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
 enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
@@ -45,7 +43,7 @@ enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 // function declarations
 void incrementPC(struct MachineState *state);
 void printResults(struct MachineState *state);
-WORD readWord(ADDRESS, struct MachineState *state);
+WORD readFourBytes(ADDRESS, struct MachineState *state);
 bool checkCondition(enum CondCode, struct MachineState *state);
 bool isSet(enum CondFlag, struct MachineState *state);
 void setFlag(enum CondFlag, struct MachineState *state);
@@ -63,6 +61,13 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
-WORD loadWord(ADDRESS startAddress, struct MachineState *state);
-void storeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
+WORD readWord(ADDRESS startAddress, struct MachineState *state);
+void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 int shiftRegister(int bits, int regOperand, struct MachineState *state);
+
+
+// SHIFT
+enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
+int shift(int val, int shamt, enum ShiftType shiftType);
+int rotateRightShift(int val, int shamt);
+int logicalRightShift(int val, int shamt);
