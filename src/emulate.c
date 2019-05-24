@@ -24,32 +24,10 @@ BYTE memory[MEM_SIZE];
 #define STATUS_ZER (1<<6) // zero bit
 #define STATUS_CAR (1<<5) // carry bit
 #define STATUS_OVF (1<<4) // overflow bit
-BYTE statusRegister = 0; // byte corresponding to status register
-
-// helper functions related to CPSR status flags
-int isSet(int flag) {
-    // flag is set if appropriate bit in statusRegister is set
-    return (statusRegister & flag) == flag;
-}
-void setFlag(int flag) {
-    // perform bitwise 'or' to update appropriate bit in statusRegister
-    statusRegister = statusRegister | flag; }
-void clearFlag(int flag) {
-    // perform bitwise 'and' to update appropriate bits in statusRegister
-    statusRegister = statusRegister & (~flag);
-}
 
 enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
-
-typedef struct {
-    int *memory;
-    int *registers;
-    int executeInst;
-    int decodeInst;
-    int fetchInstIndex;
-} State;
 
 void printResults(void);
 
@@ -138,15 +116,19 @@ void parse_branch(State* currentState) {
   // and then set the new variables
 }
 
+// helper functions related to CPSR status flags
+int isSet(int flag) {
+    // flag is set if appropriate bit in statusRegister is set
+    return (registers[REG_CPSR] & flag) == flag;
+}
+void setFlag(int flag) {
+    // perform bitwise 'or' to update appropriate bit in statusRegister
+    registers[REG_CPSR] = registers[REG_CPSR] | flag; }
+void clearFlag(int flag) {
+    // perform bitwise 'and' to update appropriate bits in statusRegister
+    registers[REG_CPSR] = registers[REG_CPSR] & (~flag);
+}
+
 int check_code(int instruction, int cpsr) {
     return instruction >> 28 == cpsr >> 28;
 }
-
-
-/* CHECKLIST
- *
- * 1. from the input, take each line and put it in an index of an array (how do we find the size?)
- * 2. define a struct which includes the pipeline (decode and execute variables), the array of registers, and all words in memory
- * 3. process each type of the 4 instructions with its separate function
- *
- * */
