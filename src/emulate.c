@@ -163,13 +163,13 @@ bool checkCondition(enum CondCode condCode) {
 
 // helper functions related to CPSR status flags
 bool isSet(enum CondFlag flag) {
-    return (registers[REG_CPSR + 3] & flag << 4) == flag << 4;
+    return (registers[REG_CPSR] & flag << 4) == flag << 4;
 }
 void setFlag(enum CondFlag flag) {
-    registers[REG_CPSR + 3] = registers[REG_CPSR + 3] | flag << 4;
+    registers[REG_CPSR] = registers[REG_CPSR] | flag << 4;
 }
 void clearFlag(enum CondFlag flag) {
-    registers[REG_CPSR + 3] = registers[REG_CPSR + 3] & (~(flag << 4));
+    registers[REG_CPSR] = registers[REG_CPSR] & (~(flag << 4));
 }
 
 // execute the given instruction
