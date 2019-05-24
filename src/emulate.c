@@ -9,6 +9,7 @@ typedef uint32_t REGISTER;	// registers are 32 bits
 typedef uint32_t WORD;		// words are 32 bits
 typedef uint16_t ADDRESS;   // addresses are 16 bits
 typedef uint8_t BYTE;		// bytes are 8 bits
+typedef int32_t OFFSET;     // offsets are 32 bits, signed
 
 // define constants related to registers
 // store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
@@ -26,14 +27,25 @@ enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 
 // function declarations
-WORD readWord(ADDRESS);
-void executeInstruction(WORD);
 void incrementPC(void);
 void printResults(void);
+WORD readWord(ADDRESS);
 bool checkCondition(enum CondCode);
-bool isSet(enum CondFlag flag);
-void setFlag(enum CondFlag flag);
-void clearFlag(enum CondFlag flag);
+bool isSet(enum CondFlag);
+void setFlag(enum CondFlag);
+void clearFlag(enum CondFlag);
+
+void executeInstruction(WORD);
+void performBranch(OFFSET offset);
+void performSDT(bool iFlag, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset);
+void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm);
+void performDataProcessOp2Register(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE shift, BYTE rm);
+void performDataProcessOp2ImmVal(enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, BYTE rotate, BYTE immVal);
+
+// TODO: REMEMBER ENDIANNESS:
+// each byte has its bits stored big-endian, i.e. MSB 01010101 LSB
+// bytes within a word are stored little-endian, i.e. LSByte a1 03 b2 a3 MSByte
+// therefore, first addressable byte contains word bits 7-0; second byte contains word bits 14-8, etc.
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -135,16 +147,6 @@ WORD readWord(ADDRESS startAddress) {
            | memory[startAddress+2] << 8 | memory[startAddress+3];
 }
 
-// decode and execute the given instructions
-void executeInstruction(WORD instr) {
-    // check if instruction should be executed
-    bool doExecute = checkCondition((enum CondCode) (instr >> 28));
-
-    if (doExecute) {
-        // TODO: Implement this function to decode instruction and delegate to appropriate functions
-    }
-}
-
 // checks whether an instruction should be executed based on condition code
 bool checkCondition(enum CondCode condCode) {
     switch (condCode) {
@@ -160,12 +162,31 @@ bool checkCondition(enum CondCode condCode) {
 
 // helper functions related to CPSR status flags
 bool isSet(enum CondFlag flag) {
-    return (registers[REG_CPSR] & flag << 4) == flag << 4;
+    return (registers[REG_CPSR + 3] & flag << 4) == flag << 4;
 }
 void setFlag(enum CondFlag flag) {
-    registers[REG_CPSR] = registers[REG_CPSR] | flag << 4;
+    registers[REG_CPSR + 3] = registers[REG_CPSR + 3] | flag << 4;
 }
 void clearFlag(enum CondFlag flag) {
-    registers[REG_CPSR] = registers[REG_CPSR] & (~(flag << 4));
+    registers[REG_CPSR + 3] = registers[REG_CPSR + 3] & (~(flag << 4));
 }
 
+// execute the given instruction
+void executeInstruction(WORD instr) {
+    // check if instruction should be executed
+    bool doExecute = checkCondition((enum CondCode) (instr & (15 << 4))); // first 4 bits of msbyte
+
+    if (doExecute) {
+        if (((instr >> 26) & 3) == 2) { // 10 in bits 27-26; branch
+            // TODO: calculate 32 bit signed offset
+            // TODO: delegate to branch function
+        } else if (((instr >> 26) & 3) == 1) { // 01 in bits 27-26; single data transfer
+            // TODO: calculate I,P,U,L,Rn,Rd,offset
+            // TODO: delegate to single data transfer function
+        } else if (((instr >> 26) & 3) == 2) { // 00 in bits 27-26
+            // TODO: determine whether this is data processing OR multiply
+            // TODO: calculate appropriate offsets, operands, etc.
+            // TODO: delegate to appropriate helper functions
+        }
+    }
+}
