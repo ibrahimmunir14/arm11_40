@@ -21,12 +21,6 @@ typedef uint8_t BYTE;		// bytes are 8 bits
 REGISTER registers[NUM_REG];
 BYTE memory[MEM_SIZE];
 
-// define CPSR status bits
-#define STATUS_NEG (1<<7) // negative bit
-#define STATUS_ZER (1<<6) // zero bit
-#define STATUS_CAR (1<<5) // carry bit
-#define STATUS_OVF (1<<4) // overflow bit
-
 enum CondFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
