@@ -157,7 +157,7 @@ bool checkCondition(enum CondCode condCode) {
         case LT : return isSet(N) != isSet(V);
         case GT : return !isSet(Z) && (isSet(N) == isSet(V));
         case LE : return isSet(Z) || (isSet(N) != isSet(V));
-        default : return true;
+        default : return false;
     }
 }
 
