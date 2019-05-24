@@ -1,10 +1,5 @@
 #include "emulate.h"
 
-// TODO: REMEMBER ENDIANNESS:
-// each byte has its bits stored big-endian, i.e. MSB 01010101 LSB
-// bytes within a word are stored little-endian, i.e. LSByte a1 03 b2 a3 MSByte
-// therefore, first addressable byte contains word bits 7-0; second byte contains word bits 14-8, etc.
-
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
     if (argc != 2) { return EXIT_FAILURE; }
@@ -107,6 +102,20 @@ WORD readWord(ADDRESS startAddress, struct MachineState *state) {
            | state->memory[startAddress+2] << 8 | state->memory[startAddress+3];
 }
 
+// returns a word (4 bytes) given the address of the first byte; converts to big-endian
+WORD loadWord(ADDRESS startAddress, struct MachineState *state) {
+    return state->memory[startAddress+3] << 24 | state->memory[startAddress+2] << 16
+           | state->memory[startAddress+1] << 8 | state->memory[startAddress];
+}
+
+// write a word (4 bytes) given the start byte and word in big-endian; convert to little-endian
+void storeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
+    state->memory[startAddress] = word & 15;
+    state->memory[startAddress+1] = (word >> 8) & 15;
+    state->memory[startAddress+2] = (word >> 16) & 15;
+    state->memory[startAddress+3] = (word >> 24) & 15;
+}
+
 // checks whether an instruction should be executed based on condition code
 bool checkCondition(enum CondCode condCode, struct MachineState *state) {
     switch (condCode) {
@@ -152,16 +161,6 @@ void executeInstruction(WORD instr, struct MachineState *state) {
     }
 }
 
-void performBranch(OFFSET offset, struct MachineState *state) {
-}
-void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
-}
-void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
-}
-void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
-}
-
-
 enum InstrType getInstrType(WORD instr) {
     switch (getBitsFromWord(instr, 27, 2)) {
         case 2: // 10 in bits 27-26; branch
@@ -179,7 +178,6 @@ enum InstrType getInstrType(WORD instr) {
             return instrUnknown;
     }
 }
-
 enum DataProcType getDataProcType(WORD instr) {
     bool iFlag = getBitsFromWord(instr, 25, 1);
     if (iFlag) { return dataProcOp2Imm; }
@@ -187,11 +185,19 @@ enum DataProcType getDataProcType(WORD instr) {
     if (fourthBit) { return dataProcOp2RegShiftReg; }
     else { return dataProcOp2RegShiftConst; }
 }
-
 enum SdtType getSdtType(WORD instr) {
     bool iFlag = getBitsFromWord(instr, 25, 1);
     if (!iFlag) { return sdtOffsetImm; }
     bool fourthBit = getBitsFromWord(instr, 4, 1);
     if (fourthBit) { return sdtOffsetRegShiftReg; }
     else { return sdtOffsetRegShiftConst; }
+}
+
+void performBranch(OFFSET offset, struct MachineState *state) {
+}
+void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
+}
+void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
+}
+void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
 }

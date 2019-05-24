@@ -63,3 +63,5 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
+WORD loadWord(ADDRESS startAddress, struct MachineState *state);
+void storeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
