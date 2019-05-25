@@ -228,7 +228,24 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BY
 }
 
 void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
+    if (aFlag) {
+        state->registers[rd] = state->registers[rm] * state->registers[rs] + state->registers[rn];
+    } else {
+        state-> registers[rd] = state-> registers[rm] * state-> registers[rs];
+    }
 
+    if (sFlag) {
+        // set the Z flag for 0 values
+        if (state->registers[rd] == 0) {
+            setFlag(Z, state);
+        }
+        // set the N flag for <0 values
+        if (getBitsFromRegister(rd, 31, 1, state) == 0) {
+            clearFlag(N, state);
+        } else {
+            setFlag(N, state);
+        }
+    }
 }
 
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
