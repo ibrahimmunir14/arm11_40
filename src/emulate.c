@@ -4,6 +4,11 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
+// TODO: Clean-up so all code has consistent style
+// TODO: Comment everything properly
+// TODO: Fix segmentation faults
+// TODO: Ensure all types are correct (BYTE, REGISTER, OFFSET etc.)
+
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
     if (argc != 2) { return EXIT_FAILURE; }
@@ -47,7 +52,6 @@ int main(int argc, char **argv) {
                 break; // terminate on all-0 instruction
             } else {
                 executeInstruction(instrToExecute, &state);
-                printf("Executed Instruction 0x%08x\n", instrToExecute);
             }
         }
 
@@ -153,7 +157,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
     if (doExecute) {
         switch (getInstrType(instr)) {
             case instrBranch:
-                printf("Branch Operation\n");
+                printf("Branch Operation: (0x%08x)\n", instr);
                 // TODO: delegate to branch function
                 break;
             case instrSDT: {
@@ -169,7 +173,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             }
             case instrMultiply: {
-                printf("Multiply Operation\n");
+                printf("Multiply Operation: (0x%08x)\n", instr);
                 bool aFlag = getBitsFromWord(instr, 21, 1);
                 bool sFlag = getBitsFromWord(instr, 20, 1);
                 BYTE rd = getBitsFromWord(instr, 19, 4);
@@ -180,7 +184,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             }
             case instrDataProcessing:
-                printf("DataProcessing Operation\n");
+                printf("DataProcessing Operation: (0x%08x)\n", instr);
                 // TODO: delegate to appropriate function
                 break;
             default:
@@ -190,12 +194,12 @@ void executeInstruction(WORD instr, struct MachineState *state) {
 }
 
 void performBranch(OFFSET offset, struct MachineState *state) {
-
+    // TODO: implement branch operations
 }
 
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
     ADDRESS address = (ADDRESS) state->registers[rn];
-    printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offset);
+    //printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offset);
 
     int offsetValue = sdtType == sdtOffsetImm ?
             (unsigned int) offset : //Offset is an immediate value
@@ -210,32 +214,34 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BY
         // Transfer data using address that has been offset
         if (ldstFlag) {
             // Load word from memory
-            printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
-                    address, offsetValue, address + offsetValue, rd);
+            //printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
+            //        address, offsetValue, address + offsetValue, rd);
             state->registers[rd] = readWord(address + offsetValue, state);
         } else {
             // Store word in memory
-            printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
-                   rd, address, offsetValue, address + offsetValue);
+            //printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
+            //       rd, address, offsetValue, address + offsetValue);
             writeWord((WORD) state->registers[rd], address + offsetValue, state);
         }
     } else {
         // Transfer data then update base register
         if (ldstFlag) {
             // Load word from memory
-            printf("  Load (post-index) from memory[0x%04x] to register[$%i]\n", address, rd);
+            //printf("  Load (post-index) from memory[0x%04x] to register[$%i]\n", address, rd);
             state->registers[rd] = readWord(address, state);
         } else {
             // Store word in memory
-            printf("  Store (post-index) from register[$%i] to memory[0x%04x]\n", rd, address);
+            //printf("  Store (post-index) from register[$%i] to memory[0x%04x]\n", rd, address);
             writeWord((WORD) state->registers[rd], address, state);
         }
-        printf("  Incremented register[$%i] by offsetValue (0x%04x)", rn, offsetValue);
+        //printf("  Incremented register[$%i] by offsetValue (0x%04x)", rn, offsetValue);
         state->registers[rn] += offsetValue;
     }
 }
 
 void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
+    //printf("  Rn $%i; Rd $%i; Rs $%i; Rm $%i; Offset (0x%03x)\n", rn, rd, rs, rm, offset);
+    //printf("  accumulate: %i;  statusupdate: %i\n", aFlag, sFlag);
     if (aFlag) {
         state->registers[rd] = state->registers[rm] * state->registers[rs] + state->registers[rn];
     } else {
@@ -253,7 +259,8 @@ void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm,
 }
 
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
-
+    // TODO: implement Data Processing Operations. Delegate to relevant functions per opCode
+    // TODO: implement data processing functions for each opCode
 }
 
 enum InstrType getInstrType(WORD instr) {
@@ -312,6 +319,7 @@ BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
     bool carryOutBit = 0;
     BYTE result;
     switch (shiftType) {
+        // TODO: Ensure this follows spec, order of shift and retrieving byte
         case LSL : {
             carryOutBit = (val >> (32 - shiftAmount)) & 1; // least sig discarded bit
             result = val << shiftAmount;

@@ -68,3 +68,5 @@ WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *sta
 
 // SHIFT
 BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
+
+// TODO: declare data processing functions for each opCode
