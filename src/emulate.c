@@ -158,7 +158,8 @@ void executeInstruction(WORD instr, struct MachineState *state) {
         switch (getInstrType(instr)) {
             case instrBranch:
                 printf("Branch Operation: (0x%08x)\n", instr);
-                // TODO: delegate to branch function
+                BYTE offset = getBitsFromWord(instr, 23, 24);
+                performBranch(offset, state);
                 break;
             case instrSDT: {
                 printf("SDT Operation: (0x%08x)\n", instr);
@@ -194,10 +195,13 @@ void executeInstruction(WORD instr, struct MachineState *state) {
 }
 
 void performBranch(OFFSET offset, struct MachineState *state) {
-    // TODO: implement branch operations
+    // falsify hasInstr booleans
+    state->hasInstrToExecute = false;
+    state->hasInstrToDecode = false;
     // set PC to wherever the next instruction is
-    // falsify hasInstr bools
-    // and whatever else needs to be done
+    state->registers[REG_PC] += (offset >> 2);
+    // TODO check if offset already 32 bits and why it needs to be signed
+    // TODO check if need to worry about 8 bytes offset
 }
 
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
