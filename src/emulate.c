@@ -158,8 +158,8 @@ void executeInstruction(WORD instr, struct MachineState *state) {
         switch (getInstrType(instr)) {
             case instrBranch:
                 printf("Branch Operation: (0x%08x)\n", instr);
-                OFFSET offset = getBitsFromWord(instr, 23, 24);
-                performBranch(offset, state);
+                WORD offsetBits = getBitsFromWord(instr, 23, 24);
+                performBranch(offsetBits, state);
                 break;
             case instrSDT: {
                 printf("SDT Operation: (0x%08x)\n", instr);
@@ -194,14 +194,13 @@ void executeInstruction(WORD instr, struct MachineState *state) {
     }
 }
 
-void performBranch(OFFSET offset, struct MachineState *state) {
+void performBranch(WORD offsetBits, struct MachineState *state) {
     // falsify hasInstr booleans
     state->hasInstrToExecute = false;
     state->hasInstrToDecode = false;
     // set PC to wherever the next instruction is
-    state->registers[REG_PC] += (offset >> 2);
-    // TODO check if offset already 32 bits and why it needs to be signed
-    // TODO check if need to worry about 8 bytes offset
+    BRANCHOFFSET branchoffset = signExtend(offsetBits << 2u, 26);
+    state->registers[REG_PC] += branchoffset;
 }
 
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
@@ -388,7 +387,7 @@ WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
         }
         case ASR : {
             carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
-            result = val >> shiftAmount | ((WORD) pow(2, shiftAmount - 1) << (32u - shiftAmount));
+            result = signExtend(val >> shiftAmount, 32u - shiftAmount);
             break;
         }
         case ROR : {
@@ -406,6 +405,10 @@ WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
     return result;
 }
 
+WORD signExtend(WORD val, BYTE originalLength) {
+    BYTE emptyBits = 32u - originalLength;
+    return val | ((WORD) pow(2, emptyBits - 1) << originalLength);
+}
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
     BYTE andOp = (BYTE) (pow(2, numBits) - 1);
     WORD wordShifted = word >> (BYTE) (1 + startBitNo - numBits);

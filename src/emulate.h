@@ -16,6 +16,7 @@ typedef uint32_t WORD;		// words/instructions are 32 bits
 typedef uint16_t ADDRESS;   // memory addresses are 16 bits, unsigned because addresses positive
 typedef uint8_t BYTE;		// bytes are 8 bits
 typedef uint32_t SDTOFFSET;     // SDT offset always positive: imm offset 12 bits; reg offset is 32 bits
+typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 
 // define constants related to registers
 // store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
@@ -77,4 +78,5 @@ WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *sta
 // SHIFT
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
 
+WORD signExtend(WORD val, BYTE originalLength);
 // TODO: declare data processing functions for each opCode
