@@ -156,7 +156,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 printf("Branch Operation\n");
                 // TODO: delegate to branch function
                 break;
-            case instrSDT:
+            case instrSDT: {
                 printf("SDT Operation: (0x%08x)\n", instr);
                 enum SdtType sdtType = getSdtType(instr);
                 bool pFlag = getBitsFromWord(instr, 24, 1);
@@ -167,10 +167,18 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 OFFSET offset = getBitsFromWord(instr, 11, 12);
                 performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offset, state);
                 break;
-            case instrMultiply:
+            }
+            case instrMultiply: {
                 printf("Multiply Operation\n");
-                // TODO: delegate to multiply function
+                bool aFlag = getBitsFromWord(instr, 21, 1);
+                bool sFlag = getBitsFromWord(instr, 20, 1);
+                BYTE rd = getBitsFromWord(instr, 19, 4);
+                BYTE rn = getBitsFromWord(instr, 15, 4);
+                BYTE rs = getBitsFromWord(instr, 11, 4);
+                BYTE rm = getBitsFromWord(instr, 3, 4);
+                performMultiply(aFlag, sFlag, rd, rn, rs, rm, state);
                 break;
+            }
             case instrDataProcessing:
                 printf("DataProcessing Operation\n");
                 // TODO: delegate to appropriate function
@@ -281,7 +289,6 @@ enum SdtType getSdtType(WORD instr) {
 }
 
 WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *state) {
-    // TODO: Rewrite this using our defined types, and add comments!
     BYTE rm = getBitsFromWord((WORD) offset, 3, 4);
     REGISTER rmContents = state->registers[rm];
     enum ShiftType shiftType = getBitsFromWord((WORD) offset, 6, 2);
@@ -301,14 +308,6 @@ WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *sta
     return shiftAmount == 0 ? rmContents
                       : shift(rmContents, shiftAmount, 0, shiftType, state);
 }
-
-WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
-    BYTE andOp = (BYTE) (pow(2, numBits) - 1);
-    WORD wordShifted = word >> (1 + startBitNo - numBits);
-    return andOp & wordShifted;
-}
-
-
 BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
     bool carryOutBit = 0;
     BYTE result;
@@ -337,3 +336,8 @@ BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
     return result;
 }
 
+WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
+    BYTE andOp = (BYTE) (pow(2, numBits) - 1);
+    WORD wordShifted = word >> (1 + startBitNo - numBits);
+    return andOp & wordShifted;
+}
