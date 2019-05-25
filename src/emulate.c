@@ -235,16 +235,12 @@ void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm,
     }
 
     if (sFlag) {
-        // set the Z flag for 0 values
-        if (state->registers[rd] == 0) {
-            setFlag(Z, state);
-        }
-        // set the N flag for <0 values
-        if (getBitsFromRegister(rd, 31, 1, state) == 0) {
-            clearFlag(N, state);
-        } else {
-            setFlag(N, state);
-        }
+        // set the Z flag iff result is 0
+        if (state->registers[rd] == 0) setFlag(Z, state);
+        else clearFlag(Z, state);
+        // set the N flag to bit 31 of result
+        if (getBitsFromWord(rd, 31, 1)) setFlag(N, state);
+        else setFlag(N, state);
     }
 }
 
