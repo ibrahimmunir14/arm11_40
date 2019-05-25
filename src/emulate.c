@@ -286,7 +286,7 @@ WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *sta
 
     //Shift register if shift amount is nonzero
     return shiftAmount == 0 ? rmContents
-                      : shift(rmContents, shiftAmount, shiftType);
+                      : shift(rmContents, shiftAmount, 0, shiftType, state);
 }
 
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
@@ -296,25 +296,31 @@ WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
 }
 
 
-BYTE shift(WORD val, BYTE shiftAmount, enum ShiftType shiftType) {
-    // TODO: UPDATE CPSR where necessary if necessary
+BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
+    bool carryOutBit = 0;
+    BYTE result;
     switch (shiftType) {
         case LSL : {
-            bool leastSigDiscarded = (val >> (32 - shiftAmount)) & 1;
-            return val << shiftAmount;
+            carryOutBit = (val >> (32 - shiftAmount)) & 1; // least sig discarded bit
+            result = val << shiftAmount;
         }
         case LSR : {
-            bool mostSigDiscarded = (val >> shiftAmount - 1) & 1;
-            return val >> shiftAmount;
+            carryOutBit = (val >> shiftAmount - 1) & 1; // most sig discarded bit
+            result = val >> shiftAmount;
         }
         case ASR : {
-            bool mostSigDiscarded = (val >> shiftAmount - 1) & 1;
-            return val >> shiftAmount | ((WORD) pow(2, shiftAmount) - 1 << (32 - shiftAmount));
+            carryOutBit = (val >> shiftAmount - 1) & 1; // most sig discarded bit
+            result = val >> shiftAmount | ((WORD) pow(2, shiftAmount) - 1 << (32 - shiftAmount));
         }
         case ROR : {
-            return val >> shiftAmount | val << (32 - shiftAmount);
+            carryOutBit = (val >> shiftAmount - 1) & 1; // most sig discarded bit
+            result = val >> shiftAmount | val << (32 - shiftAmount);
         }
     }
-    return 0;
+    if (updateCPSR) {
+        if (carryOutBit) setFlag(C, state);
+        else clearFlag(C, state);
+    }
+    return result;
 }
 

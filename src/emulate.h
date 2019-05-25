@@ -67,4 +67,4 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *state);
 
 // SHIFT
-BYTE shift(WORD val, BYTE shiftAmount, enum ShiftType shiftType);
+BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
