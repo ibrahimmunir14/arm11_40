@@ -67,6 +67,6 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *state);
 
 // SHIFT
-BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
+WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
 
 // TODO: declare data processing functions for each opCode

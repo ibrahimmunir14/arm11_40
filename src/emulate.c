@@ -254,7 +254,7 @@ void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm,
         else clearFlag(Z, state);
         // set the N flag to bit 31 of result
         if (getBitsFromWord(rd, 31, 1)) setFlag(N, state);
-        else setFlag(N, state);
+        else clearFlag(N, state);
     }
 }
 
@@ -315,9 +315,9 @@ WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *sta
     return shiftAmount == 0 ? rmContents
                       : shift(rmContents, shiftAmount, 0, shiftType, state);
 }
-BYTE shift(BYTE val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
+WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
     bool carryOutBit = 0;
-    BYTE result;
+    WORD result;
     switch (shiftType) {
         // TODO: Ensure this follows spec, order of shift and retrieving byte
         case LSL : {
