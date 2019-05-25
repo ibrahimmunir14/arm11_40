@@ -106,22 +106,22 @@ void printResults(struct MachineState *state) {
 
 // returns a word (4 bytes) given the address of the first byte
 WORD readFourBytes(ADDRESS startAddress, struct MachineState *state) {
-    return state->memory[startAddress] << 24 | state->memory[startAddress+1] << 16
-           | state->memory[startAddress+2] << 8 | state->memory[startAddress+3];
+    return state->memory[startAddress] << 24u | state->memory[startAddress+1] << 16u
+           | state->memory[startAddress+2] << 8u | state->memory[startAddress+3];
 }
 
 // returns a word (4 bytes) given the address of the first byte; converts to big-endian
 WORD readWord(ADDRESS startAddress, struct MachineState *state) {
-    return state->memory[startAddress+3] << 24 | state->memory[startAddress+2] << 16
-           | state->memory[startAddress+1] << 8 | state->memory[startAddress];
+    return state->memory[startAddress+3] << 24u | state->memory[startAddress+2] << 16u
+           | state->memory[startAddress+1] << 8u | state->memory[startAddress];
 }
 
-// write a word (4 bytes) given the start byte and word in big-endian; convert to little-endian
+// write a word (4 bytes) in little-endian in memory given the start address and big-endian word
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
-    state->memory[startAddress] = (BYTE) (word & (FULL_BYTE));
-    state->memory[startAddress+1] = (BYTE) ((word >> 8) & (FULL_BYTE));
-    state->memory[startAddress+2] = (BYTE) ((word >> 16) & (FULL_BYTE));
-    state->memory[startAddress+3] = (BYTE) ((word >> 24) & (FULL_BYTE));
+    state->memory[startAddress] = (BYTE) (word & ((BYTE) FULL_BYTE));
+    state->memory[startAddress+1] = (BYTE) ((word >> 8u) & ((BYTE) FULL_BYTE));
+    state->memory[startAddress+2] = (BYTE) ((word >> 16u) & ((BYTE) FULL_BYTE));
+    state->memory[startAddress+3] = (BYTE) ((word >> 24u) & ((BYTE) FULL_BYTE));
 }
 
 // checks whether an instruction should be executed based on condition code
@@ -167,20 +167,20 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 bool pFlag = getBitsFromWord(instr, 24, 1);
                 bool uFlag = getBitsFromWord(instr, 23, 1);
                 bool lFlag = getBitsFromWord(instr, 20, 1);
-                BYTE rn = getBitsFromWord(instr, 19, 4);
-                BYTE rd = getBitsFromWord(instr, 15, 4);
-                OFFSET offset = getBitsFromWord(instr, 11, 12);
-                performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offset, state);
+                REGNUMBER rn = getBitsFromWord(instr, 19, 4);
+                REGNUMBER rd = getBitsFromWord(instr, 15, 4);
+                WORD offsetBits = getBitsFromWord(instr, 11, 12);
+                performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offsetBits, state);
                 break;
             }
             case instrMultiply: {
                 printf("Multiply Operation: (0x%08x)\n", instr);
                 bool aFlag = getBitsFromWord(instr, 21, 1);
                 bool sFlag = getBitsFromWord(instr, 20, 1);
-                BYTE rd = getBitsFromWord(instr, 19, 4);
-                BYTE rn = getBitsFromWord(instr, 15, 4);
-                BYTE rs = getBitsFromWord(instr, 11, 4);
-                BYTE rm = getBitsFromWord(instr, 3, 4);
+                REGNUMBER rd = getBitsFromWord(instr, 19, 4);
+                REGNUMBER rn = getBitsFromWord(instr, 15, 4);
+                REGNUMBER rs = getBitsFromWord(instr, 11, 4);
+                REGNUMBER rm = getBitsFromWord(instr, 3, 4);
                 performMultiply(aFlag, sFlag, rd, rn, rs, rm, state);
                 break;
             }
@@ -204,40 +204,30 @@ void performBranch(OFFSET offset, struct MachineState *state) {
     // TODO check if need to worry about 8 bytes offset
 }
 
-void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
+void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     ADDRESS address = (ADDRESS) state->registers[rn];
     //printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offset);
 
-    int offsetValue = sdtType == sdtOffsetImm ?
-            (unsigned int) offset : //Offset is an immediate value
-            shiftRegister(offset, sdtType, state); //Offset is a shifted register value
+    SDTOFFSET offsetValue = getSDTOffset(sdtType, offsetBits, state);
 
     // upFlag determines whether to add or subtract offset
-    if (!upFlag) {
-        offsetValue = -offsetValue;
-    }
+    if (!upFlag) offsetValue = -offsetValue;
 
-    if (pFlag) {
-        // Transfer data using address that has been offset
-        if (ldstFlag) {
-            // Load word from memory
+    if (pFlag) { // transfer data using address after offset
+        if (ldstFlag) { // load word from memory
             //printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
             //        address, offsetValue, address + offsetValue, rd);
             state->registers[rd] = readWord(address + offsetValue, state);
-        } else {
-            // Store word in memory
+        } else { // store word in memory
             //printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
             //       rd, address, offsetValue, address + offsetValue);
             writeWord((WORD) state->registers[rd], address + offsetValue, state);
         }
-    } else {
-        // Transfer data then update base register
-        if (ldstFlag) {
-            // Load word from memory
+    } else { // transfer data then update base register
+        if (ldstFlag) { // load word from memory
             //printf("  Load (post-index) from memory[0x%04x] to register[$%i]\n", address, rd);
             state->registers[rd] = readWord(address, state);
-        } else {
-            // Store word in memory
+        } else { // store word in memory
             //printf("  Store (post-index) from register[$%i] to memory[0x%04x]\n", rd, address);
             writeWord((WORD) state->registers[rd], address, state);
         }
@@ -245,22 +235,30 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BY
         state->registers[rn] += offsetValue;
     }
 }
+// given the 12-bit offset bits, calculate and returns the final sdt offset
+SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) {
+    return (sdtType == sdtOffsetImm)
+                        ? offsetBits // offset is immediate value
+                        : getOperandFromRegisterShift(offsetBits, (sdtType == sdtOffsetRegShiftReg), state);
 
-void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state) {
-    //printf("  Rn $%i; Rd $%i; Rs $%i; Rm $%i; Offset (0x%03x)\n", rn, rd, rs, rm, offset);
+}
+
+void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state) {
+    //printf("  Rn $%i; Rd $%i; Rs $%i; Rm $%i\n", rn, rd, rs, rm);
     //printf("  accumulate: %i;  statusupdate: %i\n", aFlag, sFlag);
+    WORD result;
     if (aFlag) {
-        state->registers[rd] = state->registers[rm] * state->registers[rs] + state->registers[rn];
+        result = state->registers[rm] * state->registers[rs] + state->registers[rn];
     } else {
-        state-> registers[rd] = state-> registers[rm] * state-> registers[rs];
+        result = state-> registers[rm] * state-> registers[rs];
     }
-
+    state->registers[rd] = result;
     if (sFlag) {
         // set the Z flag iff result is 0
-        if (state->registers[rd] == 0) setFlag(Z, state);
+        if (result == 0) setFlag(Z, state);
         else clearFlag(Z, state);
         // set the N flag to bit 31 of result
-        if (getBitsFromWord(rd, 31, 1)) setFlag(N, state);
+        if (getBitsFromWord(result, 31, 1)) setFlag(N, state);
         else clearFlag(N, state);
     }
 }
@@ -353,47 +351,53 @@ enum SdtType getSdtType(WORD instr) {
     else { return sdtOffsetRegShiftConst; }
 }
 
-WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *state) {
-    BYTE rm = getBitsFromWord((WORD) offset, 3, 4);
+// given a 12-bit operand, where operand specified by register, calculates and returns the 32-bit operand
+WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state) {
+    REGNUMBER rm = getBitsFromWord((WORD) operandBits, 3, 4);
     REGISTER rmContents = state->registers[rm];
-    enum ShiftType shiftType = getBitsFromWord((WORD) offset, 6, 2);
-    BYTE shiftAmount;
+    enum ShiftType shiftType = getBitsFromWord(operandBits, 6, 2);
+    BYTE shiftAmount; // shift specified by 5-bit unsigned int
 
-    if (sdtType == sdtOffsetRegShiftReg) {
-        //Shift amount is the last byte in register Rs
-        BYTE rs = getBitsFromWord((WORD) offset, 11, 4);
+    if (regShift) { // shift specified by register, bottom byte
+        REGNUMBER rs = getBitsFromWord((WORD) regShift, 11, 4);
         REGISTER rsContents = state->registers[rs];
         shiftAmount = rsContents & ((BYTE) FULL_BYTE);
-    } else {
-        //Shift amount is immediate value
-        shiftAmount = getBitsFromWord((WORD) offset, 11, 5);
+    } else { // shift by a constant amount
+        shiftAmount = getBitsFromWord((WORD) operandBits, 11, 5);
     }
 
     //Shift register if shift amount is nonzero
     return shiftAmount == 0 ? rmContents
-                      : shift(rmContents, shiftAmount, 0, shiftType, state);
+                            : shift(rmContents, shiftAmount, 0, shiftType, state);
 }
+
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
     bool carryOutBit = 0;
     WORD result;
     switch (shiftType) {
         // TODO: Ensure this follows spec, order of shift and retrieving byte
         case LSL : {
-            carryOutBit = (val >> (32 - shiftAmount)) & 1; // least sig discarded bit
+            carryOutBit = getBitsFromWord(val, 32-shiftAmount, 1); // least sig discarded bit
             result = val << shiftAmount;
+            break;
         }
         case LSR : {
-            carryOutBit = (val >> shiftAmount - 1) & 1; // most sig discarded bit
+            carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
             result = val >> shiftAmount;
+            break;
         }
         case ASR : {
-            carryOutBit = (val >> shiftAmount - 1) & 1; // most sig discarded bit
-            result = val >> shiftAmount | ((WORD) pow(2, shiftAmount) - 1 << (32 - shiftAmount));
+            carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
+            result = val >> shiftAmount | ((WORD) pow(2, shiftAmount - 1) << (32u - shiftAmount));
+            break;
         }
         case ROR : {
-            carryOutBit = (val >> shiftAmount - 1) & 1; // most sig discarded bit
-            result = val >> shiftAmount | val << (32 - shiftAmount);
+            carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
+            result = val >> shiftAmount | val << (32u - shiftAmount);
+            break;
         }
+        default:
+            return 0;
     }
     if (updateCPSR) {
         if (carryOutBit) setFlag(C, state);
@@ -404,6 +408,6 @@ WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
 
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
     BYTE andOp = (BYTE) (pow(2, numBits) - 1);
-    WORD wordShifted = word >> (1 + startBitNo - numBits);
+    WORD wordShifted = word >> (BYTE) (1 + startBitNo - numBits);
     return andOp & wordShifted;
 }

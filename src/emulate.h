@@ -10,11 +10,12 @@
 #include <stdbool.h>
 
 // define types to aid readability
-typedef uint32_t REGISTER;	// registers are 32 bits
-typedef uint32_t WORD;		// words are 32 bits
-typedef uint16_t ADDRESS;   // addresses are 16 bits
+typedef uint32_t REGISTER;	// register contents are 32 bits
+typedef uint8_t REGNUMBER;  // register numbers are 4 bits, unsigned because register numbers positive
+typedef uint32_t WORD;		// words/instructions are 32 bits
+typedef uint16_t ADDRESS;   // memory addresses are 16 bits, unsigned because addresses positive
 typedef uint8_t BYTE;		// bytes are 8 bits
-typedef int32_t OFFSET;     // offsets are 32 bits, signed
+typedef uint32_t SDTOFFSET;     // SDT offset always positive: imm offset 12 bits; reg offset is 32 bits
 
 // define constants related to registers
 // store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
@@ -56,10 +57,13 @@ void executeInstruction(WORD, struct MachineState *state);
 enum InstrType getInstrType(WORD instr);
 enum DataProcType getDataProcType(WORD instr);
 enum SdtType getSdtType(WORD instr);
+WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state);
+SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
+
 
 void performBranch(OFFSET offset, struct MachineState *state);
-void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state);
-void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state);
+void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state);
+void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state);
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state);
 int getImmValue(OFFSET Operand2);
 int getRegValue(bool constShift, OFFSET Operand2);
