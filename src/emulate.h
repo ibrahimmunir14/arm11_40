@@ -30,6 +30,8 @@ typedef int32_t OFFSET;     // offsets are 32 bits, signed
 struct MachineState {
     REGISTER registers[NUM_REG];
     BYTE memory[MEM_SIZE];
+    bool hasInstrToExecute;
+    bool hasInstrToDecode;
 };
 
 enum CondFlag {V=1, C=2, Z=4, N=8};

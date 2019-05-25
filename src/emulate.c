@@ -42,11 +42,11 @@ int main(int argc, char **argv) {
     // main pipeline loop
     WORD instrToExecute = 0;
     WORD instrToDecode = 0;
-    bool hasInstrToExecute = false;
-    bool hasInstrToDecode = false;
+    state.hasInstrToDecode = false;
+    state.hasInstrToExecute = false;
     while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
-        if (hasInstrToExecute) {
+        if (state.hasInstrToExecute) {
             if (instrToExecute == 0) {
                 printf("TERMINATE: All-0 Instruction\n\n");
                 break; // terminate on all-0 instruction
@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
 
         // decode instrToDecode and put it in instrToExecute
         // note: decoding is actually done during execution
-        if (hasInstrToDecode) {
-            hasInstrToExecute = true;
+        if (state.hasInstrToDecode) {
+            state.hasInstrToExecute = true;
             instrToExecute = instrToDecode;
             printf("Decoded Instruction 0x%08x\n", instrToExecute);
 
@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
         // fetch next instruction and put it in instrToDecode
         instrToDecode = readWord((ADDRESS) state.registers[REG_PC], &state);
         printf("Fetched Instruction at 0x%08x : 0x%08x\n", state.registers[REG_PC], instrToDecode);
-        hasInstrToDecode = true;
+        state.hasInstrToDecode = true;
 
         // increment program counter
         incrementPC(&state);
@@ -195,6 +195,9 @@ void executeInstruction(WORD instr, struct MachineState *state) {
 
 void performBranch(OFFSET offset, struct MachineState *state) {
     // TODO: implement branch operations
+    // set PC to wherever the next instruction is
+    // falsify hasInstr bools
+    // and whatever else needs to be done
 }
 
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
