@@ -268,6 +268,54 @@ void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm,
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
     // TODO: implement Data Processing Operations. Delegate to relevant functions per opCode
     // TODO: implement data processing functions for each opCode
+    // check condition
+    int op2;
+    if (dataProcType == dataProcOp2Imm) {
+        op2 = getImmValue(Operand2);
+    } else if (dataProcType == dataProcOp2RegShiftConst) {
+        op2 = getRegValue(true, Operand2);
+    } else {
+        op2 = getRegValue(false, Operand2);
+    }
+
+    bool executeNext = true;
+
+    switch (opCode) {
+        case AND:
+            state->registers[rd] = state->registers[rn] & op2;
+        case EOR:
+            state->registers[rd] = state->registers[rn] ^ op2;
+        case SUB:
+            state->registers[rd] = state->registers[rn] - op2;
+        case RSB:
+            state->registers[rd] = op2 - state->registers[rn];
+        case ADD:
+            state->registers[rd] = state->registers[rn] + op2;
+        case TST:
+            executeNext = state->registers[rn] == (state->registers[rn] & op2);
+        case TEQ:
+            executeNext = state->registers[rn] == (state->registers[rn] ^ op2);
+        case CMP:
+            executeNext = state->registers[rn] == (state->registers[rn] - op2) > 0;
+        case ORR:
+            state->registers[rd] = state->registers[rn] | op2;
+        case MOV:
+            state->registers[rd] = op2;
+    }
+
+    if (!executeNext) {
+        state->hasInstrToExecute = false;
+        // TODO check if have to make this false or the decode false
+    }
+
+}
+
+int getImmValue(OFFSET Operand2) {
+
+}
+
+int getRegValue(bool constShift, OFFSET Operand2) {
+
 }
 
 enum InstrType getInstrType(WORD instr) {

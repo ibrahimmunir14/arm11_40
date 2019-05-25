@@ -61,6 +61,8 @@ void performBranch(OFFSET offset, struct MachineState *state);
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state);
 void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm, struct MachineState *state);
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state);
+int getImmValue(OFFSET Operand2);
+int getRegValue(bool constShift, OFFSET Operand2);
 
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
