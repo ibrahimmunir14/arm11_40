@@ -267,26 +267,26 @@ enum SdtType getSdtType(WORD instr) {
     else { return sdtOffsetRegShiftConst; }
 }
 
-int shiftRegister(int bits, int regOperand, struct MachineState *state) {
+WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *state) {
     // TODO: Rewrite this using our defined types, and add comments!
-    int rm = getBitsFromWord((WORD) bits, 0, 4);
-    int rmContents = state->registers[rm];
-    int shiftType = getBitsFromWord((WORD) bits, 5, 2);
-    int shamt;
+    BYTE rm = getBitsFromWord((WORD) offset, 3, 4);
+    REGISTER rmContents = state->registers[rm];
+    enum ShiftType shiftType = getBitsFromWord((WORD) offset, 6, 2);
+    BYTE shiftAmount;
 
-    if (regOperand) {
+    if (sdtType == sdtOffsetRegShiftReg) {
         //Shift amount is the last byte in register Rs
-        int rs = state->registers[getBitsFromWord((WORD) bits, 8, 4)];
-        shamt = rs & ((1 << 8) - 1);
-
+        BYTE rs = getBitsFromWord((WORD) offset, 11, 4);
+        REGISTER rsContents = state->registers[rs];
+        shiftAmount = rsContents & ((BYTE) FULL_BYTE);
     } else {
         //Shift amount is immediate value
-        shamt = getBitsFromWord((WORD) bits, 7, 5);
+        shiftAmount = getBitsFromWord((WORD) offset, 11, 5);
     }
 
     //Shift register if shift amount is nonzero
-    return shamt == 0 ? rmContents
-                      : shift(rmContents, shamt, shiftType);
+    return shiftAmount == 0 ? rmContents
+                      : shift(rmContents, shiftAmount, shiftType);
 }
 
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
@@ -296,21 +296,25 @@ WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
 }
 
 
-// SHIFT
-int shift(int val, int shamt, enum ShiftType shiftType) {
+BYTE shift(WORD val, BYTE shiftAmount, enum ShiftType shiftType) {
+    // TODO: UPDATE CPSR where necessary if necessary
     switch (shiftType) {
-        case LSL : return val << shamt;
-        case LSR : return logicalRightShift(val, shamt);
-        case ASR : return val >> shamt;
-        case ROR : return rotateRightShift(val, shamt);
+        case LSL : {
+            bool leastSigDiscarded = (val >> (32 - shiftAmount)) & 1;
+            return val << shiftAmount;
+        }
+        case LSR : {
+            bool mostSigDiscarded = (val >> shiftAmount - 1) & 1;
+            return val >> shiftAmount;
+        }
+        case ASR : {
+            bool mostSigDiscarded = (val >> shiftAmount - 1) & 1;
+            return val >> shiftAmount | ((WORD) pow(2, shiftAmount) - 1 << (32 - shiftAmount));
+        }
+        case ROR : {
+            return val >> shiftAmount | val << (32 - shiftAmount);
+        }
     }
     return 0;
 }
 
-int rotateRightShift(int val, int shamt) {
-    return (val << shamt) | (val >> (sizeof(int) - shamt));
-}
-
-int logicalRightShift(int val, int shamt) {
-    return (int) ((unsigned int) val >> shamt);
-}
