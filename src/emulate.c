@@ -266,9 +266,7 @@ void performMultiply(bool aFlag, bool sFlag, BYTE rd, BYTE rn, BYTE rs, BYTE rm,
 }
 
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
-    // TODO: implement Data Processing Operations. Delegate to relevant functions per opCode
-    // TODO: implement data processing functions for each opCode
-    // check condition
+    // TODO check condition
     int op2;
     if (dataProcType == dataProcOp2Imm) {
         op2 = getImmValue(Operand2);
@@ -308,10 +306,15 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         // TODO check if have to make this false or the decode false
     }
 
+    // TODO set flags
+
 }
 
 int getImmValue(OFFSET Operand2) {
-
+    // TODO remove these magic numbers
+    int value = Operand2 & 255;
+    int rotate = (Operand2 & 3840) >> 7;
+    return (value >> rotate)|(value << (32 - rotate));
 }
 
 int getRegValue(bool constShift, OFFSET Operand2) {
