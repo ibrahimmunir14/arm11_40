@@ -157,14 +157,14 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 // TODO: delegate to branch function
                 break;
             case instrSDT:
-                printf("SDT Operation\n");
+                printf("SDT Operation: (0x%08x)\n", instr);
                 enum SdtType sdtType = getSdtType(instr);
                 bool pFlag = getBitsFromWord(instr, 24, 1);
-                bool uFlag = getBitsFromWord(instr, 25, 1);
+                bool uFlag = getBitsFromWord(instr, 23, 1);
                 bool lFlag = getBitsFromWord(instr, 20, 1);
                 BYTE rn = getBitsFromWord(instr, 19, 4);
                 BYTE rd = getBitsFromWord(instr, 15, 4);
-                OFFSET offset = getBitsFromWord(instr, 11, 4);
+                OFFSET offset = getBitsFromWord(instr, 11, 12);
                 performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offset, state);
                 break;
             case instrMultiply:
@@ -187,34 +187,42 @@ void performBranch(OFFSET offset, struct MachineState *state) {
 
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, BYTE rn, BYTE rd, OFFSET offset, struct MachineState *state) {
     ADDRESS address = (ADDRESS) state->registers[rn];
+    printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offset);
 
     int offsetValue = sdtType == sdtOffsetImm ?
             (unsigned int) offset : //Offset is an immediate value
             shiftRegister(offset, sdtType, state); //Offset is a shifted register value
 
-    //Subtraction if U=0
+    // upFlag determines whether to add or subtract offset
     if (!upFlag) {
         offsetValue = -offsetValue;
     }
 
-
     if (pFlag) {
-        //Transfer data using address that has been offset
+        // Transfer data using address that has been offset
         if (ldstFlag) {
-            state->registers[rd] = state->memory[address + offsetValue];
+            // Load word from memory
+            printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
+                    address, offsetValue, address + offsetValue, rd);
+            state->registers[rd] = readWord(address + offsetValue, state);
         } else {
-            // TODO; this implementation is incorrect - mem location is BYTE, register may contain WORD
-            state->memory[address + offsetValue] = (BYTE) state->registers[rd];
+            // Store word in memory
+            printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
+                   rd, address, offsetValue, address + offsetValue);
+            writeWord((WORD) state->registers[rd], address + offsetValue, state);
         }
     } else {
-        //Transfer data then update base register
+        // Transfer data then update base register
         if (ldstFlag) {
-            state->registers[rd] = state->memory[address];
+            // Load word from memory
+            printf("  Load (post-index) from memory[0x%04x] to register[$%i]\n", address, rd);
+            state->registers[rd] = readWord(address, state);
         } else {
-            // TODO; this implementation is incorrect - mem location is BYTE, register may contain WORD
-            state->memory[address] = (BYTE) state->registers[rd];
+            // Store word in memory
+            printf("  Store (post-index) from register[$%i] to memory[0x%04x]\n", rd, address);
+            writeWord((WORD) state->registers[rd], address, state);
         }
-
+        printf("  Incremented register[$%i] by offsetValue (0x%04x)", rn, offsetValue);
         state->registers[rn] += offsetValue;
     }
 }
