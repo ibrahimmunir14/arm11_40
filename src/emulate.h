@@ -25,7 +25,7 @@ typedef int32_t OFFSET;     // offsets are 32 bits, signed
 #define REG_PC 15
 #define REG_CPSR 16
 
-#define FULL_BYTE (2^8)-1
+#define FULL_BYTE 255
 
 struct MachineState {
     REGISTER registers[NUM_REG];
