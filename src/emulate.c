@@ -158,7 +158,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
         switch (getInstrType(instr)) {
             case instrBranch:
                 printf("Branch Operation: (0x%08x)\n", instr);
-                BYTE offset = getBitsFromWord(instr, 23, 24);
+                OFFSET offset = getBitsFromWord(instr, 23, 24);
                 performBranch(offset, state);
                 break;
             case instrSDT: {
