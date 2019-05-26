@@ -122,10 +122,10 @@ WORD readWord(ADDRESS startAddress, struct MachineState *state) {
 
 // write a word (4 bytes) in little-endian in memory given the start address and big-endian word
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
-    state->memory[startAddress] = (BYTE) (word & ((BYTE) FULL_BYTE));
-    state->memory[startAddress+1] = (BYTE) ((word >> 8u) & ((BYTE) FULL_BYTE));
-    state->memory[startAddress+2] = (BYTE) ((word >> 16u) & ((BYTE) FULL_BYTE));
-    state->memory[startAddress+3] = (BYTE) ((word >> 24u) & ((BYTE) FULL_BYTE));
+    state->memory[startAddress] = (BYTE) (word & fullBits(8));
+    state->memory[startAddress+1] = (BYTE) ((word >> 8u) & fullBits(8));
+    state->memory[startAddress+2] = (BYTE) ((word >> 16u) & fullBits(8));
+    state->memory[startAddress+3] = (BYTE) ((word >> 24u) & fullBits(8));
 }
 
 // checks whether an instruction should be executed based on condition code
@@ -144,13 +144,13 @@ bool checkCondition(enum CondCode condCode, struct MachineState *state) {
 
 // helper functions related to CPSR status flags
 bool isSet(enum CondFlag flag, struct MachineState *state) {
-    return (state->registers[REG_CPSR] & flag << 4u) == flag << 4u;
+    return getBitsFromWord(state->registers[REG_CPSR], 31, 4) == flag;
 }
 void setFlag(enum CondFlag flag, struct MachineState *state) {
-    state->registers[REG_CPSR] = state->registers[REG_CPSR] | flag << 4u;
+    state->registers[REG_CPSR] = state->registers[REG_CPSR] | flag << 28u;
 }
 void clearFlag(enum CondFlag flag, struct MachineState *state) {
-    state->registers[REG_CPSR] = state->registers[REG_CPSR] & (~(flag << 4u));
+    state->registers[REG_CPSR] = state->registers[REG_CPSR] & (~(flag << 28u));
 }
 
 // execute the given instruction
@@ -270,7 +270,6 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
 }
 
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
-    // TODO check condition
     int op2;
     if (dataProcType == dataProcOp2Imm) {
         op2 = getImmValue(Operand2);
@@ -365,11 +364,11 @@ WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct Machine
     BYTE shiftAmount; // shift specified by 5-bit unsigned int
 
     if (regShift) { // shift specified by register, bottom byte
-        REGNUMBER rs = getBitsFromWord((WORD) regShift, 11, 4);
+        REGNUMBER rs = getBitsFromWord(operandBits, 11, 4);
         REGISTER rsContents = state->registers[rs];
-        shiftAmount = rsContents & ((BYTE) FULL_BYTE);
+        shiftAmount = rsContents & fullBits(8);
     } else { // shift by a constant amount
-        shiftAmount = getBitsFromWord((WORD) operandBits, 11, 5);
+        shiftAmount = getBitsFromWord(operandBits, 11, 5);
     }
 
     //Shift register if shift amount is nonzero
@@ -415,9 +414,14 @@ WORD signExtend(WORD val, BYTE originalLength) {
     BYTE emptyBits = 32u - originalLength;
     bool topBitOne = getBitsFromWord(val, originalLength - 1, 1) == 1;
     return topBitOne
-    ? val | ((WORD) pow(2, emptyBits - 1) << originalLength)
+    ? val | (fullBits(emptyBits) << originalLength)
     : val;
 }
+
+WORD fullBits(BYTE numBits) {
+    return (WORD) pow(2, numBits - 1);
+}
+
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
     BYTE andOp = (BYTE) (pow(2, numBits) - 1);
     WORD wordShifted = word >> (BYTE) (1 + startBitNo - numBits);

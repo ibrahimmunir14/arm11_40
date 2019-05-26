@@ -29,7 +29,7 @@ typedef uint32_t OFFSET; //temp
 #define REG_PC 15
 #define REG_CPSR 16
 
-#define FULL_BYTE 255
+WORD fullBits(BYTE numBits);
 
 struct MachineState {
     REGISTER registers[NUM_REG];
