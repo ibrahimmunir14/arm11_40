@@ -309,8 +309,8 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             break;
         case MOV:
             result = operand2;
-            return;
-        default: break;
+            break;
+        default: return;
     }
 
     // write result to register if not TST, TEQ, CMP
