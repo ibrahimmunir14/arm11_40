@@ -16,6 +16,7 @@ typedef uint32_t WORD;		// words/instructions are 32 bits
 typedef uint16_t ADDRESS;   // memory addresses are 16 bits, unsigned because addresses positive
 typedef uint8_t BYTE;		// bytes are 8 bits
 typedef uint32_t SDTOFFSET;     // SDT offset always positive: imm offset 12 bits; reg offset is 32 bits
+typedef uint32_t DPOPERAND2;     // imm operand2 8 bits; reg operand2 is 32 bits
 typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 
 typedef uint32_t OFFSET; //temp
@@ -60,15 +61,16 @@ void executeInstruction(WORD, struct MachineState *state);
 enum InstrType getInstrType(WORD instr);
 enum DataProcType getDataProcType(WORD instr);
 enum SdtType getSdtType(WORD instr);
+enum OpCode getOpCode(WORD instr);
 WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state);
 SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
+DPOPERAND2 getOperandFromImmRotation(WORD operand2Bits, struct MachineState *state);
+DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, struct MachineState *state);
 
 void performBranch(WORD offsetBits, struct MachineState *state);
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state);
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state);
-void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state);
-int getImmValue(OFFSET Operand2);
-int getRegValue(bool constShift, OFFSET Operand2);
+void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD Operand2, struct MachineState *state);
 
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
