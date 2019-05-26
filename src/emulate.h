@@ -19,64 +19,72 @@ typedef uint32_t SDTOFFSET;     // SDT offset always positive: imm offset 12 bit
 typedef uint32_t DPOPERAND2;     // imm operand2 8 bits; reg operand2 is 32 bits
 typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 
-typedef uint32_t OFFSET; //temp
-
 // define constants related to registers
-// store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
-// store memory as array of byte, 64kb memory capacity, 1 word is 4 bytes
 #define NUM_REG 17
 #define MEM_SIZE 65536
 #define NUM_GENERAL_REG 13
 #define REG_PC 15
 #define REG_CPSR 16
 
-WORD fullBits(BYTE numBits);
-
 struct MachineState {
-    REGISTER registers[NUM_REG];
-    BYTE memory[MEM_SIZE];
+    REGISTER registers[NUM_REG]; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
+    BYTE memory[MEM_SIZE];       // 64kb memory capacity, 1 word is 4 bytes
     bool hasInstrToExecute;
     bool hasInstrToDecode;
 };
 
-enum CondFlag {V=1, C=2, Z=4, N=8};
+// enums for common values/types
+enum StatusFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
-
 enum InstrType {instrDataProcessing, instrMultiply, instrSDT, instrBranch, instrUnknown};
 enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
 enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 
-// function declarations
+/* useful bit-related functions */
+// return value representing numBits 1s in a row
+static inline WORD fullBits(BYTE numBits) {
+    return (WORD) pow(2, numBits) - 1;
+}
+// extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
+WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
+// apply a shift on val specified by shift amount, optionally update status bits
+WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
+// sign extend val to 32 bits, given the original length of val
+WORD signExtend(WORD val, BYTE originalLength);
+
+/* functions related to memory access */
+// returns a word (4 bytes) directly from memory given the address of the first byte
+WORD readFourBytes(ADDRESS startAddress, struct MachineState *state);
+// returns a word (4 bytes) from memory given the address of the first byte; converts to big-endian
+WORD readWord(ADDRESS startAddress, struct MachineState *state);
+// write a word (4 bytes) to memory in little-endian given the start address and big-endian word
+void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
+
+/* helper functions for main program */
 void incrementPC(struct MachineState *state);
 void printResults(struct MachineState *state);
-WORD readFourBytes(ADDRESS, struct MachineState *state);
-bool checkCondition(enum CondCode, struct MachineState *state);
-bool isSet(enum CondFlag, struct MachineState *state);
-void setFlag(enum CondFlag, struct MachineState *state);
-void clearFlag(enum CondFlag, struct MachineState *state);
+bool checkCondition(enum CondCode condCode, struct MachineState *state);
 
-void executeInstruction(WORD, struct MachineState *state);
-enum InstrType getInstrType(WORD instr);
-enum DataProcType getDataProcType(WORD instr);
-enum SdtType getSdtType(WORD instr);
-enum OpCode getOpCode(WORD instr);
-WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state);
-SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
-DPOPERAND2 getOperandFromImmRotation(WORD operand2Bits, struct MachineState *state);
-DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, struct MachineState *state);
+/* helper functions related to CPSR status bits */
+bool isSet(enum StatusFlag, struct MachineState *state);
+void setFlag(enum StatusFlag, struct MachineState *state);
+void clearFlag(enum StatusFlag, struct MachineState *state);
 
+/* functions for execution of instructions */
+void executeInstruction(WORD instruction, struct MachineState *state);
 void performBranch(WORD offsetBits, struct MachineState *state);
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state);
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state);
-void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD Operand2, struct MachineState *state);
+void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state);
 
-// extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
-WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
-WORD readWord(ADDRESS startAddress, struct MachineState *state);
-void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
-
-WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
-
-WORD signExtend(WORD val, BYTE originalLength);
+/* helper functions for execution of instructions */
+enum InstrType getInstrType(WORD instr);
+enum SdtType getSdtType(WORD instr);
+enum DataProcType getDataProcType(WORD instr);
+enum OpCode getOpCode(WORD instr);
+SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
+DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, struct MachineState *state);
+DPOPERAND2 getOperandFromImmRotation(WORD operandBits, struct MachineState *state);
+WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state);
