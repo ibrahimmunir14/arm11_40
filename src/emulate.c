@@ -419,7 +419,7 @@ WORD signExtend(WORD val, BYTE originalLength) {
 }
 
 WORD fullBits(BYTE numBits) {
-    return (WORD) pow(2, numBits - 1);
+    return (WORD) pow(2, numBits) - 1;
 }
 
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
