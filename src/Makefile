@@ -1,5 +1,6 @@
 CC      = gcc
 CFLAGS  = -Wall -g -D_DEFAULT_SOURCE -D_DEFAULT_SOURCE -std=c99 -Werror -pedantic
+LDLLIBS = -lm
 
 .SUFFIXES: .c .o
 
