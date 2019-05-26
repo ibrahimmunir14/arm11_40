@@ -4,10 +4,11 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: Clean-up so all code has consistent style
-// TODO: Comment everything properly
-// TODO: Fix segmentation faults
-// TODO: Ensure all types are correct (BYTE, REGISTER, OFFSET etc.)
+// TODO: (1) Complete Data-Processing function(s) [Umer?]
+// TODO: (2) Clean-up so all code has consistent style
+// TODO: (3) Comment everything properly
+// TODO: (4) Organise everything into headers and c files
+// TODO: (5) Fix segmentation faults
 
 const bool debug = true;
 
@@ -86,7 +87,6 @@ int main(int argc, char **argv) {
 void incrementPC(struct MachineState *state) {
     state->registers[REG_PC] += 4;
 }
-
 // output the contents of registers and non-zero memory
 void printResults(struct MachineState *state) {
     printf("Registers:\n");
@@ -107,19 +107,16 @@ void printResults(struct MachineState *state) {
         }
     }
 }
-
 // returns a word (4 bytes) given the address of the first byte
 WORD readFourBytes(ADDRESS startAddress, struct MachineState *state) {
     return (WORD) state->memory[startAddress] << 24u | (WORD) state->memory[startAddress+1] << 16u
          | (WORD) state->memory[startAddress+2] << 8u | (WORD) state->memory[startAddress+3];
 }
-
 // returns a word (4 bytes) given the address of the first byte; converts to big-endian
 WORD readWord(ADDRESS startAddress, struct MachineState *state) {
     return (WORD) state->memory[startAddress+3] << 24u | (WORD) state->memory[startAddress+2] << 16u
          | (WORD) state->memory[startAddress+1] << 8u | (WORD) state->memory[startAddress];
 }
-
 // write a word (4 bytes) in little-endian in memory given the start address and big-endian word
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
     state->memory[startAddress] = (BYTE) (word & fullBits(8));
@@ -141,7 +138,6 @@ bool checkCondition(enum CondCode condCode, struct MachineState *state) {
         default : return false;
     }
 }
-
 // helper functions related to CPSR status flags
 bool isSet(enum CondFlag flag, struct MachineState *state) {
     return getBitsFromWord(state->registers[REG_CPSR], 31, 4) == flag;
@@ -190,7 +186,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
             }
             case instrDataProcessing:
                 if (debug) printf("DataProcessing Operation: (0x%08x)\n", instr);
-                // TODO: delegate to appropriate function
+                // TODO: (1) delegate to appropriate function
                 break;
             default:
                 if (debug) printf("Unknown Operation\n");
@@ -209,7 +205,6 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     state->registers[REG_PC] += branchOffset;
     if (debug) printf("0x%08x\n", state->registers[REG_PC]);
 }
-
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     ADDRESS address = (ADDRESS) state->registers[rn];
     if (debug) printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offsetBits);
@@ -248,7 +243,6 @@ SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineStat
                         : getOperandFromRegisterShift(offsetBits, (sdtType == sdtOffsetRegShiftReg), state);
 
 }
-
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state) {
     if (debug) printf("  Rn $%i; Rd $%i; Rs $%i; Rm $%i\n", rn, rd, rs, rm);
     if (debug) printf("  accumulate: %i;  statusupdate: %i\n", aFlag, sFlag);
@@ -306,20 +300,18 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
     if (!executeNext) {
         state->hasInstrToExecute = false;
-        // TODO check if have to make this false or the decode false
+        // TODO (1) check if have to make this false or the decode false
     }
 
-    // TODO set flags
+    // TODO (1) set flags
 
 }
-
 int getImmValue(OFFSET Operand2) {
-    // TODO remove these magic numbers
+    // TODO (1) remove these magic numbers
     int value = Operand2 & 255;
     int rotate = (Operand2 & 3840) >> 7;
     return (value >> rotate)|(value << (32 - rotate));
 }
-
 int getRegValue(bool constShift, OFFSET Operand2) {
 
 }
@@ -417,11 +409,9 @@ WORD signExtend(WORD val, BYTE originalLength) {
     ? val | (fullBits(emptyBits) << originalLength)
     : val;
 }
-
 WORD fullBits(BYTE numBits) {
     return (WORD) pow(2, numBits) - 1;
 }
-
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
     BYTE andOp = (BYTE) (pow(2, numBits) - 1);
     WORD wordShifted = word >> (BYTE) (1 + startBitNo - numBits);

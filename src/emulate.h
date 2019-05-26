@@ -63,7 +63,6 @@ enum SdtType getSdtType(WORD instr);
 WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state);
 SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
 
-
 void performBranch(WORD offsetBits, struct MachineState *state);
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state);
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state);
@@ -76,8 +75,6 @@ WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
 WORD readWord(ADDRESS startAddress, struct MachineState *state);
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 
-// SHIFT
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
 
 WORD signExtend(WORD val, BYTE originalLength);
-// TODO: declare data processing functions for each opCode
