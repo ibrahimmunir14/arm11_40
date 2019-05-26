@@ -10,7 +10,7 @@
 // TODO: (4) Organise everything into headers and c files
 // TODO: (5) Fix segmentation faults
 
-const bool debug = true;
+const bool debug = false;
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -186,7 +186,13 @@ void executeInstruction(WORD instr, struct MachineState *state) {
             }
             case instrDataProcessing:
                 if (debug) printf("DataProcessing Operation: (0x%08x)\n", instr);
-                // TODO: (1) delegate to appropriate function
+                enum DataProcType dataProcType = getDataProcType(instr);
+                enum OpCode opCode = getOpCode(instr);
+                bool sFlag = getBitsFromWord(instr, 20, 1);
+                REGNUMBER rn = getBitsFromWord(instr, 19, 4);
+                REGNUMBER rd = getBitsFromWord(instr, 15, 4);
+                WORD operand2Bits = getBitsFromWord(instr, 11, 12);
+                performDataProc(dataProcType, opCode, sFlag, rn, rd, operand2Bits, state);
                 break;
             default:
                 if (debug) printf("Unknown Operation\n");
@@ -263,57 +269,68 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
     }
 }
 
-void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state) {
-    int op2;
-    if (dataProcType == dataProcOp2Imm) {
-        op2 = getImmValue(Operand2);
-    } else if (dataProcType == dataProcOp2RegShiftConst) {
-        op2 = getRegValue(true, Operand2);
-    } else {
-        op2 = getRegValue(false, Operand2);
-    }
+void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
+    DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, state);
 
-    bool executeNext = true;
-
+    // perform calculation based on op-code
+    WORD result;
     switch (opCode) {
         case AND:
-            state->registers[rd] = state->registers[rn] & op2;
+            result = state->registers[rn] & operand2;
+            break;
         case EOR:
-            state->registers[rd] = state->registers[rn] ^ op2;
+            result = state->registers[rn] ^ operand2;
+            break;
         case SUB:
-            state->registers[rd] = state->registers[rn] - op2;
+            result = state->registers[rn] - operand2;
+            break;
         case RSB:
-            state->registers[rd] = op2 - state->registers[rn];
+            result = operand2 - state->registers[rn];
+            break;
         case ADD:
-            state->registers[rd] = state->registers[rn] + op2;
+            result = state->registers[rn] + operand2;
+            break;
         case TST:
-            executeNext = state->registers[rn] == (state->registers[rn] & op2);
+            result = state->registers[rn] & operand2;
+            break;
         case TEQ:
-            executeNext = state->registers[rn] == (state->registers[rn] ^ op2);
+            result = state->registers[rn] ^ operand2;
+            break;
         case CMP:
-            executeNext = state->registers[rn] == (state->registers[rn] - op2) > 0;
+            result = state->registers[rn] - operand2;
+            break;
         case ORR:
-            state->registers[rd] = state->registers[rn] | op2;
+            result = state->registers[rn] | operand2;
+            break;
         case MOV:
-            state->registers[rd] = op2;
+            result = operand2;
+            break;
+        default: break;
     }
 
-    if (!executeNext) {
-        state->hasInstrToExecute = false;
-        // TODO (1) check if have to make this false or the decode false
+    // write result to register if not TST, TEQ, CMP
+    switch (opCode) {
+        case TST:
+        case TEQ:
+        case CMP:
+            break;
+        default:
+            state->registers[rd] = result;
     }
 
     // TODO (1) set flags
 
 }
-int getImmValue(OFFSET Operand2) {
-    // TODO (1) remove these magic numbers
-    int value = Operand2 & 255;
-    int rotate = (Operand2 & 3840) >> 7;
-    return (value >> rotate)|(value << (32 - rotate));
+DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, struct MachineState *state) {
+    return (dataProcType == dataProcOp2Imm)
+           ? getOperandFromImmRotation(operand2Bits, state) // operand2 is immediate value
+           : getOperandFromRegisterShift(operand2Bits, (dataProcType == dataProcOp2RegShiftReg), state);
 }
-int getRegValue(bool constShift, OFFSET Operand2) {
-
+DPOPERAND2 getOperandFromImmRotation(WORD operand2Bits, struct MachineState *state) {
+    WORD immValue = getBitsFromWord(operand2Bits, 7, 8);
+    BYTE rotAmount = 2 * getBitsFromWord(operand2Bits, 11, 4);
+    return shift(immValue, rotAmount, false, ROR, state);
+    // TODO: should the shifter carry bit of CPSR be set for the rotation?
 }
 
 enum InstrType getInstrType(WORD instr) {
@@ -346,6 +363,9 @@ enum SdtType getSdtType(WORD instr) {
     bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
     if (fourthBit) { return sdtOffsetRegShiftReg; }
     else { return sdtOffsetRegShiftConst; }
+}
+enum OpCode getOpCode(WORD instr) {
+    return (enum OpCode) getBitsFromWord(instr, 24, 4);
 }
 
 // given a 12-bit operand, where operand specified by register, calculates and returns the 32-bit operand
