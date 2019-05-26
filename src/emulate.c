@@ -160,7 +160,8 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 if (debug) printf("Branch Operation: (0x%08x)\n", instr);
                 WORD offsetBits = getBitsFromWord(instr, 23, 24);
                 performBranch(offsetBits, state);
-                break; }
+                break;
+            }
             case instrSDT: {
                 if (debug) printf("SDT Operation: (0x%08x)\n", instr);
                 enum SdtType sdtType = getSdtType(instr);
@@ -184,7 +185,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 performMultiply(aFlag, sFlag, rd, rn, rs, rm, state);
                 break;
             }
-            case instrDataProcessing:
+            case instrDataProcessing: {
                 if (debug) printf("DataProcessing Operation: (0x%08x)\n", instr);
                 enum DataProcType dataProcType = getDataProcType(instr);
                 enum OpCode opCode = getOpCode(instr);
@@ -192,8 +193,10 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 REGNUMBER rn = getBitsFromWord(instr, 19, 4);
                 REGNUMBER rd = getBitsFromWord(instr, 15, 4);
                 WORD operand2Bits = getBitsFromWord(instr, 11, 12);
+                printf("0x%08x OP2", operand2Bits);
                 performDataProc(dataProcType, opCode, sFlag, rn, rd, operand2Bits, state);
                 break;
+            }
             default:
                 if (debug) printf("Unknown Operation\n");
         }
@@ -270,7 +273,9 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
 }
 
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
+    if (debug) printf("OpCode: %i  Rn $%i; Rd $%i; operand2Bits (0x%03x)\n", opCode, rn, rd, operand2Bits);
     DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, state);
+    if (debug) printf("  operand2: 0x%08x\n", operand2);
 
     // perform calculation based on op-code
     WORD result;
@@ -304,7 +309,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             break;
         case MOV:
             result = operand2;
-            break;
+            return;
         default: break;
     }
 
@@ -433,7 +438,7 @@ WORD fullBits(BYTE numBits) {
     return (WORD) pow(2, numBits) - 1;
 }
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
-    BYTE andOp = (BYTE) (pow(2, numBits) - 1);
+    WORD andOp = (WORD) (pow(2, numBits) - 1);
     WORD wordShifted = word >> (BYTE) (1 + startBitNo - numBits);
     return andOp & wordShifted;
 }
