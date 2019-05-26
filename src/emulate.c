@@ -199,13 +199,16 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     state->hasInstrToExecute = false;
     state->hasInstrToDecode = false;
     // set PC to wherever the next instruction is
-    BRANCHOFFSET branchoffset = signExtend(offsetBits << 2u, 26);
-    state->registers[REG_PC] += branchoffset;
+    BRANCHOFFSET branchOffset = signExtend(offsetBits << 2u, 26);
+    //printf("  Offset Value: %i\n", branchOffset);
+    //printf("  REG_PC incremented from 0x%08x to ", state->registers[REG_PC]);
+    state->registers[REG_PC] += branchOffset;
+    //printf("0x%08x\n", state->registers[REG_PC]);
 }
 
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     ADDRESS address = (ADDRESS) state->registers[rn];
-    //printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offset);
+    //printf("  Rn $%i; Rd $%i; Offset (0x%03x)\n", rn, rd, offsetBits);
 
     SDTOFFSET offsetValue = getSDTOffset(sdtType, offsetBits, state);
 
@@ -374,7 +377,6 @@ WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
     bool carryOutBit = 0;
     WORD result;
     switch (shiftType) {
-        // TODO: Ensure this follows spec, order of shift and retrieving byte
         case LSL : {
             carryOutBit = getBitsFromWord(val, 32-shiftAmount, 1); // least sig discarded bit
             result = val << shiftAmount;
@@ -407,7 +409,10 @@ WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
 
 WORD signExtend(WORD val, BYTE originalLength) {
     BYTE emptyBits = 32u - originalLength;
-    return val | ((WORD) pow(2, emptyBits - 1) << originalLength);
+    bool topBitOne = getBitsFromWord(val, originalLength - 1, 1) == 1;
+    return topBitOne
+    ? val | ((WORD) pow(2, emptyBits - 1) << originalLength)
+    : val;
 }
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
     BYTE andOp = (BYTE) (pow(2, numBits) - 1);

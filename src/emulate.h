@@ -18,6 +18,8 @@ typedef uint8_t BYTE;		// bytes are 8 bits
 typedef uint32_t SDTOFFSET;     // SDT offset always positive: imm offset 12 bits; reg offset is 32 bits
 typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 
+typedef uint32_t OFFSET; //temp
+
 // define constants related to registers
 // store registers in an array of register (R13=SP; R14=LR; R15=PC; R16=CPSR)
 // store memory as array of byte, 64kb memory capacity, 1 word is 4 bytes
@@ -62,7 +64,7 @@ WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct Machine
 SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
 
 
-void performBranch(OFFSET offset, struct MachineState *state);
+void performBranch(WORD offsetBits, struct MachineState *state);
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state);
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state);
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, OFFSET Operand2, struct MachineState *state);
@@ -73,7 +75,6 @@ int getRegValue(bool constShift, OFFSET Operand2);
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
 WORD readWord(ADDRESS startAddress, struct MachineState *state);
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
-WORD shiftRegister(OFFSET offset, enum SdtType sdtType, struct MachineState *state);
 
 // SHIFT
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
