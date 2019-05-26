@@ -8,7 +8,6 @@
 // TODO: Clean-up so all code has consistent style
 // TODO: Organise everything into headers and c files
 // TODO: Fix segmentation faults
-// TODO: Implement error checking (out of bounds memory access)
 
 bool debug = false;
 
@@ -237,7 +236,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             }
             default:
-                if (debug) printf("Unknown Operation\n");
+                printf("Error: Unknown Instruction: 0x%08x\n", instr);
         }
     }
 }
@@ -353,7 +352,8 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case MOV:
             result = operand2;
             break;
-        default: return;
+        default:
+            printf("Error: Unknown Operation Code: %i\n", opCode);
     }
 
     // write result to register if not TST, TEQ, CMP
