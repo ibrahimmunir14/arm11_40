@@ -10,7 +10,7 @@
 // TODO: Fix segmentation faults
 // TODO: Implement error checking (out of bounds memory access)
 
-bool debug = false;
+bool debug = true;
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -407,7 +407,7 @@ DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, stru
 }
 DPOPERAND2 getOperandFromImmRotation(WORD operandBits, struct MachineState *state) {
     WORD immValue = getBitsFromWord(operandBits, 7, 8);
-    BYTE rotAmount = getBitsFromWord(operandBits, 11, 4);
+    BYTE rotAmount = 2 * getBitsFromWord(operandBits, 11, 4);
     return shift(immValue, rotAmount, false, ROR, state);
     // TODO: should the shifter carry bit of CPSR be set for the rotation?
 }
