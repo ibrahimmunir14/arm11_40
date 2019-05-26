@@ -193,7 +193,6 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 REGNUMBER rn = getBitsFromWord(instr, 19, 4);
                 REGNUMBER rd = getBitsFromWord(instr, 15, 4);
                 WORD operand2Bits = getBitsFromWord(instr, 11, 12);
-                printf("0x%08x OP2", operand2Bits);
                 performDataProc(dataProcType, opCode, sFlag, rn, rd, operand2Bits, state);
                 break;
             }
