@@ -8,13 +8,10 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdbool.h>
+#include "binaryOps.c"
 
 // define types to aid readability
-typedef uint32_t REGISTER;	// register contents are 32 bits
 typedef uint8_t REGNUMBER;  // register numbers are 4 bits, unsigned because register numbers positive
-typedef uint32_t WORD;		// words/instructions are 32 bits
-typedef uint16_t ADDRESS;   // memory addresses are 16 bits, unsigned because addresses positive
-typedef uint8_t BYTE;		// bytes are 8 bits
 typedef int32_t SDTOFFSET;     // SDT offset: imm offset 12 bits; reg offset is 32 bits
 typedef uint32_t DPOPERAND2;     // imm operand2 8 bits; reg operand2 is 32 bits
 typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
@@ -42,11 +39,6 @@ enum InstrType {instrUnknown, instrDataProcessing, instrMultiply, instrSDT, inst
 enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
 enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 
-/* useful bit-related functions */
-// return value representing numBits 1s in a row
-static inline WORD fullBits(BYTE numBits) {
-    return (WORD) pow(2, numBits) - 1;
-}
 // extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
 // apply a shift on val specified by shift amount, optionally update status bits
@@ -63,28 +55,47 @@ WORD readWord(ADDRESS startAddress, struct MachineState *state);
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 
 /* helper functions for main program */
+// increment program counter
 void incrementPC(struct MachineState *state);
+// print current state of machine
 void printResults(struct MachineState *state);
+// check condition code
 bool checkCondition(enum CondCode condCode, struct MachineState *state);
 
 /* helper functions related to CPSR status bits */
+// check flag is set
 bool isSet(enum StatusFlag, struct MachineState *state);
+// set flag (to 1)
 void setFlag(enum StatusFlag, struct MachineState *state);
+// clear flag (to 0)
 void clearFlag(enum StatusFlag, struct MachineState *state);
 
 /* functions for execution of instructions */
+// execute instruction with the current state
 void executeInstruction(WORD instruction, struct MachineState *state);
+// perform a branch instruction with the given parameters and state
 void performBranch(WORD offsetBits, struct MachineState *state);
+// perform an sdt instruction with the given parameters and state
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state);
+// perform a multiply instruction with the given parameters and state
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state);
+// perform a data processing instruction with the given parameters and state
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state);
 
 /* helper functions for execution of instructions */
+// extract instruction type from the instruction bit string
 enum InstrType getInstrType(WORD instr);
+// extract type of sdt instruction being executed
 enum SdtType getSdtType(WORD instr);
+// extract type of data processing instruction being executed
 enum DataProcType getDataProcType(WORD instr);
+// extract opcode from instruction bit string
 enum OpCode getOpCode(WORD instr);
+// get offset from sdt instruction
 SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) ;
+// get operand2 from data processing instruction
 DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, bool modifyCPSR, struct MachineState *state);
+// get operand from rotated immediate value data processing instruction
 DPOPERAND2 getOperandFromImmRotation(WORD operandBits, bool modifyCPSR, struct MachineState *state);
+// get operand from shifted register data processing instruction
 WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, bool modifyCPSR, struct MachineState *state);

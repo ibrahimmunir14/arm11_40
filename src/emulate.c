@@ -1,4 +1,4 @@
-#include "emulate.h"
+  #include "emulate.h"
 
 // NOTE: Words in memory are stored Big-Endian; Words in registers are stored Big-Endian
 //       Instructions in this code are Little-Endian
@@ -11,26 +11,43 @@
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
-    if (argc != 2) { return EXIT_FAILURE; }
+    if (argc != 2) {
+      return EXIT_FAILURE;
+    }
 
-    // initialize state, registers, memory to 0s
+
     struct MachineState state;
-    for (int i = 0; i < NUM_REG; i++) { state.registers[i] = 0; }
-    for (int i = 0; i < MEM_SIZE; i++) { state.memory[i] = 0; }
 
-    // set up memory array with instructions
+    // initialize registers to 0s
+    for (int i = 0; i < NUM_REG; i++) {
+      state.registers[i] = 0;
+    }
+    // initialize memory to 0s
+    for (int i = 0; i < MEM_SIZE; i++) {
+      state.memory[i] = 0;
+    }
+
+
     char *fileName = argv[1];
+
+    // find number of words
     FILE *fPointer = fopen(fileName, "rb");
     fseek(fPointer, 0, SEEK_END);
     int size = (int) ftell(fPointer);
     fseek(fPointer, 0, SEEK_SET);
-    for (int i = 0; i < size; i++) { state.memory[i] = (BYTE) getc(fPointer); }
 
-    // main pipeline loop
+    // set up memory array with instructions/data
+    for (int i = 0; i < size; i++) {
+      state.memory[i] = (BYTE) getc(fPointer);
+    }
+
+    /* Main Pipeline Loop */
+    // initialize pipeline
     WORD instrToExecute = 0;
     WORD instrToDecode = 0;
     state.hasInstrToDecode = false;
     state.hasInstrToExecute = false;
+
     while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
         if (state.hasInstrToExecute) {
@@ -52,7 +69,6 @@ int main(int argc, char **argv) {
         instrToDecode = readWord((ADDRESS) state.registers[REG_PC], &state);
         state.hasInstrToDecode = true;
 
-        // increment program counter
         incrementPC(&state);
     }
 
@@ -60,51 +76,40 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-/* useful bit-related functions */
-WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
-    WORD andOp = fullBits(numBits);
-    WORD wordShifted = word >> (BYTE) (1 + startBitNo - numBits);
-    return andOp & wordShifted;
-}
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
     bool carryOutBit = 0;
     WORD result;
     switch (shiftType) {
-        case LSL : {
+        case LSL: // logical shift left
             carryOutBit = getBitsFromWord(val, 32-shiftAmount, 1); // least sig discarded bit
             result = val << shiftAmount;
             break;
-        }
-        case LSR : {
+        case LSR: // logical shift right
             carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
             result = val >> shiftAmount;
             break;
-        }
-        case ASR : {
+        case ASR: // arithmetic shift right
             carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
             result = signExtend(val >> shiftAmount, 32u - shiftAmount);
             break;
-        }
-        case ROR : {
+        case ROR: // rotate right
             carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
             result = val >> shiftAmount | val << (32u - shiftAmount);
             break;
-        }
         default:
             return 0;
     }
+
+    // update status register with carry out bit
     if (updateCPSR) {
-        if (carryOutBit) setFlag(C, state);
-        else clearFlag(C, state);
+        if (carryOutBit) {
+          setFlag(C, state);
+        } else {
+          clearFlag(C, state);
+        }
     }
+
     return result;
-}
-WORD signExtend(WORD val, BYTE originalLength) {
-    BYTE numEmptyBits = 32u - originalLength;
-    bool topBitOne = getBitsFromWord(val, originalLength - 1, 1) == 1;
-    return topBitOne
-           ? val | (fullBits(numEmptyBits) << originalLength)
-           : val;
 }
 
 /* functions related to memory access */
@@ -117,10 +122,10 @@ WORD readWord(ADDRESS startAddress, struct MachineState *state) {
            | (WORD) state->memory[startAddress+1] << 8u | (WORD) state->memory[startAddress];
 }
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
-    state->memory[startAddress] = (BYTE) (word & fullBits(8));
-    state->memory[startAddress+1] = (BYTE) ((word >> 8u) & fullBits(8));
-    state->memory[startAddress+2] = (BYTE) ((word >> 16u) & fullBits(8));
-    state->memory[startAddress+3] = (BYTE) ((word >> 24u) & fullBits(8));
+    state->memory[startAddress] = (BYTE) word;
+    state->memory[startAddress+1] = (BYTE) (word >> 8u);
+    state->memory[startAddress+2] = (BYTE) (word >> 16u);
+    state->memory[startAddress+3] = (BYTE) (word >> 24u);
 }
 
 /* helper functions for main program */
@@ -146,16 +151,19 @@ void printResults(struct MachineState *state) {
         }
     }
 }
+
+//
 bool checkCondition(enum CondCode condCode, struct MachineState *state) {
+    // check condition is met
     switch (condCode) {
-        case AL : return true;
-        case EQ : return isSet(Z, state);
-        case NE : return !isSet(Z, state);
-        case GE : return isSet(N, state) == isSet(V, state);
-        case LT : return isSet(N, state) != isSet(V, state);
-        case GT : return !isSet(Z, state) && (isSet(N, state) == isSet(V, state));
-        case LE : return isSet(Z, state) || (isSet(N, state) != isSet(V, state));
-        default : return false;
+        case AL: return true;
+        case EQ: return isSet(Z, state);
+        case NE: return !isSet(Z, state);
+        case GE: return isSet(N, state) == isSet(V, state);
+        case LT: return isSet(N, state) != isSet(V, state);
+        case GT: return !isSet(Z, state) && (isSet(N, state) == isSet(V, state));
+        case LE: return isSet(Z, state) || (isSet(N, state) != isSet(V, state));
+        default: return false;
     }
 }
 
@@ -179,10 +187,12 @@ void executeInstruction(WORD instr, struct MachineState *state) {
         switch (getInstrType(instr)) {
             case instrBranch: {
                 WORD offsetBits = getBitsFromWord(instr, 23, 24);
+
                 performBranch(offsetBits, state);
                 break;
-            }
-            case instrSDT: {
+
+
+            } case instrSDT: {
                 enum SdtType sdtType = getSdtType(instr);
                 bool pFlag = getBitsFromWord(instr, 24, 1);
                 bool uFlag = getBitsFromWord(instr, 23, 1);
@@ -190,34 +200,41 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 REGNUMBER rn = getBitsFromWord(instr, 19, 4);
                 REGNUMBER rd = getBitsFromWord(instr, 15, 4);
                 WORD offsetBits = getBitsFromWord(instr, 11, 12);
+
                 performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offsetBits, state);
                 break;
-            }
-            case instrMultiply: {
+
+
+            } case instrMultiply: {
                 bool aFlag = getBitsFromWord(instr, 21, 1);
                 bool sFlag = getBitsFromWord(instr, 20, 1);
                 REGNUMBER rd = getBitsFromWord(instr, 19, 4);
                 REGNUMBER rn = getBitsFromWord(instr, 15, 4);
                 REGNUMBER rs = getBitsFromWord(instr, 11, 4);
                 REGNUMBER rm = getBitsFromWord(instr, 3, 4);
+
                 performMultiply(aFlag, sFlag, rd, rn, rs, rm, state);
                 break;
-            }
-            case instrDataProcessing: {
+
+
+            } case instrDataProcessing: {
                 enum DataProcType dataProcType = getDataProcType(instr);
                 enum OpCode opCode = getOpCode(instr);
                 bool sFlag = getBitsFromWord(instr, 20, 1);
                 REGNUMBER rn = getBitsFromWord(instr, 19, 4);
                 REGNUMBER rd = getBitsFromWord(instr, 15, 4);
                 WORD operand2Bits = getBitsFromWord(instr, 11, 12);
+
                 performDataProc(dataProcType, opCode, sFlag, rn, rd, operand2Bits, state);
                 break;
-            }
-            default:
+
+
+            } default:
                 printf("Error: Unknown Instruction: 0x%08x\n", instr);
         }
     }
 }
+
 void performBranch(WORD offsetBits, struct MachineState *state) {
     // falsify hasInstr booleans
     state->hasInstrToExecute = false;
@@ -226,11 +243,14 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     BRANCHOFFSET branchOffset = signExtend(offsetBits << 2u, 26);
     state->registers[REG_PC] += branchOffset;
 }
+
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     // read address reference from source/dest register and calculate offset value
     REGISTER memAddress = state->registers[rn];
     SDTOFFSET offsetValue = getSDTOffset(sdtType, offsetBits, state);
-    if (!upFlag) offsetValue = -offsetValue;
+    if (!upFlag) {
+      offsetValue = -offsetValue;
+    }
 
     if (pFlag) { // transfer data using address after offset
         // ensure address is in bounds
@@ -270,11 +290,18 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
     // sFlag indicates whether to update CPSR status bits
     if (sFlag) {
         // set the Z flag iff result is 0
-        if (result == 0) setFlag(Z, state);
-        else clearFlag(Z, state);
+        if (result == 0) {
+          setFlag(Z, state);
+        } else {
+          clearFlag(Z, state);
+        }
+
         // set the N flag to bit 31 of result
-        if (getBitsFromWord(result, 31, 1)) setFlag(N, state);
-        else clearFlag(N, state);
+        if (getBitsFromWord(result, 31, 1)) {
+          setFlag(N, state);
+        } else {
+          clearFlag(N, state);
+        }
     }
 }
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
@@ -327,15 +354,25 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             state->registers[rd] = (WORD) result;
     }
 
+    // set condition codes
     if (sFlag) {
-        if ((WORD) result == 0) setFlag(Z, state);
-        else clearFlag(Z, state);
+        if ((WORD) result == 0) {
+          setFlag(Z, state);
+        } else {
+          clearFlag(Z, state);
+        }
 
-        if (getBitsFromWord((WORD) result, 31, 1)) setFlag(N, state);
-        else clearFlag(N, state);
+        if (getBitsFromWord((WORD) result, 31, 1)) {
+          setFlag(N, state);
+        } else {
+          clearFlag(N, state);
+        }
 
-        if (aluCarry) setFlag(C, state);
-        else clearFlag(C, state);
+        if (aluCarry) {
+          setFlag(C, state);
+        } else {
+          clearFlag(C, state);
+        }
     }
 
 }
@@ -351,27 +388,49 @@ enum InstrType getInstrType(WORD instr) {
             bool iFlag = (bool) getBitsFromWord(instr, 25, 1);
             bool seventhBit = (bool) getBitsFromWord(instr, 7, 1);
             bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
-            if (!iFlag && seventhBit && fourthBit) { return instrMultiply; }
+            if (!iFlag && seventhBit && fourthBit) {
+              return instrMultiply;
+            }
             return instrDataProcessing;
         }
         default: // unknown instruction type
             return instrUnknown;
     }
 }
+
 enum DataProcType getDataProcType(WORD instr) {
     bool iFlag = (bool) getBitsFromWord(instr, 25, 1);
-    if (iFlag) { return dataProcOp2Imm; }
+
+    if (iFlag) { // immediate
+      return dataProcOp2Imm;
+    }
+
     bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
-    if (fourthBit) { return dataProcOp2RegShiftReg; }
-    else { return dataProcOp2RegShiftConst; }
+
+    // shifted register
+    if (fourthBit) {
+      return dataProcOp2RegShiftReg;
+    } else {
+      return dataProcOp2RegShiftConst;
+    }
 }
 enum SdtType getSdtType(WORD instr) {
     bool iFlag = (bool) getBitsFromWord(instr, 25, 1);
-    if (!iFlag) { return sdtOffsetImm; }
+
+    if (!iFlag) { // immediate
+      return sdtOffsetImm;
+    }
+
     bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
-    if (fourthBit) { return sdtOffsetRegShiftReg; }
-    else { return sdtOffsetRegShiftConst; }
+
+    // shifted register
+    if (fourthBit) {
+      return sdtOffsetRegShiftReg;
+    } else {
+      return sdtOffsetRegShiftConst;
+    }
 }
+
 enum OpCode getOpCode(WORD instr) {
     return (enum OpCode) getBitsFromWord(instr, 24, 4);
 }

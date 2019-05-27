@@ -12,7 +12,10 @@ assemble: assemble.o
 
 emulate: emulate.o
 
-emulate.o: emulate.h
+emulate.o: emulate.h binaryOps.h
+
+binaryOps.o: binaryOps.h binaryTypes.h
+
 
 clean:
 	rm -f $(wildcard *.o)
