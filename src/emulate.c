@@ -8,9 +8,8 @@
 // TODO: Clean-up so all code has consistent style
 // TODO: Organise everything into headers and c files
 // TODO: Fix segmentation faults
-// TODO: Implement error checking (out of bounds memory access)
 
-bool debug = true;
+bool debug = false;
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -237,7 +236,7 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             }
             default:
-                if (debug) printf("Unknown Operation\n");
+                printf("Error: Unknown Instruction: 0x%08x\n", instr);
         }
     }
 }
@@ -255,28 +254,38 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
 }
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     if (debug) printf("  Rn $%i; Rd $%i; Offset (0x%03x); \n", rn, rd, offsetBits);
+
     // read address reference from source/dest register and calculate offset value
-    ADDRESS memAddress = (ADDRESS) state->registers[rn];
+    REGISTER memAddress = state->registers[rn];
     SDTOFFSET offsetValue = getSDTOffset(sdtType, offsetBits, state);
     if (!upFlag) offsetValue = -offsetValue;
 
     if (pFlag) { // transfer data using address after offset
+        // ensure address is in bounds
+        if (memAddress + offsetValue > fullBits(16)) {
+            printf("Error: Out of bounds memory access at address 0x%08x\n", memAddress + offsetValue);
+            return;
+        }
         if (ldstFlag) { // load word from memory
             if (debug) printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
                               memAddress, offsetValue, memAddress + offsetValue, rd);
-            state->registers[rd] = readWord(memAddress + offsetValue, state);
+            state->registers[rd] = readWord((ADDRESS) memAddress + offsetValue, state);
         } else { // store word in memory
             if (debug) printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
                               rd, memAddress, offsetValue, memAddress + offsetValue);
-            writeWord((WORD) state->registers[rd], memAddress + offsetValue, state);
+            writeWord((WORD) state->registers[rd], (ADDRESS) memAddress + offsetValue, state);
         }
     } else { // transfer data then update base register
+        if (memAddress > fullBits(16)) {
+            printf("Error: Out of bounds memory access at address 0x%08x\n", memAddress);
+            return;
+        }
         if (ldstFlag) { // load word from memory
             if (debug) printf("  Load (post-index) from memory[0x%04x] to register[$%i]\n", memAddress, rd);
-            state->registers[rd] = readWord(memAddress, state);
+            state->registers[rd] = readWord((ADDRESS) memAddress, state);
         } else { // store word in memory
             if (debug) printf("  Store (post-index) from register[$%i] to memory[0x%04x]\n", rd, memAddress);
-            writeWord((WORD) state->registers[rd], memAddress, state);
+            writeWord((WORD) state->registers[rd], (ADDRESS) memAddress, state);
         }
         // apply offset to source/des register contents
         if (debug) printf("  Incremented register[$%i] by offsetValue (0x%04x)", rn, offsetValue);
@@ -348,7 +357,8 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case MOV:
             result = operand2;
             break;
-        default: return;
+        default:
+            printf("Error: Unknown Operation Code: %i\n", opCode);
     }
 
     // write result to register if not TST, TEQ, CMP

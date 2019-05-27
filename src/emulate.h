@@ -38,7 +38,7 @@ enum StatusFlag {V=1, C=2, Z=4, N=8};
 enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
 enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
-enum InstrType {instrDataProcessing, instrMultiply, instrSDT, instrBranch, instrUnknown};
+enum InstrType {instrUnknown, instrDataProcessing, instrMultiply, instrSDT, instrBranch};
 enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
 enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 
