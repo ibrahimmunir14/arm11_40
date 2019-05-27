@@ -15,7 +15,7 @@ typedef uint8_t REGNUMBER;  // register numbers are 4 bits, unsigned because reg
 typedef uint32_t WORD;		// words/instructions are 32 bits
 typedef uint16_t ADDRESS;   // memory addresses are 16 bits, unsigned because addresses positive
 typedef uint8_t BYTE;		// bytes are 8 bits
-typedef uint32_t SDTOFFSET;     // SDT offset always positive: imm offset 12 bits; reg offset is 32 bits
+typedef int32_t SDTOFFSET;     // SDT offset: imm offset 12 bits; reg offset is 32 bits
 typedef uint32_t DPOPERAND2;     // imm operand2 8 bits; reg operand2 is 32 bits
 typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 
