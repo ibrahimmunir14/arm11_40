@@ -178,13 +178,13 @@ bool checkCondition(enum CondCode condCode, struct MachineState *state) {
 
 /* helper functions related to CPSR status bits */
 bool isSet(enum StatusFlag flag, struct MachineState *state) {
-    return (getBitsFromWord(state->registers[REG_CPSR], 31, 4) & flag) == flag;
+    return (getBitsFromWord(state->registers[REG_CPSR], 31, 4) & (BYTE) flag) == flag;
 }
 void setFlag(enum StatusFlag flag, struct MachineState *state) {
-    state->registers[REG_CPSR] = state->registers[REG_CPSR] | flag << 28u;
+    state->registers[REG_CPSR] = state->registers[REG_CPSR] | (WORD) ((BYTE) flag << 28u);
 }
 void clearFlag(enum StatusFlag flag, struct MachineState *state) {
-    state->registers[REG_CPSR] = state->registers[REG_CPSR] & (~(flag << 28u));
+    state->registers[REG_CPSR] = state->registers[REG_CPSR] & (~ (WORD) ((BYTE) flag << 28u));
 }
 
 /* functions for execution of instructions */
@@ -267,7 +267,7 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
         }
         if (ldstFlag) { // load word from memory
             if (debug) printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
-                              memAddress, offsetValue, memAddress + offsetValue, rd);
+                              memAddress, offsetValue, (ADDRESS) memAddress + offsetValue, rd);
             state->registers[rd] = readWord((ADDRESS) memAddress + offsetValue, state);
         } else { // store word in memory
             if (debug) printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
@@ -334,7 +334,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case SUB:
         case CMP:
             result = state->registers[rn] - operand2;
-            aluCarry = result < state->registers[rn];
+            aluCarry = result <= state->registers[rn];
             break;
         case RSB:
             result = operand2 - state->registers[rn];
@@ -342,7 +342,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             break;
         case ADD:
             result = state->registers[rn] + operand2;
-            aluCarry = result >> 32 > 0;
+            aluCarry = result >> 32u > 0;
             break;
         case ORR:
             result = state->registers[rn] | operand2;
