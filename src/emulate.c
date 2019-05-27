@@ -307,35 +307,40 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
 }
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
     if (debug) printf("OpCode: %i  Rn $%i; Rd $%i; operand2Bits (0x%03x)\n", opCode, rn, rd, operand2Bits);
-    DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, state);
+    DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, sFlag, state);
     if (debug) printf("  operand2: 0x%08x\n", operand2);
 
+    bool cFlag = false;
+
     // perform calculation based on op-code
-    WORD result;
+    long result;
     switch (opCode) {
         case AND:
-            result = state->registers[rn] & operand2;
-            break;
-        case EOR:
-            result = state->registers[rn] ^ operand2;
-            break;
-        case SUB:
-            result = state->registers[rn] - operand2;
-            break;
-        case RSB:
-            result = operand2 - state->registers[rn];
-            break;
-        case ADD:
-            result = state->registers[rn] + operand2;
-            break;
         case TST:
             result = state->registers[rn] & operand2;
             break;
+        case EOR:
         case TEQ:
             result = state->registers[rn] ^ operand2;
             break;
+        case SUB:
         case CMP:
             result = state->registers[rn] - operand2;
+            if (result < state->registers[rn]) {
+                cFlag = true;
+            }
+            break;
+        case RSB:
+            result = operand2 - state->registers[rn];
+            if (result < operand2) {
+                cFlag = true;
+            }
+            break;
+        case ADD:
+            result = state->registers[rn] + operand2;
+            if (result >> 32 > 0) {
+                cFlag = true;
+            }
             break;
         case ORR:
             result = state->registers[rn] | operand2;
@@ -353,10 +358,19 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case CMP:
             break;
         default:
-            state->registers[rd] = result;
+            state->registers[rd] = (int) result;
     }
 
-    // TODO set flags
+    if (sFlag) {
+        if (state->registers[rd] == 0) setFlag(Z, state);
+        else clearFlag(Z, state);
+
+        if (getBitsFromWord(rd, 31, 1)) setFlag(N, state);
+        else clearFlag(N, state);
+
+        if (cFlag) setFlag(C, state);
+        else clearFlag(C, state);
+    }
 
 }
 
@@ -398,20 +412,20 @@ enum OpCode getOpCode(WORD instr) {
 SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) {
     return (sdtType == sdtOffsetImm)
            ? offsetBits // offset is immediate value
-           : getOperandFromRegisterShift(offsetBits, (sdtType == sdtOffsetRegShiftReg), state); // shifted reg
+           : getOperandFromRegisterShift(offsetBits, (sdtType == sdtOffsetRegShiftReg), false, state); // shifted reg
 }
-DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, struct MachineState *state) {
+DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, bool modifyCPSR, struct MachineState *state) {
     return (dataProcType == dataProcOp2Imm)
-           ? getOperandFromImmRotation(operand2Bits, state) // operand2 is immediate value
-           : getOperandFromRegisterShift(operand2Bits, (dataProcType == dataProcOp2RegShiftReg), state); // shifted reg
+           ? getOperandFromImmRotation(operand2Bits, modifyCPSR, state) // operand2 is immediate value
+           : getOperandFromRegisterShift(operand2Bits, (dataProcType == dataProcOp2RegShiftReg), modifyCPSR, state); // shifted reg
 }
-DPOPERAND2 getOperandFromImmRotation(WORD operandBits, struct MachineState *state) {
+DPOPERAND2 getOperandFromImmRotation(WORD operandBits, bool modifyCPSR, struct MachineState *state) {
     WORD immValue = getBitsFromWord(operandBits, 7, 8);
     BYTE rotAmount = 2 * getBitsFromWord(operandBits, 11, 4);
-    return shift(immValue, rotAmount, false, ROR, state);
+    return shift(immValue, rotAmount, modifyCPSR, ROR, state);
     // TODO: should the shifter carry bit of CPSR be set for the rotation?
 }
-WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct MachineState *state) {
+WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, bool modifyCPSR, struct MachineState *state) {
     REGNUMBER rm = getBitsFromWord((WORD) operandBits, 3, 4);
     REGISTER rmContents = state->registers[rm];
     enum ShiftType shiftType = getBitsFromWord(operandBits, 6, 2);
@@ -426,5 +440,5 @@ WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, struct Machine
         shiftAmount = getBitsFromWord(operandBits, 11, 5);
     }
 
-    return shift(rmContents, shiftAmount, 0, shiftType, state);
+    return shift(rmContents, shiftAmount, modifyCPSR, shiftType, state);
 }
