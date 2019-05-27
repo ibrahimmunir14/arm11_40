@@ -4,7 +4,6 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: Update Status Register Flags in DataProcessing Function
 // TODO: Clean-up so all code has consistent style
 // TODO: Organise everything into headers and c files
 // TODO: Fix segmentation faults
@@ -179,7 +178,7 @@ bool checkCondition(enum CondCode condCode, struct MachineState *state) {
 
 /* helper functions related to CPSR status bits */
 bool isSet(enum StatusFlag flag, struct MachineState *state) {
-    return getBitsFromWord(state->registers[REG_CPSR], 31, 4) == flag;
+    return (getBitsFromWord(state->registers[REG_CPSR], 31, 4) & flag) == flag;
 }
 void setFlag(enum StatusFlag flag, struct MachineState *state) {
     state->registers[REG_CPSR] = state->registers[REG_CPSR] | flag << 28u;
@@ -319,10 +318,10 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
     DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, sFlag, state);
     if (debug) printf("  operand2: 0x%08x\n", operand2);
 
-    bool cFlag = false;
+    bool aluCarry = false;
 
     // perform calculation based on op-code
-    long result;
+    uint64_t result;
     switch (opCode) {
         case AND:
         case TST:
@@ -335,21 +334,15 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case SUB:
         case CMP:
             result = state->registers[rn] - operand2;
-            if (result < state->registers[rn]) {
-                cFlag = true;
-            }
+            aluCarry = result < state->registers[rn];
             break;
         case RSB:
             result = operand2 - state->registers[rn];
-            if (result < operand2) {
-                cFlag = true;
-            }
+            aluCarry = result < operand2;
             break;
         case ADD:
             result = state->registers[rn] + operand2;
-            if (result >> 32 > 0) {
-                cFlag = true;
-            }
+            aluCarry = result >> 32 > 0;
             break;
         case ORR:
             result = state->registers[rn] | operand2;
@@ -359,6 +352,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             break;
         default:
             printf("Error: Unknown Operation Code: %i\n", opCode);
+            return;
     }
 
     // write result to register if not TST, TEQ, CMP
@@ -368,17 +362,17 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case CMP:
             break;
         default:
-            state->registers[rd] = (int) result;
+            state->registers[rd] = (WORD) result;
     }
 
     if (sFlag) {
-        if (state->registers[rd] == 0) setFlag(Z, state);
+        if ((WORD) result == 0) setFlag(Z, state);
         else clearFlag(Z, state);
 
-        if (getBitsFromWord(rd, 31, 1)) setFlag(N, state);
+        if (getBitsFromWord((WORD) result, 31, 1)) setFlag(N, state);
         else clearFlag(N, state);
 
-        if (cFlag) setFlag(C, state);
+        if (aluCarry) setFlag(C, state);
         else clearFlag(C, state);
     }
 
@@ -433,7 +427,6 @@ DPOPERAND2 getOperandFromImmRotation(WORD operandBits, bool modifyCPSR, struct M
     WORD immValue = getBitsFromWord(operandBits, 7, 8);
     BYTE rotAmount = 2 * getBitsFromWord(operandBits, 11, 4);
     return shift(immValue, rotAmount, modifyCPSR, ROR, state);
-    // TODO: should the shifter carry bit of CPSR be set for the rotation?
 }
 WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, bool modifyCPSR, struct MachineState *state) {
     REGNUMBER rm = getBitsFromWord((WORD) operandBits, 3, 4);
