@@ -244,9 +244,7 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     state->hasInstrToExecute = false;
     state->hasInstrToDecode = false;
     // set PC to wherever the next instruction is
-    // TODO: ensure test if this works with negative offsets
     BRANCHOFFSET branchOffset = signExtend(offsetBits << 2u, 26);
-    if (debug) printf("  Offset Value: %i\n", branchOffset);
     if (debug) printf("  REG_PC incremented from 0x%08x to ", state->registers[REG_PC]);
     state->registers[REG_PC] += branchOffset;
     if (debug) printf("0x%08x\n", state->registers[REG_PC]);
@@ -314,40 +312,40 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
     }
 }
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
-    if (debug) printf("OpCode: %i  Rn $%i; Rd $%i; operand2Bits (0x%03x)\n", opCode, rn, rd, operand2Bits);
+    if (debug) printf("  Rn $%i; Rd $%i; operand2Bits (0x%03x); ", opCode, rn, rd, operand2Bits);
     DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, sFlag, state);
-    if (debug) printf("  operand2: 0x%08x\n", operand2);
+    if (debug) printf("operand2: 0x%08x\n", operand2);
 
     bool aluCarry = false;
 
     // perform calculation based on op-code
     uint64_t result;
     switch (opCode) {
-        case AND:
-        case TST:
+        case AND: if (debug) printf("  AND 0x%08x & 0x%08x\n", state->registers[rn], operand2);
+        case TST: if (debug) printf("  TST 0x%08x & 0x%08x\n", state->registers[rn], operand2);
             result = state->registers[rn] & operand2;
             break;
-        case EOR:
-        case TEQ:
+        case EOR: if (debug) printf("  EOR 0x%08x ^ 0x%08x\n", state->registers[rn], operand2);
+        case TEQ: if (debug) printf("  TEQ 0x%08x ^ 0x%08x\n", state->registers[rn], operand2);
             result = state->registers[rn] ^ operand2;
             break;
-        case SUB:
-        case CMP:
+        case SUB: if (debug) printf("  SUB 0x%08x - 0x%08x\n", state->registers[rn], operand2);
+        case CMP: if (debug) printf("  CMP 0x%08x - 0x%08x (%i)\n", state->registers[rn], operand2);
             result = state->registers[rn] - operand2;
             aluCarry = result <= state->registers[rn];
             break;
-        case RSB:
+        case RSB: if (debug) printf("  RSB 0x%08x - 0x%08x\n", operand2, state->registers[rn]);
             result = operand2 - state->registers[rn];
             aluCarry = result < operand2;
             break;
-        case ADD:
+        case ADD: if (debug) printf("  ADD 0x%08x + 0x%08x\n", state->registers[rn], operand2);
             result = state->registers[rn] + operand2;
             aluCarry = result >> 32u > 0;
             break;
-        case ORR:
+        case ORR: if (debug) printf("  ORR 0x%08x | 0x%08x\n", state->registers[rn], operand2);
             result = state->registers[rn] | operand2;
             break;
-        case MOV:
+        case MOV: if (debug) printf("  MOV 0x%08x = 0x%08x (%i)\n", state->registers[rn], operand2);
             result = operand2;
             break;
         default:
@@ -364,7 +362,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         default:
             state->registers[rd] = (WORD) result;
     }
-
+    if (debug) printf("  Result: 0x%08x (%i)\n", (WORD) result, (WORD) result);
     if (sFlag) {
         if ((WORD) result == 0) setFlag(Z, state);
         else clearFlag(Z, state);
@@ -374,6 +372,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
         if (aluCarry) setFlag(C, state);
         else clearFlag(C, state);
+        if (debug) printf("NZCV: %i%i%i%i\n", isSet(N, state), isSet(Z, state), isSet(C, state), isSet(V, state));
     }
 
 }
