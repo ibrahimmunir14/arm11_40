@@ -6,9 +6,8 @@
 
 // TODO: Clean-up so all code has consistent style
 // TODO: Organise everything into headers and c files
-// TODO: Fix segmentation faults
-
-bool debug = false;
+// TODO: Fix segmentation faults if there are any
+// TODO: Improve speed of program, see test case loop01
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -27,18 +26,6 @@ int main(int argc, char **argv) {
     fseek(fPointer, 0, SEEK_SET);
     for (int i = 0; i < size; i++) { state.memory[i] = (BYTE) getc(fPointer); }
 
-    // output memory contents after loading instructions (for testing)
-    if (debug) {
-        printf("Initial Memory Contents:\n");
-        for (int i = 0; i < MEM_SIZE; i += 4) {
-            WORD word = readFourBytes((ADDRESS) i, &state);
-            if (word != 0) {
-                printf("0x%08x: 0x%08x\n", i, word);
-            }
-        }
-        printf("\n");
-    }
-
     // main pipeline loop
     WORD instrToExecute = 0;
     WORD instrToDecode = 0;
@@ -48,7 +35,6 @@ int main(int argc, char **argv) {
         // execute instrToExecute
         if (state.hasInstrToExecute) {
             if (instrToExecute == 0) {
-                if (debug) printf("TERMINATE: All-0 Instruction\n\n");
                 break; // terminate on all-0 instruction
             } else {
                 executeInstruction(instrToExecute, &state);
@@ -60,17 +46,14 @@ int main(int argc, char **argv) {
         if (state.hasInstrToDecode) {
             state.hasInstrToExecute = true;
             instrToExecute = instrToDecode;
-            if (debug) printf("Decoded Instruction 0x%08x\n", instrToExecute);
         }
 
         // fetch next instruction and put it in instrToDecode
         instrToDecode = readWord((ADDRESS) state.registers[REG_PC], &state);
-        if (debug) printf("Fetched Instruction at 0x%08x : 0x%08x\n", state.registers[REG_PC], instrToDecode);
         state.hasInstrToDecode = true;
 
         // increment program counter
         incrementPC(&state);
-        if (debug) printf("Incremented PC to 0x%08x\n\n", state.registers[REG_PC]);
     }
 
     printResults(&state);
@@ -195,13 +178,11 @@ void executeInstruction(WORD instr, struct MachineState *state) {
         // calculate parameters and delegate to relevant function
         switch (getInstrType(instr)) {
             case instrBranch: {
-                if (debug) printf("Branch Operation: (0x%08x)\n", instr);
                 WORD offsetBits = getBitsFromWord(instr, 23, 24);
                 performBranch(offsetBits, state);
                 break;
             }
             case instrSDT: {
-                if (debug) printf("SDT Operation: (0x%08x)\n", instr);
                 enum SdtType sdtType = getSdtType(instr);
                 bool pFlag = getBitsFromWord(instr, 24, 1);
                 bool uFlag = getBitsFromWord(instr, 23, 1);
@@ -213,7 +194,6 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             }
             case instrMultiply: {
-                if (debug) printf("Multiply Operation: (0x%08x)\n", instr);
                 bool aFlag = getBitsFromWord(instr, 21, 1);
                 bool sFlag = getBitsFromWord(instr, 20, 1);
                 REGNUMBER rd = getBitsFromWord(instr, 19, 4);
@@ -224,7 +204,6 @@ void executeInstruction(WORD instr, struct MachineState *state) {
                 break;
             }
             case instrDataProcessing: {
-                if (debug) printf("DataProcessing Operation: (0x%08x)\n", instr);
                 enum DataProcType dataProcType = getDataProcType(instr);
                 enum OpCode opCode = getOpCode(instr);
                 bool sFlag = getBitsFromWord(instr, 20, 1);
@@ -245,13 +224,9 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     state->hasInstrToDecode = false;
     // set PC to wherever the next instruction is
     BRANCHOFFSET branchOffset = signExtend(offsetBits << 2u, 26);
-    if (debug) printf("  REG_PC incremented from 0x%08x to ", state->registers[REG_PC]);
     state->registers[REG_PC] += branchOffset;
-    if (debug) printf("0x%08x\n", state->registers[REG_PC]);
 }
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
-    if (debug) printf("  Rn $%i; Rd $%i; Offset (0x%03x); \n", rn, rd, offsetBits);
-
     // read address reference from source/dest register and calculate offset value
     REGISTER memAddress = state->registers[rn];
     SDTOFFSET offsetValue = getSDTOffset(sdtType, offsetBits, state);
@@ -264,12 +239,8 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
             return;
         }
         if (ldstFlag) { // load word from memory
-            if (debug) printf("  Load (pre-index) from memory[0x%04x + 0x%04x = 0x%04x] to register[$%i]\n",
-                              memAddress, offsetValue, (ADDRESS) memAddress + offsetValue, rd);
             state->registers[rd] = readWord((ADDRESS) memAddress + offsetValue, state);
         } else { // store word in memory
-            if (debug) printf("  Store (pre-index) from register[$%i] to memory[0x%04x + 0x%04x = 0x%04x]\n",
-                              rd, memAddress, offsetValue, memAddress + offsetValue);
             writeWord((WORD) state->registers[rd], (ADDRESS) memAddress + offsetValue, state);
         }
     } else { // transfer data then update base register
@@ -278,20 +249,15 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
             return;
         }
         if (ldstFlag) { // load word from memory
-            if (debug) printf("  Load (post-index) from memory[0x%04x] to register[$%i]\n", memAddress, rd);
             state->registers[rd] = readWord((ADDRESS) memAddress, state);
         } else { // store word in memory
-            if (debug) printf("  Store (post-index) from register[$%i] to memory[0x%04x]\n", rd, memAddress);
             writeWord((WORD) state->registers[rd], (ADDRESS) memAddress, state);
         }
         // apply offset to source/des register contents
-        if (debug) printf("  Incremented register[$%i] by offsetValue (0x%04x)", rn, offsetValue);
         state->registers[rn] += offsetValue;
     }
 }
 void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMBER rs, REGNUMBER rm, struct MachineState *state) {
-    if (debug) printf("  Rn $%i; Rd $%i; Rs $%i; Rm $%i\n", rn, rd, rs, rm);
-    if (debug) printf("  accumulate: %i;  statusupdate: %i\n", aFlag, sFlag);
     // perform calculate, take result as last 32 bits, put result in dest register
     // aFlag bit determines whether to multiply or multiply and accumulate
     WORD result;
@@ -312,40 +278,38 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
     }
 }
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
-    if (debug) printf("  Rn $%i; Rd $%i; operand2Bits (0x%03x); ", opCode, rn, rd, operand2Bits);
     DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, sFlag, state);
-    if (debug) printf("operand2: 0x%08x\n", operand2);
 
     bool aluCarry = false;
 
     // perform calculation based on op-code
     uint64_t result;
     switch (opCode) {
-        case AND: if (debug) printf("  AND 0x%08x & 0x%08x\n", state->registers[rn], operand2);
-        case TST: if (debug) printf("  TST 0x%08x & 0x%08x\n", state->registers[rn], operand2);
+        case AND:
+        case TST:
             result = state->registers[rn] & operand2;
             break;
-        case EOR: if (debug) printf("  EOR 0x%08x ^ 0x%08x\n", state->registers[rn], operand2);
-        case TEQ: if (debug) printf("  TEQ 0x%08x ^ 0x%08x\n", state->registers[rn], operand2);
+        case EOR:
+        case TEQ:
             result = state->registers[rn] ^ operand2;
             break;
-        case SUB: if (debug) printf("  SUB 0x%08x - 0x%08x\n", state->registers[rn], operand2);
-        case CMP: if (debug) printf("  CMP 0x%08x - 0x%08x (%i)\n", state->registers[rn], operand2);
+        case SUB:
+        case CMP:
             result = state->registers[rn] - operand2;
             aluCarry = result <= state->registers[rn];
             break;
-        case RSB: if (debug) printf("  RSB 0x%08x - 0x%08x\n", operand2, state->registers[rn]);
+        case RSB:
             result = operand2 - state->registers[rn];
             aluCarry = result < operand2;
             break;
-        case ADD: if (debug) printf("  ADD 0x%08x + 0x%08x\n", state->registers[rn], operand2);
+        case ADD:
             result = state->registers[rn] + operand2;
             aluCarry = result >> 32u > 0;
             break;
-        case ORR: if (debug) printf("  ORR 0x%08x | 0x%08x\n", state->registers[rn], operand2);
+        case ORR:
             result = state->registers[rn] | operand2;
             break;
-        case MOV: if (debug) printf("  MOV 0x%08x = 0x%08x (%i)\n", state->registers[rn], operand2);
+        case MOV:
             result = operand2;
             break;
         default:
@@ -362,7 +326,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         default:
             state->registers[rd] = (WORD) result;
     }
-    if (debug) printf("  Result: 0x%08x (%i)\n", (WORD) result, (WORD) result);
+
     if (sFlag) {
         if ((WORD) result == 0) setFlag(Z, state);
         else clearFlag(Z, state);
@@ -372,7 +336,6 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
         if (aluCarry) setFlag(C, state);
         else clearFlag(C, state);
-        if (debug) printf("NZCV: %i%i%i%i\n", isSet(N, state), isSet(Z, state), isSet(C, state), isSet(V, state));
     }
 
 }
