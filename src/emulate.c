@@ -4,8 +4,6 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: Clean-up so all code has consistent style
-// TODO: Organise everything into headers and c files
 // TODO: Fix segmentation faults if there are any
 // TODO: Improve speed of program, see test case loop01
 
@@ -79,9 +77,14 @@ int main(int argc, char **argv) {
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
     bool carryOutBit = 0;
     WORD result;
+
+    if (shiftAmount <= 0) {
+      return val;
+    }
+
     switch (shiftType) {
         case LSL: // logical shift left
-            carryOutBit = getBitsFromWord(val, 32-shiftAmount, 1); // least sig discarded bit
+            carryOutBit = getBitsFromWord(val, 32 - shiftAmount, 1); // least sig discarded bit
             result = val << shiftAmount;
             break;
         case LSR: // logical shift right
