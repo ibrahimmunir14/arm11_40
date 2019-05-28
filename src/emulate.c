@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < NUM_REG; i++) {
       state.registers[i] = 0;
     }
+
     // initialize memory to 0s
     for (int i = 0; i < MEM_SIZE; i++) {
       state.memory[i] = 0;

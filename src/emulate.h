@@ -1,14 +1,11 @@
 #ifndef ARM11_40_EMULATE_H
 #define ARM11_40_EMULATE_H
 
-#endif //ARM11_40_EMULATE_H
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
 #include <stdbool.h>
-#include "binaryOps.c"
+#include "binaryOps.h"
 
 // define types to aid readability
 typedef uint8_t REGNUMBER;  // register numbers are 4 bits, unsigned because register numbers positive
@@ -99,3 +96,5 @@ DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, bool
 DPOPERAND2 getOperandFromImmRotation(WORD operandBits, bool modifyCPSR, struct MachineState *state);
 // get operand from shifted register data processing instruction
 WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, bool modifyCPSR, struct MachineState *state);
+
+#endif //ARM11_40_EMULATE_H

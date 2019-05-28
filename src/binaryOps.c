@@ -1,7 +1,8 @@
+#include <math.h>
+#include <stdbool.h>
 #include "binaryOps.h"
 
-// return value representing numBits 1s in a row
-static inline WORD fullBits(BYTE numBits) {
+WORD fullBits(BYTE numBits) {
   return (WORD) pow(2, numBits) - 1;
 }
 
