@@ -10,19 +10,33 @@ all: assemble emulate
 
 assemble: assemble.o
 
-emulate: emulate.o binaryOps.o binaryFileLoader.o
-	$(CC) emulate.o binaryOps.o binaryFileLoader.o -o emulate $(LDLIBS)
+emulate: emulate.o binaryOps.o binaryFileLoader.o instructionExecution.o instructionDecoding.o statusFlags.o memAccess.o
+	$(CC) emulate.o binaryOps.o binaryFileLoader.o instructionExecution.o instructionDecoding.o statusFlags.o memAccess.o -o emulate $(LDLIBS)
 
-emulate.o: emulate.h emulate.c binaryOps.h binaryFileLoader.h
+emulate.o: emulate.c emulate.h binaryOps.h binaryFileLoader.h machine.h instructionExecution.h
 	$(CC) $(CFLAGS) emulate.c -c -o emulate.o
 
-binaryOps.o: binaryOps.h binaryOps.c
+binaryOps.o: binaryOps.c binaryOps.h 
 	$(CC) $(CFLAGS) binaryOps.c -c -o binaryOps.o
+
+binaryFileLoader.o: binaryFileLoader.c binaryFileLoader.h binaryTypes.h
+	$(CC) $(CFLAGS) binaryFileLoader.c -c -o binaryFileLoader.o
+
+instructionDecoding.o: instructionDecoding.c instructionDecoding.h binaryOps.h machine.h statusFlags.h
+	$(CC) $(CFLAGS) instructionDecoding.c -c -o instructionDecoding.o
+
+instructionExecution.o: instructionExecution.c instructionExecution.h machine.h instructionDecoding.h statusFlags.h binaryOps.h memAccess.h 
+	$(CC) $(CFLAGS) instructionExecution.c -c -o instructionExecution.o
+
+statusFlags.o: statusFlags.c statusFlags.h machine.h binaryOps.h 
+	$(CC) $(CFLAGS) statusFlags.c -c -o statusFlags.o
+
+memAccess.o: memAccess.c machine.h
+	$(CC) $(CFLAGS) memAccess.c -c -o memAccess.o
 
 binaryOps.h: binaryTypes.h
 
-binaryFileLoader.o: binaryFileLoader.h binaryTypes.h binaryFileLoader.c
-	$(CC) $(CFLAGS) binaryFileLoader.c -c -o binaryFileLoader.o
+machine.h: binaryTypes.h
 
 clean:
 	rm -f $(wildcard *.o)
