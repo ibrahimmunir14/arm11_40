@@ -1,10 +1,9 @@
-  #include "emulate.h"
+#include "emulate.h"
 
 // NOTE: Words in memory are stored Big-Endian; Words in registers are stored Big-Endian
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: Fix segmentation faults if there are any
 // TODO: Improve speed of program, see test case loop01
 
 int main(int argc, char **argv) {
@@ -13,48 +12,24 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
+    struct MachineState state = {{0}, {0}, false, false};
 
-    struct MachineState state;
-
-    // initialize registers to 0s
-    for (int i = 0; i < NUM_REG; i++) {
-      state.registers[i] = 0;
-    }
-
-    // initialize memory to 0s
-    for (int i = 0; i < MEM_SIZE; i++) {
-      state.memory[i] = 0;
-    }
-
-
+    // import file into memory
     char *fileName = argv[1];
-
-    // find number of words
-    FILE *fPointer = fopen(fileName, "rb");
-    fseek(fPointer, 0, SEEK_END);
-    int size = (int) ftell(fPointer);
-    fseek(fPointer, 0, SEEK_SET);
-
-    // set up memory array with instructions/data
-    for (int i = 0; i < size; i++) {
-      state.memory[i] = (BYTE) getc(fPointer);
-    }
+    importFile(fileName, state.memory);
 
     /* Main Pipeline Loop */
     // initialize pipeline
     WORD instrToExecute = 0;
     WORD instrToDecode = 0;
-    state.hasInstrToDecode = false;
-    state.hasInstrToExecute = false;
 
     while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
         if (state.hasInstrToExecute) {
             if (instrToExecute == 0) {
                 break; // terminate on all-0 instruction
-            } else {
-                executeInstruction(instrToExecute, &state);
             }
+            executeInstruction(instrToExecute, &state);
         }
 
         // decode instrToDecode and put it in instrToExecute
@@ -121,10 +96,12 @@ WORD readFourBytes(ADDRESS startAddress, struct MachineState *state) {
     return (WORD) state->memory[startAddress] << 24u  | (WORD) state->memory[startAddress+1] << 16u
            | (WORD) state->memory[startAddress+2] << 8u | (WORD) state->memory[startAddress+3];
 }
+
 WORD readWord(ADDRESS startAddress, struct MachineState *state) {
     return (WORD) state->memory[startAddress+3] << 24u | (WORD) state->memory[startAddress+2] << 16u
            | (WORD) state->memory[startAddress+1] << 8u | (WORD) state->memory[startAddress];
 }
+
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
     state->memory[startAddress] = (BYTE) word;
     state->memory[startAddress+1] = (BYTE) (word >> 8u);
@@ -136,6 +113,7 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
 void incrementPC(struct MachineState *state) {
     state->registers[REG_PC] += 4;
 }
+
 void printResults(struct MachineState *state) {
     printf("Registers:\n");
     // print contents of general registers R0-R12

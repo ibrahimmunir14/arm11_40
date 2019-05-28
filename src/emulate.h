@@ -2,10 +2,10 @@
 #define ARM11_40_EMULATE_H
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "binaryOps.h"
+#include "binaryFileLoader.h"
 
 // define types to aid readability
 typedef uint8_t REGNUMBER;  // register numbers are 4 bits, unsigned because register numbers positive
