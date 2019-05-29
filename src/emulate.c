@@ -12,36 +12,32 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    struct MachineState state = {{0}, {0}, false, false};
+    struct MachineState state = {{0}, {0}, 0, 0};
 
     // import file into memory
     char *fileName = argv[1];
     importFile(fileName, state.memory);
 
     /* Main Pipeline Loop */
-    // initialize pipeline
-    WORD instrToExecute = 0;
-    WORD instrToDecode = 0;
+    // fill pipeline initially
+    state.instrToExecute = state.registers[REG_PC];
+    incrementPC(&state);
+    state.instrToDecode = state.registers[REG_PC];
+    incrementPC(&state);
 
     while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
-        if (state.hasInstrToExecute) {
-            if (instrToExecute == 0) {
-                break; // terminate on all-0 instruction
-            }
-            executeInstruction(instrToExecute, &state);
+        if (state.instrToExecute == 0) {
+            break; // terminate on all-0 instruction
         }
+        executeInstruction(state.instrToExecute, &state);
 
         // decode instrToDecode and put it in instrToExecute
         // note: decoding is actually done during execution
-        if (state.hasInstrToDecode) {
-            state.hasInstrToExecute = true;
-            instrToExecute = instrToDecode;
-        }
+        state.instrToExecute = state.instrToDecode;
 
         // fetch next instruction and put it in instrToDecode
-        instrToDecode = readWord((ADDRESS) state.registers[REG_PC], &state);
-        state.hasInstrToDecode = true;
+        state.instrToDecode = readWord((ADDRESS) state.registers[REG_PC], &state);
 
         incrementPC(&state);
     }
@@ -205,12 +201,12 @@ void executeInstruction(WORD instr, struct MachineState *state) {
     }
 }
 void performBranch(WORD offsetBits, struct MachineState *state) {
-    // falsify hasInstr booleans
-    state->hasInstrToExecute = false;
-    state->hasInstrToDecode = false;
     // set PC to wherever the next instruction is
     BRANCHOFFSET branchOffset = signExtend(offsetBits << 2u, 26);
     state->registers[REG_PC] += branchOffset;
+    // reload pipeline for next cycle
+    state->instrToDecode = state->registers[REG_PC];
+    incrementPC(state);
 }
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     // read address reference from source/dest register and calculate offset value

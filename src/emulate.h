@@ -23,8 +23,8 @@ typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 struct MachineState {
     REGISTER registers[NUM_REG]; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
     BYTE memory[MEM_SIZE];       // 64kb memory capacity, 1 word is 4 bytes
-    bool hasInstrToExecute;
-    bool hasInstrToDecode;
+    WORD instrToExecute;
+    WORD instrToDecode;
 };
 
 // enums for common values/types
