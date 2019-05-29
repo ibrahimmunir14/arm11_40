@@ -8,7 +8,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdbool.h>
-#include "binaryTypes.h"
+#include <string.h>
+#include "binaryOps.h"
 
 // TODO these lines have already been defined in emulate
 typedef uint8_t REGNUMBER;
@@ -25,6 +26,9 @@ enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MO
 /* functions for IO */
 char** fileReader(char** lines);
 void binaryFileWriter(WORD* instructions);
+
+/* first pass */
+void buildSymbolTable(); // Need to feed in ADT here as a pointer
 
 /* functions for encoding instructions */
 
