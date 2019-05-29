@@ -36,12 +36,8 @@ enum InstrType {instrUnknown, instrDataProcessing, instrMultiply, instrSDT, inst
 enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
 enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 
-// extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
-WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
 // apply a shift on val specified by shift amount, optionally update status bits
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
-// sign extend val to 32 bits, given the original length of val
-WORD signExtend(WORD val, BYTE originalLength);
 
 /* functions related to memory access */
 // returns a word (4 bytes) directly from memory given the address of the first byte
