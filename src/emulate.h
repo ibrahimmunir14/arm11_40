@@ -50,6 +50,8 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 /* helper functions for main program */
 // increment program counter
 void incrementPC(struct MachineState *state);
+// read the next instruction from memory pointed to by PC register
+WORD readNextInstr(struct MachineState *state);
 // print current state of machine
 void printResults(struct MachineState *state);
 // check condition code

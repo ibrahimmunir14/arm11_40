@@ -20,9 +20,9 @@ int main(int argc, char **argv) {
 
     /* Main Pipeline Loop */
     // fill pipeline initially
-    state.instrToExecute = state.registers[REG_PC];
+    state.instrToExecute = readNextInstr(&state);
     incrementPC(&state);
-    state.instrToDecode = state.registers[REG_PC];
+    state.instrToDecode = readNextInstr(&state);
     incrementPC(&state);
 
     while (state.registers[REG_PC] < MEM_SIZE) {
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         state.instrToExecute = state.instrToDecode;
 
         // fetch next instruction and put it in instrToDecode
-        state.instrToDecode = readWord((ADDRESS) state.registers[REG_PC], &state);
+        state.instrToDecode = readNextInstr(&state);
 
         incrementPC(&state);
     }
@@ -106,6 +106,9 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
 /* helper functions for main program */
 void incrementPC(struct MachineState *state) {
     state->registers[REG_PC] += 4;
+}
+WORD readNextInstr(struct MachineState *state) {
+    return readWord((ADDRESS) state->registers[REG_PC], state);
 }
 void printResults(struct MachineState *state) {
     printf("Registers:\n");
@@ -205,7 +208,7 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     BRANCHOFFSET branchOffset = signExtend(offsetBits << 2u, 26);
     state->registers[REG_PC] += branchOffset;
     // reload pipeline for next cycle
-    state->instrToDecode = state->registers[REG_PC];
+    state->instrToDecode = readNextInstr(state);
     incrementPC(state);
 }
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
