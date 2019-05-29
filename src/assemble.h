@@ -1,7 +1,3 @@
-//
-// Created by Umer on 5/27/2019.
-//
-
 #ifndef ARM11_40_ASSEMBLE_H
 #define ARM11_40_ASSEMBLE_H
 
@@ -12,35 +8,48 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdbool.h>
+#include "binaryTypes.h"
 
+// TODO these lines have already been defined in emulate
+typedef uint8_t REGNUMBER;
+enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
+enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
 
 // TODO separate types into another file and include in both header files
 // TODO maybe create an extra address type for "expressions" which maybe addresses
 // TODO build a symbol table abstract data type
 // TODO binary file writer
+// TODO create some sort of enum expression to fulfill all different types of expressions
+// TODO create a global array of lines inputted - write to the same array index for the integer instruction?
 
 /* functions for IO */
-char* tokenizer(char** lines);
-
+char** fileReader(char** lines);
+void binaryFileWriter(WORD* instructions);
 
 /* functions for encoding instructions */
 
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-int encodeInstruction();
+WORD encodeInstruction(char* line);
 /* each encode instruction returns a 32 bit integer instruction */
-int assembleBranch(enum CondCode condCode, int expression);
-int assembleSDT();
-int assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMER rs, REGNUMER rn, bool aFlag);
-int assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int operand2);
+WORD assembleBranch(enum CondCode condCode, char* target);
+WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address);
+WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
+WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
 /* special is for andeq and lsl, can be split into 2 different functions later */
 /* can call encodeDataProc from inside this instruction */
-int assembleSpecial(enum ExtendedOpCode opCode, REGNUMBER rn, int expression);
+WORD assembleSpecial(enum ExtendedOpCode opCode, REGNUMBER rn, char* expression);
 
 /* helper functions for encoding DataProc */
-int assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int operand2);
-int assembleMov(REGNUMBER rd, int operand2);
-int assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int operand2);
+WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value);
+WORD assembleMov(REGNUMBER rd, int value);
+WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value);
 
 /* helper functions for encodingBranch */
-BRANCHOFFSET calculateBranchOffset(int newAddress);
+BRANCHOFFSET calculateBranchOffset(char* target);
 BYTE calculateBranchCond(enum CondCode condCode);
+
+/* helper functions for parsing */
+
+/* this parses the different types of values that can be placed in operand2 and passes it to the above 3 helper functions */
+int parseOperand2(char* operand2);
+int parseExpression(char* expression);
