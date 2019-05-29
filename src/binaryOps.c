@@ -3,7 +3,7 @@
 #include "binaryOps.h"
 
 WORD fullBits(BYTE numBits) {
-  return (WORD) pow(2, numBits) - 1;
+  return (1 << (numBits)) - 1;
 }
 
 WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits) {
