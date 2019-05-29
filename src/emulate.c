@@ -1,4 +1,5 @@
 #include "emulate.h"
+#include <time.h>
 
 // NOTE: Words in memory are stored Big-Endian; Words in registers are stored Big-Endian
 //       Instructions in this code are Little-Endian
@@ -12,7 +13,15 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    struct MachineState state = {{0}, {0}, 0, 0};
+    //clock_t start = clock();
+    // initialise state
+    static struct MachineState state;
+    for (int i = 0; i < NUM_REG; i++) {
+        state.registers[i] = 0;
+    }
+    state.memory = (BYTE *) calloc(MEM_SIZE, sizeof(BYTE));
+    state.instrToExecute = 0;
+    state.instrToDecode = 0;
 
     // import file into memory
     char *fileName = argv[1];
@@ -43,6 +52,10 @@ int main(int argc, char **argv) {
     }
 
     printResults(&state);
+    free(state.memory);
+    //clock_t stop = clock();
+    //double elapsed = (double) (stop - start) / CLOCKS_PER_SEC;
+    //printf("\nTime elapsed: %.5f\n", elapsed);
     return EXIT_SUCCESS;
 }
 
