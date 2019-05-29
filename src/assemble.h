@@ -51,5 +51,5 @@ BYTE calculateBranchCond(enum CondCode condCode);
 /* helper functions for parsing */
 
 /* this parses the different types of values that can be placed in operand2 and passes it to the above 3 helper functions */
-int parseOperand2(char* operand2);
-int parseExpression(char* expression);
+int parseOperand2(char* operand2); // used by assemble dataproc and result passed to dataproc helpers
+int parseExpression(char* expression); // used by assembleSpecial and possibly by SDT + Branch
