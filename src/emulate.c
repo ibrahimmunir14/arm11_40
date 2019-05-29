@@ -276,6 +276,7 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state) {
     DPOPERAND2 operand2 = getDPOperand2(dataProcType, operand2Bits, sFlag, state);
     bool aluCarry = false;
+    bool isArithOp = false;
 
     // perform calculation based on op-code
     uint64_t result;
@@ -288,24 +289,27 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         case TEQ:
             result = state->registers[rn] ^ operand2;
             break;
-        case SUB:
-        case CMP:
-            result = state->registers[rn] - operand2;
-            aluCarry = result <= state->registers[rn];
-            break;
-        case RSB:
-            result = operand2 - state->registers[rn];
-            aluCarry = result < operand2;
-            break;
-        case ADD:
-            result = state->registers[rn] + operand2;
-            aluCarry = result >> 32u > 0;
-            break;
         case ORR:
             result = state->registers[rn] | operand2;
             break;
         case MOV:
             result = operand2;
+            break;
+        case SUB:
+        case CMP:
+            result = state->registers[rn] - operand2;
+            aluCarry = result <= state->registers[rn];
+            isArithOp = true;
+            break;
+        case RSB:
+            result = operand2 - state->registers[rn];
+            aluCarry = result < operand2;
+            isArithOp = true;
+            break;
+        case ADD:
+            result = state->registers[rn] + operand2;
+            aluCarry = result >> 32u > 0;
+            isArithOp = true;
             break;
         default:
             printf("Error: Unknown Operation Code: %i\n", opCode);
@@ -339,13 +343,14 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         }
 
         // set C flag to carry bit of arithmetic operation
-        if (aluCarry) {
-          setFlag(C, state);
-        } else {
-          clearFlag(C, state);
+        if (isArithOp) {
+            if (aluCarry) {
+                setFlag(C, state);
+            } else {
+                clearFlag(C, state);
+            }
         }
     }
-
 }
 
 /* helper functions for execution of instructions */
