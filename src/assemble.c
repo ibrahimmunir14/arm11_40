@@ -59,7 +59,7 @@ int parseExpression(char* expression) {
   return strtol(expression, NULL, 10);
 }
 
-WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
+WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *number) {
   WORD offset = 0;
   bool iFlag = false;
   bool pFlag = false;
@@ -73,6 +73,8 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
       if (value <= 0xFF) {
         return assembleMov(rd, value);
       }
+
+      *number = value;
 
       //add value as a word to end of assembled program
       //PC is base register

@@ -32,7 +32,7 @@ void buildSymbolTable(); // Need to feed in ADT here as a pointer
 WORD encodeInstruction(char* line);
 /* each encode instruction returns a 32 bit integer instruction */
 WORD assembleBranch(enum CondCode condCode, char* target);
-WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address);
+WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, int *number);
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
 /* special is for andeq and lsl, can be split into 2 different functions later */
