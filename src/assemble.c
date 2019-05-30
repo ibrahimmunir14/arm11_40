@@ -1,5 +1,6 @@
 #include "assemble.h"
 #include "fileIO.h"
+#include "hashmapAbstract.h"
 
 // TODO move this function into binary ops and maybe create a nibble type for value
 
@@ -17,17 +18,31 @@ int main(int argc, char **argv) {
         printf("[%s]\n", contents[i]);
     }
 
-    // instructions list has maximum length = size
+    // TODO: complete implementation of first pass - build symbol table
+    // set up head node
+    pair_t headPair = {"start", 0};
+    node_t headNode = {headPair, 0};
+    displayList(&headNode);
+    for (int i = 0; i < size; i++) {
+        char *line = contents[i];
+        ADDRESS currAddress = i * 4;
+        /* TODO: if line starts with label :
+         *              extract label as char*
+         *              add label, currAddress to hashMap
+         */
+    }
+
+    // TODO: test/check implementation of second pass - assembly phase
     WORD* instructions = calloc(size, sizeof(WORD));
-    // TODO: implement first pass - build symbol table
-    // TODO: implement second pass - assembly phase
+    for (int i = 0; i < size; i++) {
+        // TODO: encodeInstruction must be modified to carry the hashmap
+        instructions[i] = encodeInstruction(contents[i]);
+    }
 
     // write instructions to output file
     char *outFileName = argv[2];
     binaryFileWriter(outFileName, instructions);
     return EXIT_SUCCESS;
-  // TODO function to get the number of lines in the input file
-  // TODO how to store 17 registers with 4 bits, which register left out
 }
 
 
@@ -42,11 +57,11 @@ WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress
 BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
     // TODO: differentiate between label target and address target
     ADDRESS targetAddress;
-    /* if label target:
-     *      targetAddress = lookup label in table
-     * else:
-     *      targetAddress = atoi(target) (*4?)
-     * */
+    /* TODO: if label target:
+     *          targetAddress = lookup label in table
+     *       else:
+     *          targetAddress = atoi(target) (*4?)
+     */
     BRANCHOFFSET offset = targetAddress - currentAddress;
     return (offset >> 2);
     // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
