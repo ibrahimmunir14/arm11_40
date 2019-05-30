@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "binaryOps.h"
-#include "binaryFileLoader.h"
+#include "fileIO.h"
 #include "machineDataTypes.h"
 
 struct MachineState {

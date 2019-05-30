@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 
     // import file into memory
     char *fileName = argv[1];
-    if (!importFile(fileName, state.memory)) {
+    if (!importBinaryFile(fileName, state.memory)) {
         perror("Error: could not open file.");
         return EXIT_FAILURE;
     }
