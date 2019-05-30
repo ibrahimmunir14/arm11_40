@@ -11,7 +11,7 @@ WORD signExtend(WORD val, BYTE originalLength) {
 }
 
 WORD appendBits(int numOfBits, WORD bitString, int addition) {
-  return (bitString << numOfBits) & GETBITS(addition, numOfBits - 1, numOfBits);
+  return (bitString << numOfBits) | GETBITS(addition, numOfBits - 1, numOfBits);
 }
 
 WORD appendNibble(WORD bitString, int addition) {
