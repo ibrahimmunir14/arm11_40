@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
     WORD instr = 0;
     instr = appendNibble(instr, (BYTE) condCode);
-    instr = appendNibble(instr, 0b1010);
+    instr = appendNibble(instr, 10); // 0b1010
     instr = appendNibble(instr, calculateBranchOffset(target, currentAddress));
     return instr;
 }
@@ -71,16 +71,16 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
-    WORD value = 0b11100000;
+    WORD value = 224; // 0b11100000
     if (aFlag) {
-        value = appendNibble(value, 0b0010);
+        value = appendNibble(value, 2); // 0b0010
     } else {
-        value = appendNibble(value, 0b0000);
+        value = appendNibble(value, 0); // 0b0000
     }
     value = appendNibble(value, rd);
     value = appendNibble(value, rn);
     value = appendNibble(value, rs);
-    value = appendNibble(value, 0b1001);
+    value = appendNibble(value, 9); // 0b1001
     value = appendNibble(value, rm);
     return value;
 }
