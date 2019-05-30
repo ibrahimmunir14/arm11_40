@@ -2,13 +2,71 @@
 #include "fileIO.h"
 #include <regex.h>
 #include <ctype.h>
+#include "hashmapAbstract.h"
 
 // TODO move this function into binary ops and maybe create a nibble type for value
 
 int main(int argc, char **argv) {
-  return EXIT_SUCCESS;
-  // TODO function to get the number of lines in the input file
-  // TODO how to store 17 registers with 4 bits, which register left out
+    // ensure we have two argument, the filenames
+    if (argc != 3) {
+        return EXIT_FAILURE;
+    }
+    // import file into contents**, each line has a \n
+    int size;
+    char *inFileName = argv[1];
+    char **contents = importAsciiFile(inFileName, &size);
+    // print contents, for debugging purposes
+    for (int i = 0; i < size; i++) {
+        printf("[%s]\n", contents[i]);
+    }
+
+    // TODO: complete implementation of first pass - build symbol table
+    // set up head node
+    pair_t headPair = {"start", 0};
+    node_t headNode = {headPair, 0};
+    displayList(&headNode);
+    for (int i = 0; i < size; i++) {
+        char *line = contents[i];
+        ADDRESS currAddress = i * 4;
+        /* TODO: if line starts with label :
+         *              extract label as char*
+         *              add label, currAddress to hashMap
+         */
+    }
+
+    // TODO: test/check implementation of second pass - assembly phase
+    WORD* instructions = calloc(size, sizeof(WORD));
+    for (int i = 0; i < size; i++) {
+        // TODO: encodeInstruction must be modified to carry the hashmap
+        instructions[i] = encodeInstruction(contents[i]);
+    }
+
+    // write instructions to output file
+    char *outFileName = argv[2];
+    binaryFileWriter(outFileName, instructions);
+    return EXIT_SUCCESS;
+}
+
+
+WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
+    WORD instr = 0;
+    instr = appendNibble(instr, (BYTE) condCode);
+    instr = appendNibble(instr, 10); // 0b1010
+    instr = appendNibble(instr, calculateBranchOffset(target, currentAddress));
+    return instr;
+}
+
+BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
+    // TODO: differentiate between label target and address target
+    ADDRESS targetAddress;
+    /* TODO: if label target:
+     *          targetAddress = lookup label in table
+     *       else:
+     *          targetAddress = atoi(target) (*4?)
+     */
+    BRANCHOFFSET offset = targetAddress - currentAddress;
+    return (offset >> 2);
+    // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
 }
 
 int match(const char *string, const char *pattern)
@@ -23,17 +81,17 @@ int match(const char *string, const char *pattern)
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
-    WORD value = 11100000;
+    WORD value = 224; // 0b11100000
     if (aFlag) {
-        appendNibble(value, 0010);
+        value = appendNibble(value, 2); // 0b0010
     } else {
-        appendNibble(value, 0000);
+        value = appendNibble(value, 0); // 0b0000
     }
-    appendNibble(value, rd);
-    appendNibble(value, rn);
-    appendNibble(value, rs);
-    appendNibble(value, 1001);
-    appendNibble(value, rm);
+    value = appendNibble(value, rd);
+    value = appendNibble(value, rn);
+    value = appendNibble(value, rs);
+    value = appendNibble(value, 9); // 0b1001
+    value = appendNibble(value, rm);
     return value;
 }
 
