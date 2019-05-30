@@ -38,7 +38,7 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
 int parseExpression(char* expression) {
   int length = strlen(expression);
   if (length > 2 && expression[0] == '0' && expression[1] == 'x') {
-    return strtol(expression[2], NULL, 16);
+    return strtol(&expression[2], NULL, 16);
   }
 
   return strtol(expression, NULL, 10);
@@ -53,7 +53,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
 
   if (lFlag) { //ldr
     if (address[0] == '=') {
-      int value = parseExpression(address[1]);
+      int value = parseExpression(&address[1]);
 
       if (value <= 0xFF) {
         return assembleMov(rd, value);
@@ -68,17 +68,18 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
 
   }
 
-  char instructionString[12];
-  sprintf(instructionString, "111001%d%d%d00%d", iFlag, pFlag, uFlag, lFlag);
+  char instructionString[12] = "111001";
   WORD instruction = strtol(instructionString, NULL, 2);
-  instruction <<= 4;
-  instruction &= GETBITS(rn, 3, 4);
 
-  instruction <<= 4;
-  instruction &= GETBITS(rd, 3, 4);
+  instruction = appendBits(1, instruction, iFlag);
+  instruction = appendBits(1, instruction, pFlag);
+  instruction = appendBits(1, instruction, uFlag);
+  instruction <<= 2;
 
-  instruction <<= 12;
-  instruction &= GETBITS(offset, 11, 12);
+  instruction = appendBits(1, instruction, lFlag);
+  instruction = appendBits(4, instruction, rn);
+  instruction = appendBits(4, instruction, rd);
+  instruction = appendBits(12, instruction, offset);
 
   return instruction;
 }
