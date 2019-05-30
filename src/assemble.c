@@ -101,5 +101,3 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
 
   return instruction;
 }
-
-WORD assembleMov(REGNUMBER rd, int value){}
