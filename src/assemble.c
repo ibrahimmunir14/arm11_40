@@ -2,7 +2,6 @@
 
 WORD setBitsInWord(WORD word, BYTE startBitNo, BYTE numBits, BYTE value);
 // TODO move this function into binary ops and maybe create a nibble type for value
->>>>>>> 171afaf95b1bcb881eb7beb0abdec323131b74c3
 
 int main(int argc, char **argv) {
   return EXIT_SUCCESS;

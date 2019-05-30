@@ -1,10 +1,12 @@
 #include "emulate.h"
+//#include <time.h>
 
 // NOTE: Words in memory are stored Big-Endian; Words in registers are stored Big-Endian
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: Improve speed of program, see test case loop01
+/* TODO: clarify how and when to use certain types: use int or uint for positive values? use BYTE or int?\
+         being specific vs readability vs correctness */
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
@@ -12,18 +14,31 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    struct MachineState state = {{0}, {0}, 0, 0};
+    //clock_t start = clock();
+    // initialise state, registers and memory
+    static struct MachineState state;
+    state.instrToExecute = 0;
+    state.instrToDecode = 0;
+    state.registers = (REGISTER *) calloc(NUM_REG, sizeof(REGISTER));
+    state.memory = (BYTE *) calloc(MEM_SIZE, sizeof(BYTE));
+    if (state.registers == NULL || state.memory == NULL) {
+        perror("Error: calloc failed during initialisation of machine state.");
+        return EXIT_FAILURE;
+    }
 
     // import file into memory
     char *fileName = argv[1];
-    importFile(fileName, state.memory);
+    if (!importFile(fileName, state.memory)) {
+        perror("Error: could not open file.");
+        return EXIT_FAILURE;
+    }
 
     /* Main Pipeline Loop */
     // fill pipeline initially
     state.instrToExecute = readNextInstr(&state);
-    incrementPC(&state);
+    state.registers[REG_PC] += 4;
     state.instrToDecode = readNextInstr(&state);
-    incrementPC(&state);
+    state.registers[REG_PC] += 4;
 
     while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
@@ -39,10 +54,16 @@ int main(int argc, char **argv) {
         // fetch next instruction and put it in instrToDecode
         state.instrToDecode = readNextInstr(&state);
 
-        incrementPC(&state);
+        // increment PC
+        state.registers[REG_PC] += 4;
     }
 
     printResults(&state);
+    free(state.memory);
+    free(state.registers);
+//    clock_t stop = clock();
+//    double elapsed = (double) (stop - start) / CLOCKS_PER_SEC;
+//    printf("\nTime elapsed: %.5f\n", elapsed);
     return EXIT_SUCCESS;
 }
 
@@ -56,19 +77,19 @@ WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType
 
     switch (shiftType) {
         case LSL: // logical shift left
-            carryOutBit = getBitsFromWord(val, 32 - shiftAmount, 1); // least sig discarded bit
+            carryOutBit = GETBITS(val, 32 - shiftAmount, 1); // least sig discarded bit
             result = val << shiftAmount;
             break;
         case LSR: // logical shift right
-            carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
+            carryOutBit = GETBITS(val, shiftAmount - 1, 1); // most sig discarded bit
             result = val >> shiftAmount;
             break;
         case ASR: // arithmetic shift right
-            carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
+            carryOutBit = GETBITS(val, shiftAmount - 1, 1); // most sig discarded bit
             result = signExtend(val >> shiftAmount, 32u - shiftAmount);
             break;
         case ROR: // rotate right
-            carryOutBit = getBitsFromWord(val, shiftAmount - 1, 1); // most sig discarded bit
+            carryOutBit = GETBITS(val, shiftAmount - 1, 1); // most sig discarded bit
             result = val >> shiftAmount | val << (32u - shiftAmount);
             break;
         default:
@@ -104,9 +125,6 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
 }
 
 /* helper functions for main program */
-void incrementPC(struct MachineState *state) {
-    state->registers[REG_PC] += 4;
-}
 WORD readNextInstr(struct MachineState *state) {
     return readWord((ADDRESS) state->registers[REG_PC], state);
 }
@@ -145,7 +163,7 @@ bool checkCondition(enum CondCode condCode, struct MachineState *state) {
 
 /* helper functions related to CPSR status bits */
 bool isSet(enum StatusFlag flag, struct MachineState *state) {
-    return (getBitsFromWord(state->registers[REG_CPSR], 31, 4) & (BYTE) flag) == flag;
+    return (GETBITS(state->registers[REG_CPSR], 31, 4) & (BYTE) flag) == flag;
 }
 void setFlag(enum StatusFlag flag, struct MachineState *state) {
     state->registers[REG_CPSR] = state->registers[REG_CPSR] | (WORD) ((BYTE) flag << 28u);
@@ -157,43 +175,43 @@ void clearFlag(enum StatusFlag flag, struct MachineState *state) {
 /* functions for execution of instructions */
 void executeInstruction(WORD instr, struct MachineState *state) {
     // check if instruction should be executed
-    bool doExecute = checkCondition((enum CondCode) getBitsFromWord(instr, 31, 4), state);
+    bool doExecute = checkCondition((enum CondCode) GETBITS(instr, 31, 4), state);
     if (doExecute) {
         // calculate parameters and delegate to relevant function
         switch (getInstrType(instr)) {
             case instrBranch: {
-                WORD offsetBits = getBitsFromWord(instr, 23, 24);
+                WORD offsetBits = GETBITS(instr, 23, 24);
                 performBranch(offsetBits, state);
                 break;
             }
             case instrSDT: {
                 enum SdtType sdtType = getSdtType(instr);
-                bool pFlag = getBitsFromWord(instr, 24, 1);
-                bool uFlag = getBitsFromWord(instr, 23, 1);
-                bool lFlag = getBitsFromWord(instr, 20, 1);
-                REGNUMBER rn = getBitsFromWord(instr, 19, 4);
-                REGNUMBER rd = getBitsFromWord(instr, 15, 4);
-                WORD offsetBits = getBitsFromWord(instr, 11, 12);
+                bool pFlag = GETBITS(instr, 24, 1);
+                bool uFlag = GETBITS(instr, 23, 1);
+                bool lFlag = GETBITS(instr, 20, 1);
+                REGNUMBER rn = GETBITS(instr, 19, 4);
+                REGNUMBER rd = GETBITS(instr, 15, 4);
+                WORD offsetBits = GETBITS(instr, 11, 12);
                 performSdt(sdtType, pFlag, uFlag, lFlag, rn, rd, offsetBits, state);
                 break;
             }
             case instrMultiply: {
-                bool aFlag = getBitsFromWord(instr, 21, 1);
-                bool sFlag = getBitsFromWord(instr, 20, 1);
-                REGNUMBER rd = getBitsFromWord(instr, 19, 4);
-                REGNUMBER rn = getBitsFromWord(instr, 15, 4);
-                REGNUMBER rs = getBitsFromWord(instr, 11, 4);
-                REGNUMBER rm = getBitsFromWord(instr, 3, 4);
+                bool aFlag = GETBITS(instr, 21, 1);
+                bool sFlag = GETBITS(instr, 20, 1);
+                REGNUMBER rd = GETBITS(instr, 19, 4);
+                REGNUMBER rn = GETBITS(instr, 15, 4);
+                REGNUMBER rs = GETBITS(instr, 11, 4);
+                REGNUMBER rm = GETBITS(instr, 3, 4);
                 performMultiply(aFlag, sFlag, rd, rn, rs, rm, state);
                 break;
             }
             case instrDataProcessing: {
                 enum DataProcType dataProcType = getDataProcType(instr);
                 enum OpCode opCode = getOpCode(instr);
-                bool sFlag = getBitsFromWord(instr, 20, 1);
-                REGNUMBER rn = getBitsFromWord(instr, 19, 4);
-                REGNUMBER rd = getBitsFromWord(instr, 15, 4);
-                WORD operand2Bits = getBitsFromWord(instr, 11, 12);
+                bool sFlag = GETBITS(instr, 20, 1);
+                REGNUMBER rn = GETBITS(instr, 19, 4);
+                REGNUMBER rd = GETBITS(instr, 15, 4);
+                WORD operand2Bits = GETBITS(instr, 11, 12);
                 performDataProc(dataProcType, opCode, sFlag, rn, rd, operand2Bits, state);
                 break;
             }
@@ -209,7 +227,7 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     state->registers[REG_PC] += branchOffset;
     // reload pipeline for next cycle
     state->instrToDecode = readNextInstr(state);
-    incrementPC(state);
+    state->registers[REG_PC] += 4;
 }
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     // read address reference from source/dest register and calculate offset value
@@ -221,7 +239,7 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
 
     if (pFlag) { // transfer data using address after offset
         // ensure address is in bounds
-        if (memAddress + offsetValue > fullBits(16)) {
+        if (memAddress + offsetValue > FULLBITS(16)) {
             printf("Error: Out of bounds memory access at address 0x%08x\n", memAddress + offsetValue);
             return;
         }
@@ -232,7 +250,7 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
         }
     } else { // transfer data then update base register
         // ensure address is in bounds
-        if (memAddress > fullBits(16)) {
+        if (memAddress > FULLBITS(16)) {
             printf("Error: Out of bounds memory access at address 0x%08x\n", memAddress);
             return;
         }
@@ -265,7 +283,7 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
         }
 
         // set the N flag to bit 31 of result
-        if (getBitsFromWord(result, 31, 1)) {
+        if (GETBITS(result, 31, 1)) {
           setFlag(N, state);
         } else {
           clearFlag(N, state);
@@ -335,7 +353,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
         }
 
         // set N flag to value of bit 31
-        if (getBitsFromWord((WORD) result, 31, 1)) {
+        if (GETBITS((WORD) result, 31, 1)) {
           setFlag(N, state);
         } else {
           clearFlag(N, state);
@@ -354,7 +372,7 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
 
 /* helper functions for execution of instructions */
 enum InstrType getInstrType(WORD instr) {
-    switch (getBitsFromWord(instr, 27, 2)) {
+    switch (GETBITS(instr, 27, 2)) {
         case 2: { // 10 in bits 27-26; branch
             return instrBranch;
         }
@@ -362,9 +380,9 @@ enum InstrType getInstrType(WORD instr) {
             return instrSDT;
         }
         case 0: { // 00 in bits 27-26
-            bool iFlag = (bool) getBitsFromWord(instr, 25, 1);
-            bool seventhBit = (bool) getBitsFromWord(instr, 7, 1);
-            bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
+            bool iFlag = (bool) GETBITS(instr, 25, 1);
+            bool seventhBit = (bool) GETBITS(instr, 7, 1);
+            bool fourthBit = (bool) GETBITS(instr, 4, 1);
             if (!iFlag && seventhBit && fourthBit) {
                 return instrMultiply;
             }
@@ -376,13 +394,13 @@ enum InstrType getInstrType(WORD instr) {
     }
 }
 enum DataProcType getDataProcType(WORD instr) {
-    bool iFlag = (bool) getBitsFromWord(instr, 25, 1);
+    bool iFlag = (bool) GETBITS(instr, 25, 1);
     // immediate value
     if (iFlag) {
       return dataProcOp2Imm;
     }
     // shifted register
-    bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
+    bool fourthBit = (bool) GETBITS(instr, 4, 1);
     if (fourthBit) {
       return dataProcOp2RegShiftReg;
     } else {
@@ -390,13 +408,13 @@ enum DataProcType getDataProcType(WORD instr) {
     }
 }
 enum SdtType getSdtType(WORD instr) {
-    bool iFlag = (bool) getBitsFromWord(instr, 25, 1);
+    bool iFlag = (bool) GETBITS(instr, 25, 1);
     // immediate value offset
     if (!iFlag) {
       return sdtOffsetImm;
     }
     // shifted register offset
-    bool fourthBit = (bool) getBitsFromWord(instr, 4, 1);
+    bool fourthBit = (bool) GETBITS(instr, 4, 1);
     if (fourthBit) {
       return sdtOffsetRegShiftReg;
     } else {
@@ -404,7 +422,7 @@ enum SdtType getSdtType(WORD instr) {
     }
 }
 enum OpCode getOpCode(WORD instr) {
-    return (enum OpCode) getBitsFromWord(instr, 24, 4);
+    return (enum OpCode) GETBITS(instr, 24, 4);
 }
 SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) {
     return (sdtType == sdtOffsetImm)
@@ -417,23 +435,23 @@ DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, bool
            : getOperandFromRegisterShift(operand2Bits, (dataProcType == dataProcOp2RegShiftReg), modifyCPSR, state); // shifted reg
 }
 DPOPERAND2 getOperandFromImmRotation(WORD operandBits, bool modifyCPSR, struct MachineState *state) {
-    WORD immValue = getBitsFromWord(operandBits, 7, 8);
-    BYTE rotAmount = 2 * getBitsFromWord(operandBits, 11, 4);
+    WORD immValue = GETBITS(operandBits, 7, 8);
+    BYTE rotAmount = 2 * GETBITS(operandBits, 11, 4);
     return shift(immValue, rotAmount, modifyCPSR, ROR, state);
 }
 WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, bool modifyCPSR, struct MachineState *state) {
-    REGNUMBER rm = getBitsFromWord((WORD) operandBits, 3, 4);
+    REGNUMBER rm = GETBITS((WORD) operandBits, 3, 4);
     REGISTER rmContents = state->registers[rm];
-    enum ShiftType shiftType = getBitsFromWord(operandBits, 6, 2);
+    enum ShiftType shiftType = GETBITS(operandBits, 6, 2);
 
     // calculate shift, specified by a 5-bit unsigned int
     BYTE shiftAmount;
     if (regShift) { // shift specified by register, bottom byte
-        REGNUMBER rs = getBitsFromWord(operandBits, 11, 4);
+        REGNUMBER rs = GETBITS(operandBits, 11, 4);
         REGISTER rsContents = state->registers[rs];
-        shiftAmount = rsContents & fullBits(8);
+        shiftAmount = rsContents & FULLBITS(8);
     } else { // shift by a constant amount
-        shiftAmount = getBitsFromWord(operandBits, 11, 5);
+        shiftAmount = GETBITS(operandBits, 11, 5);
     }
 
     return shift(rmContents, shiftAmount, modifyCPSR, shiftType, state);
