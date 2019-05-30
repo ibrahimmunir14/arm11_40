@@ -1,12 +1,14 @@
 #ifndef ARM11_40_SRC_BINARYOPS_H_
 #define ARM11_40_SRC_BINARYOPS_H_
 
+#include <math.h>
 #include "binaryTypes.h"
 
-// return value representing numBits 1s in a row
-WORD fullBits(BYTE numBits);
-// extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
-WORD getBitsFromWord(WORD word, BYTE startBitNo, BYTE numBits);
+// macro: value representing numBits 1s in a row
+#define FULLBITS(numBits) ((WORD) pow(2, numBits) - 1)
+// macro: extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
+#define GETBITS(word, startBitNo, numBits) (FULLBITS(numBits) & ((word) >> (BYTE) (1 + (startBitNo) - (numBits))))
+
 // sign extend val to 32 bits, given the original length of val
 WORD signExtend(WORD val, BYTE originalLength);
 
