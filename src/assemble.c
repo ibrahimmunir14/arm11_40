@@ -34,17 +34,17 @@ int main(int argc, char **argv) {
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
-    WORD value = 11100000;
+    WORD value = 0b11100000;
     if (aFlag) {
-        appendNibble(value, 0010);
+        value = appendNibble(value, 0b0010);
     } else {
-        appendNibble(value, 0000);
+        value = appendNibble(value, 0b0000);
     }
-    appendNibble(value, rd);
-    appendNibble(value, rn);
-    appendNibble(value, rs);
-    appendNibble(value, 1001);
-    appendNibble(value, rm);
+    value = appendNibble(value, rd);
+    value = appendNibble(value, rn);
+    value = appendNibble(value, rs);
+    value = appendNibble(value, 0b1001);
+    value = appendNibble(value, rm);
     return value;
 }
 
