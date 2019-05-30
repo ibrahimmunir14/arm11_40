@@ -21,7 +21,7 @@ typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 #define REG_CPSR 16
 
 struct MachineState {
-    REGISTER registers[NUM_REG]; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
+    REGISTER *registers; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
     BYTE *memory;       // 64kb memory capacity, 1 word is 4 bytes
     WORD instrToExecute;
     WORD instrToDecode;
@@ -48,8 +48,6 @@ WORD readWord(ADDRESS startAddress, struct MachineState *state);
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 
 /* helper functions for main program */
-// increment program counter
-void incrementPC(struct MachineState *state);
 // read the next instruction from memory pointed to by PC register
 WORD readNextInstr(struct MachineState *state);
 // print current state of machine

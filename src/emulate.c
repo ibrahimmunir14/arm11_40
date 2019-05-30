@@ -5,8 +5,6 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: Improve speed of program, see test case loop01
-
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
     if (argc != 2) {
@@ -14,14 +12,16 @@ int main(int argc, char **argv) {
     }
 
     //clock_t start = clock();
-    // initialise state
+    // initialise state, registers and memory
     static struct MachineState state;
-    for (int i = 0; i < NUM_REG; i++) {
-        state.registers[i] = 0;
-    }
-    state.memory = (BYTE *) calloc(MEM_SIZE, sizeof(BYTE));
     state.instrToExecute = 0;
     state.instrToDecode = 0;
+    state.registers = (REGISTER *) calloc(NUM_REG, sizeof(REGISTER));
+    state.memory = (BYTE *) calloc(MEM_SIZE, sizeof(BYTE));
+    if (state.registers == NULL || state.memory == NULL) {
+        perror("Error: calloc failed. ");
+        return EXIT_FAILURE;
+    }
 
     // import file into memory
     char *fileName = argv[1];
@@ -30,9 +30,9 @@ int main(int argc, char **argv) {
     /* Main Pipeline Loop */
     // fill pipeline initially
     state.instrToExecute = readNextInstr(&state);
-    incrementPC(&state);
+    state.registers[REG_PC] += 4;
     state.instrToDecode = readNextInstr(&state);
-    incrementPC(&state);
+    state.registers[REG_PC] += 4;
 
     while (state.registers[REG_PC] < MEM_SIZE) {
         // execute instrToExecute
@@ -48,14 +48,16 @@ int main(int argc, char **argv) {
         // fetch next instruction and put it in instrToDecode
         state.instrToDecode = readNextInstr(&state);
 
-        incrementPC(&state);
+        // increment PC
+        state.registers[REG_PC] += 4;
     }
 
     printResults(&state);
     free(state.memory);
-    //clock_t stop = clock();
-    //double elapsed = (double) (stop - start) / CLOCKS_PER_SEC;
-    //printf("\nTime elapsed: %.5f\n", elapsed);
+    free(state.registers);
+//    clock_t stop = clock();
+//    double elapsed = (double) (stop - start) / CLOCKS_PER_SEC;
+//    printf("\nTime elapsed: %.5f\n", elapsed);
     return EXIT_SUCCESS;
 }
 
@@ -117,9 +119,6 @@ void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state) {
 }
 
 /* helper functions for main program */
-void incrementPC(struct MachineState *state) {
-    state->registers[REG_PC] += 4;
-}
 WORD readNextInstr(struct MachineState *state) {
     return readWord((ADDRESS) state->registers[REG_PC], state);
 }
@@ -222,7 +221,7 @@ void performBranch(WORD offsetBits, struct MachineState *state) {
     state->registers[REG_PC] += branchOffset;
     // reload pipeline for next cycle
     state->instrToDecode = readNextInstr(state);
-    incrementPC(state);
+    state->registers[REG_PC] += 4;
 }
 void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, REGNUMBER rn, REGNUMBER rd, WORD offsetBits, struct MachineState *state) {
     // read address reference from source/dest register and calculate offset value
