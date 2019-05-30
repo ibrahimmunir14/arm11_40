@@ -1,6 +1,5 @@
 #include "assemble.h"
 
-WORD setBitsInWord(WORD word, BYTE startBitNo, BYTE numBits, BYTE value);
 // TODO move this function into binary ops and maybe create a nibble type for value
 
 int main(int argc, char **argv) {
@@ -29,25 +28,25 @@ void binaryFileWriter(WORD* instructions) {
 }
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
-    int aPos = 21;
-    int sPos = 20;
-    int rdPos = 19;
-    int rnPos = 15;
-    int rsPos = 11;
-    int rmPos = 3;
-    WORD value = 0;
-    value = setBitsInWord(value, 31, 8, 11100000);
-    if (aFlag) {
-        value = setBitsInWord(value, 23, 4, 0010);
-    } else {
-        value = setBitsInWord(value, 23, 4, 0000);
-    }
-    value = setBitsInWord(value, rdPos, 4, rd); // TODO could change to sizeof(nibble)
-    value = setBitsInWord(value, rnPos, 4, rn); // TODO do we want to feed in number format or binary format
-    value = setBitsInWord(value, rsPos, 4, rs);
-    value = setBitsInWord(value, rmPos, 4, rm);
+//    int aPos = 21;
+//    int sPos = 20;
+//    int rdPos = 19;
+//    int rnPos = 15;
+//    int rsPos = 11;
+//    int rmPos = 3;
+//    WORD value = 0;
+//    value = setBitsInWord(value, 31, 8, 11100000);
+//    if (aFlag) {
+//        value = setBitsInWord(value, 23, 4, 0010);
+//    } else {
+//        value = setBitsInWord(value, 23, 4, 0000);
+//    }
+//    value = setBitsInWord(value, rdPos, 4, rd); // TODO could change to sizeof(nibble)
+//    value = setBitsInWord(value, rnPos, 4, rn); // TODO do we want to feed in number format or binary format
+//    value = setBitsInWord(value, rsPos, 4, rs);
+//    value = setBitsInWord(value, rmPos, 4, rm);
 
-    return value;
+    return 0;
 }
 
 
@@ -88,13 +87,13 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
   sprintf(instructionString, "111001%d%d%d00%d", iFlag, pFlag, uFlag, lFlag);
   WORD instruction = strtol(instructionString, NULL, 2);
   instruction <<= 4;
-  instruction &= getBitsFromWord(rn, 3, 4);
+  instruction &= GETBITS(rn, 3, 4);
 
   instruction <<= 4;
-  instruction &= getBitsFromWord(rd, 3, 4);
+  instruction &= GETBITS(rd, 3, 4);
 
   instruction <<= 12;
-  instruction &= getBitsFromWord(offset, 11, 12);
+  instruction &= GETBITS(offset, 11, 12);
 
   return instruction;
 }

@@ -10,11 +10,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "binaryOps.h"
-
-// TODO these lines have already been defined in emulate
-typedef uint8_t REGNUMBER;
-enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
-enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
+#include "machineDataTypes.h"
 
 // TODO separate types into another file and include in both header files
 // TODO maybe create an extra address type for "expressions" which maybe addresses

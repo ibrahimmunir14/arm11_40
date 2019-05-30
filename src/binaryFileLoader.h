@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "binaryTypes.h"
+#include "machineDataTypes.h"
 
 // get number of lines in file
 int getFileSize(FILE *file);

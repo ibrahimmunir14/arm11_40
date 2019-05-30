@@ -2,7 +2,7 @@
 #define ARM11_40_SRC_BINARYOPS_H_
 
 #include <math.h>
-#include "binaryTypes.h"
+#include "machineDataTypes.h"
 
 // macro: value representing numBits 1s in a row
 #define FULLBITS(numBits) ((1 << (numBits)) - 1)
@@ -11,6 +11,8 @@
 
 // sign extend val to 32 bits, given the original length of val
 WORD signExtend(WORD val, BYTE originalLength);
+
+
 
 #endif //ARM11_40_SRC_BINARYOPS_H_
 

@@ -6,19 +6,7 @@
 #include <stdbool.h>
 #include "binaryOps.h"
 #include "binaryFileLoader.h"
-
-// define types to aid readability
-typedef uint8_t REGNUMBER;  // register numbers are 4 bits, unsigned because register numbers positive
-typedef int32_t SDTOFFSET;     // SDT offset: imm offset 12 bits; reg offset is 32 bits
-typedef uint32_t DPOPERAND2;     // imm operand2 8 bits; reg operand2 is 32 bits
-typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
-
-// define constants related to registers
-#define NUM_REG 17
-#define MEM_SIZE 65536
-#define NUM_GENERAL_REG 13
-#define REG_PC 15
-#define REG_CPSR 16
+#include "machineDataTypes.h";
 
 struct MachineState {
     REGISTER *registers; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
@@ -26,15 +14,6 @@ struct MachineState {
     WORD instrToExecute;
     WORD instrToDecode;
 };
-
-// enums for common values/types
-enum StatusFlag {V=1, C=2, Z=4, N=8};
-enum CondCode {EQ=0, NE=1, GE=10, LT=11, GT=12, LE=13, AL=14};
-enum OpCode {AND=0, EOR=1, SUB=2, RSB=3, ADD=4, TST=8, TEQ=9, CMP=10, ORR=12, MOV=13};
-enum ShiftType {LSL=0, LSR=1, ASR=2, ROR=3};
-enum InstrType {instrUnknown, instrDataProcessing, instrMultiply, instrSDT, instrBranch};
-enum DataProcType {dataProcOp2RegShiftConst, dataProcOp2RegShiftReg, dataProcOp2Imm};
-enum SdtType {sdtOffsetRegShiftConst, sdtOffsetRegShiftReg, sdtOffsetImm};
 
 // apply a shift on val specified by shift amount, optionally update status bits
 WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
