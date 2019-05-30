@@ -4,8 +4,6 @@
 #include <ctype.h>
 #include "hashmapAbstract.h"
 
-// TODO move this function into binary ops and maybe create a nibble type for value
-
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
     if (argc != 3) {
@@ -165,9 +163,9 @@ int findPos(char *string, char *strArray[], int arraySize) {
   return -1;
 }
 
-NIBBLE getRegNum(char *regString, char *restOfOperand) {
+BYTE getRegNum(char *regString, char *restOfOperand) {
   trimWhiteSpace(regString);
-  return strtol(&regString[1], &restOfOperand, 10);
+  return strtol(&regString[1], &restOfOperand, 10) & FULLBITS(4);
 }
 
 int parseOperand2(char* operand2) {
@@ -180,13 +178,13 @@ int parseOperand2(char* operand2) {
       WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
 
       if (rotated < (1 << 8)) {
-        return appendBits(8, (NIBBLE) rotation, (BYTE) rotated);
+        return appendBits(8, rotation & FULLBITS(4), (BYTE) rotated);
       }
     }
 
   } else if (match(operand2, shiftedRegister)) {
     char *restOfOperand;
-    NIBBLE rm = getRegNum(operand2, restOfOperand);
+    BYTE rm = getRegNum(operand2, restOfOperand);
 
     if (*restOfOperand == '\0') {
       return rm;
