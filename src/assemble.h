@@ -19,10 +19,6 @@
 // TODO create some sort of enum expression to fulfill all different types of expressions
 // TODO create a global array of lines inputted - write to the same array index for the integer instruction?
 
-/* functions for IO */
-char** fileReader(char** lines);
-void binaryFileWriter(WORD* instructions);
-
 /* first pass */
 void buildSymbolTable(); // Need to feed in ADT here as a pointer
 
