@@ -27,6 +27,10 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     return value;
 }
 
+WORD assembleMov(REGNUMBER rd, int value) {
+    return 0;
+}
+
 
 int parseExpression(char* expression) {
   int length = strlen(expression);
