@@ -5,7 +5,6 @@
 int main(int argc, char **argv) {
   return EXIT_SUCCESS;
   // TODO function to get the number of lines in the input file
-  // TODO need a set bits in word in binary ops
   // TODO how to store 17 registers with 4 bits, which register left out
 }
 
@@ -28,6 +27,14 @@ void binaryFileWriter(WORD* instructions) {
 }
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
+    // append 11100000
+    // append 0010 or 0000
+    // append rd
+    // append rn
+    // append rs
+    // append 1001
+    // append rm
+
 //    int aPos = 21;
 //    int sPos = 20;
 //    int rdPos = 19;

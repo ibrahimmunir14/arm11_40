@@ -12,12 +12,8 @@
 #include "binaryOps.h"
 #include "machineDataTypes.h"
 
-// TODO separate types into another file and include in both header files
-// TODO maybe create an extra address type for "expressions" which maybe addresses
-// TODO build a symbol table abstract data type
-// TODO binary file writer
 // TODO create some sort of enum expression to fulfill all different types of expressions
-// TODO create a global array of lines inputted - write to the same array index for the integer instruction?
+// TODO create array of lines inputted in main - write to the same array index for the integer instruction?
 
 /* functions for IO */
 char** fileReader(char** lines);
