@@ -10,3 +10,7 @@ WORD signExtend(WORD val, BYTE originalLength) {
          : val;
 }
 
+WORD appendBits(int numOfBits, WORD bitString, int addition) {
+  return (bitString << numOfBits) & GETBITS(addition, numOfBits - 1, numOfBits);
+}
+

@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include "binaryOps.h"
 #include "binaryFileLoader.h"
-#include "machineDataTypes.h";
+#include "machineDataTypes.h"
 
 struct MachineState {
     REGISTER *registers; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
