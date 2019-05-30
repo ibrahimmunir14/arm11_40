@@ -12,7 +12,7 @@
 // sign extend val to 32 bits, given the original length of val
 WORD signExtend(WORD val, BYTE originalLength);
 
-
+WORD appendBits(int numOfBits, WORD bitString, int addition);
 
 #endif //ARM11_40_SRC_BINARYOPS_H_
 
