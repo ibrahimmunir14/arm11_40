@@ -5,8 +5,8 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
-// TODO: clarify how and when to use certain types: use int or uint for positive values? use BYTE or int?\
-         being specific vs readability vs correctness
+/* TODO: clarify how and when to use certain types: use int or uint for positive values? use BYTE or int?\
+         being specific vs readability vs correctness */
 
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename

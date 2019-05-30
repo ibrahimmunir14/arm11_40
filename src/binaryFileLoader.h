@@ -2,6 +2,7 @@
 #define ARM11_40_BINARYFILELOADER_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "binaryTypes.h"
 
 // get number of lines in file

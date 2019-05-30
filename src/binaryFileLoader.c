@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include "binaryFileLoader.h"
 
 int getFileSize(FILE *file) {
