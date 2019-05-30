@@ -14,5 +14,7 @@ WORD signExtend(WORD val, BYTE originalLength);
 
 WORD appendBits(int numOfBits, WORD bitString, int addition);
 
+WORD appendNibble(WORD bitString, int addition);
+
 #endif //ARM11_40_SRC_BINARYOPS_H_
 
