@@ -4,7 +4,28 @@
 // TODO move this function into binary ops and maybe create a nibble type for value
 
 int main(int argc, char **argv) {
-  return EXIT_SUCCESS;
+    // ensure we have two argument, the filenames
+    if (argc != 3) {
+        return EXIT_FAILURE;
+    }
+    // import file into contents**, each line has a \n
+    int size;
+    char *inFileName = argv[1];
+    char **contents = importAsciiFile(inFileName, &size);
+    // print contents, for debugging purposes
+    for (int i = 0; i < size; i++) {
+        printf("[%s]\n", contents[i]);
+    }
+
+    // instructions list has maximum length = size
+    WORD* instructions = calloc(size, sizeof(WORD));
+    // TODO: implement first pass - build symbol table
+    // TODO: implement second pass - assembly phase
+
+    // write instructions to output file
+    char *outFileName = argv[2];
+    binaryFileWriter(outFileName, instructions);
+    return EXIT_SUCCESS;
   // TODO function to get the number of lines in the input file
   // TODO how to store 17 registers with 4 bits, which register left out
 }
@@ -76,3 +97,5 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address) {
 
   return instruction;
 }
+
+WORD assembleMov(REGNUMBER rd, int value){}
