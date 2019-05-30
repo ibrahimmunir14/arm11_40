@@ -27,33 +27,19 @@ void binaryFileWriter(WORD* instructions) {
 }
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
-    // append 11100000
-    // append 0010 or 0000
-    // append rd
-    // append rn
-    // append rs
-    // append 1001
-    // append rm
-
-//    int aPos = 21;
-//    int sPos = 20;
-//    int rdPos = 19;
-//    int rnPos = 15;
-//    int rsPos = 11;
-//    int rmPos = 3;
-//    WORD value = 0;
-//    value = setBitsInWord(value, 31, 8, 11100000);
-//    if (aFlag) {
-//        value = setBitsInWord(value, 23, 4, 0010);
-//    } else {
-//        value = setBitsInWord(value, 23, 4, 0000);
-//    }
-//    value = setBitsInWord(value, rdPos, 4, rd); // TODO could change to sizeof(nibble)
-//    value = setBitsInWord(value, rnPos, 4, rn); // TODO do we want to feed in number format or binary format
-//    value = setBitsInWord(value, rsPos, 4, rs);
-//    value = setBitsInWord(value, rmPos, 4, rm);
-
-    return 0;
+    // intialise with cond code and default bits
+    WORD value = 11100000;
+    if (aFlag) {
+        appendNibble(value, 0010);
+    } else {
+        appendNibble(value, 0000);
+    }
+    appendNibble(value, rd);
+    appendNibble(value, rn);
+    appendNibble(value, rs);
+    appendNibble(value, 1001);
+    appendNibble(value, rm);
+    return value;
 }
 
 
