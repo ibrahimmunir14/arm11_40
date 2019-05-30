@@ -31,6 +31,28 @@ int main(int argc, char **argv) {
 }
 
 
+WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
+    WORD instr = 0;
+    instr = appendNibble(instr, (BYTE) condCode);
+    instr = appendNibble(instr, 0b1010);
+    instr = appendNibble(instr, calculateBranchOffset(target, currentAddress));
+    return instr;
+}
+
+BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
+    // TODO: differentiate between label target and address target
+    ADDRESS targetAddress;
+    /* if label target:
+     *      targetAddress = lookup label in table
+     * else:
+     *      targetAddress = atoi(target) (*4?)
+     * */
+    BRANCHOFFSET offset = targetAddress - currentAddress;
+    return (offset >> 2);
+    // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
+}
+
+
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits

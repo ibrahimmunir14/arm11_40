@@ -23,7 +23,7 @@ void buildSymbolTable(); // Need to feed in ADT here as a pointer
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
 WORD encodeInstruction(char* line);
 /* each encode instruction returns a 32 bit integer instruction */
-WORD assembleBranch(enum CondCode condCode, char* target);
+WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);
 WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address);
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
@@ -37,8 +37,7 @@ WORD assembleMov(REGNUMBER rd, int value);
 WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value);
 
 /* helper functions for encodingBranch */
-BRANCHOFFSET calculateBranchOffset(char* target);
-BYTE calculateBranchCond(enum CondCode condCode);
+BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress);
 
 /* helper functions for parsing */
 
