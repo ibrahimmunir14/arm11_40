@@ -6,7 +6,7 @@
 
 // get number of lines in file
 int getFileSize(FILE *file);
-// import file lines into memory
-void importFile(char *fileName, BYTE *memory);
+// import file lines into memory, return success bool
+bool importFile(char *fileName, BYTE *memory);
 
 #endif //ARM11_40_BINARYFILELOADER_H

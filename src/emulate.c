@@ -5,6 +5,9 @@
 //       Instructions in this code are Little-Endian
 //       use readWord/storeWord to read/write from Memory, auto taking care of conversions
 
+// TODO: clarify how and when to use certain types: use int or uint for positive values? use BYTE or int?\
+         being specific vs readability vs correctness
+
 int main(int argc, char **argv) {
     // ensure we have one argument, the filename
     if (argc != 2) {
@@ -19,13 +22,16 @@ int main(int argc, char **argv) {
     state.registers = (REGISTER *) calloc(NUM_REG, sizeof(REGISTER));
     state.memory = (BYTE *) calloc(MEM_SIZE, sizeof(BYTE));
     if (state.registers == NULL || state.memory == NULL) {
-        perror("Error: calloc failed. ");
+        perror("Error: calloc failed during initialisation of machine state.");
         return EXIT_FAILURE;
     }
 
     // import file into memory
     char *fileName = argv[1];
-    importFile(fileName, state.memory);
+    if (!importFile(fileName, state.memory)) {
+        perror("Error: could not open file.");
+        return EXIT_FAILURE;
+    }
 
     /* Main Pipeline Loop */
     // fill pipeline initially
