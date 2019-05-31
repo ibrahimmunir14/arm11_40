@@ -101,17 +101,43 @@ int regexMatch(const char *string, const char *pattern)
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
   int operand2Value = parseOperand2(operand2);
   switch (opCode) {
-    case MOV:
-      break;
     case TST:
     case TEQ:
     case CMP:
+
       break;
     default:
+
       break;
   }
 
 }
+
+WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag, bool sFlag) {
+  char instructionString[6] = "111000";
+  WORD instruction = strtol(instructionString, NULL, 2);
+  instruction = appendBits(1, instruction, iFlag);
+
+  instruction = appendNibble(instruction, opCode);
+  instruction = appendBits(1, instruction, sFlag);
+
+  instruction = appendNibble(instruction, rn);
+  instruction = appendNibble(instruction, rd);
+  instruction = appendBits(12, instruction, value);
+  return instruction;
+}
+
+WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
+  return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
+}
+
+WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag) {
+  return assembleDataProcGeneral(opCode, 0, rn, value, iFlag, 1);
+}
+
+WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
+  return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
+};
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
@@ -129,18 +155,7 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     return value;
 }
 
-WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
-  char instructionString[6] = "111000";
-  WORD instruction = strtol(instructionString, NULL, 2);
-  instruction = appendBits(1, instruction, iFlag);
 
-  instruction = appendBits(4, instruction, MOV);
-  instruction <<= 5;
-
-  instruction = appendBits(4, instruction, rd);
-  instruction = appendBits(12, instruction, value);
-  return instruction;
-}
 
 
 int parseImmediateValue(char *expression) {
