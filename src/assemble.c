@@ -1,4 +1,5 @@
 #include "assemble.h"
+#include "hashmapAbstract.h"
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
@@ -8,49 +9,74 @@ int main(int argc, char **argv) {
     // import file into contents**, each line has a \n
     int size;
     char *inFileName = argv[1];
-    char **contents = importAsciiFile(inFileName, &size);
+    node_t **symbolTable = init();
+    char **contents = importAssemblyInstr(inFileName, &size, symbolTable);
     // print contents, for debugging purposes
     for (int i = 0; i < size; i++) {
         printf("[%s]\n", contents[i]);
     }
 
-    // TODO: complete implementation of first pass - build symbol table
-    // set up head node
-    pair_t headPair = {"start", 0};
-    node_t headNode = {headPair, 0};
-    displayList(&headNode);
-    for (int i = 0; i < size; i++) {
-        char *line = contents[i];
-        ADDRESS currAddress = i * 4;
-        /* TODO: if line starts with label :
-         *              extract label as char*
-         *              add label, currAddress to hashMap
-         */
-    }
-
-
-
-    // TODO: test/check implementation of second pass - assembly phase
-    WORD *memory = calloc(size * 2, sizeof(WORD));
-    WORD *reserveMemory = memory + size * sizeof(WORD);
-
-
-    int *nextReserveAddress = malloc(sizeof(int));
-    *nextReserveAddress = 0;
-
-    for (int i = 0; i < size; i++) {
-        // TODO: encodeInstruction must be modified to carry the hashmap
-        int offsetToEmptyReserve = nextReserveAddress - i;
-        memory[i] = encodeInstruction(contents[i]);
-    }
-    int reserveAddressUsed = nextReserveAddress - size;
-
-    // write instructions to output file
-    char *outFileName = argv[2];
-    binaryFileWriter(outFileName, memory);
-    return EXIT_SUCCESS;
+//    // TODO: test/check implementation of second pass - assembly phase
+//    WORD *memory = calloc(size * 2, sizeof(WORD));
+//    WORD *reserveMemory = memory + size * sizeof(WORD);
+//
+//
+//    int *nextReserveAddress = malloc(sizeof(int));
+//    *nextReserveAddress = 0;
+//
+//    for (int i = 0; i < size; i++) {
+//        // TODO: encodeInstruction must be modified to carry the hashmap
+//        //int offsetToEmptyReserve = nextReserveAddress - i;
+//        //memory[i] = encodeInstruction(contents[i]);
+//    }
+//    //int reserveAddressUsed = nextReserveAddress - size;
+//
+//    // write instructions to output file
+//    char *outFileName = argv[2];
+//    binaryFileWriter(outFileName, memory);
+//    return EXIT_SUCCESS;
 }
 
+char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
+    /* requires, as parameters, the input file name, pointer to number of lines, symbol table */
+    // open input file
+    FILE *file;
+    if ((file = fopen(fileName, "r")) == NULL) {
+        perror("Error: could not open input file.");
+        exit(EXIT_FAILURE);
+    }
+
+    // store instruction in tempContents, store labels in map
+    char** tempContents = (char **) calloc(MAX_LINES_ASCII, sizeof(char*));
+    int instrNum = 0; // number of instructions stored in tempContents
+    for (int i = 0; i < MAX_LINES_ASCII; i++) {
+        // stop loop at end of file
+        if (feof(file)) {
+            break;
+        }
+        // allocate memory and read in line
+        tempContents[instrNum] = (char *) calloc(MAX_LINE_LENGTH, sizeof(char));
+        fgets(tempContents[instrNum], MAX_LINE_LENGTH, file);
+        if (match(tempContents[instrNum], ".*:")) {
+            // line read in is a label: add to map, allow tempContents entry to be overwritten
+            char *key = strtok(tempContents[instrNum], ":");
+            ADDRESS value = instrNum * 4;
+            addHashmapEntry(map, key, value);
+        } else { // line read in is an instruction: keep stored in tempContents
+            instrNum++;
+        }
+    }
+    fclose(file);
+    *numLines = instrNum - 1;
+
+    char **contents = (char **) calloc(*numLines, sizeof(char*));
+    for (int i = 0; i < *numLines; i++) {
+        contents[i] = tempContents[i];
+    }
+    free(tempContents);
+
+    return contents;
+}
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
     WORD instr = 0;
@@ -151,7 +177,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD* reserveMemory) 
 }
 
 REGNUMBER getRegisterNumber(char* reg) {
-    return (u_int8_t) atoi(&reg[1]);
+    return (uint8_t) atoi(&reg[1]);
 
 }
 
