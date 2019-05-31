@@ -100,6 +100,7 @@ void tokenize(char* line)
 
 WORD encodeInstruction(char* line) {
     WORD value = 0;
+    WORD value = 0;
     const char branchPattern[] = "^b";
     const char mPattern[] = "^m";
     const char sPattern[] = "^andeq";
@@ -107,25 +108,79 @@ WORD encodeInstruction(char* line) {
     const char stdPattern[] = "^str";
     const char std2Pattern[] = "^ldr";
 
+
     char* token = strtok(line," ");
+    char str1[100] = "beq label";
+    char strArray[10][10];
+    int i,j,ctr;
+
 
     if (match(token, branchPattern)) {
-        printf("matching on branch");
-    } else if (match(token, mPattern)) {
-        printf("matching on multiply or mov");
-    } else if (match(token, "^andeq")) {
-        printf("matching on andeq");
-    } else if (match(token, "^lsl")) {
-        printf("matching on lsl");
-    } else if (match(token, "^ldr")) {
-        printf("matching on ldr");
-    } else if (match(token, "^str")) {
-        printf("matching on str");
-    } else {
-        printf("matching on dataproc");
-    }
+        j=0; ctr=0;
+        for(i=0;i<=(strlen(str1));i++)
+        {
+            // if space or NULL found, assign NULL into newString[ctr]
+            if(str1[i]==' '||str1[i]=='\0')
+            {
+                strArray[ctr][j]='\0';
+                ctr++;  //for next word
+                j=0;    //for next word, init index to 0
+            }
+            else
+            {
+                strArray[ctr][j]=str1[i];
+                j++;
+            }
+        }
+        for(i=0;i < ctr;i++)
+            printf(" %s\n",strArray[i]);
 
+        if (match(strArray[0], "b")) {
+            printf("matching on branch");
+            printf("matching on branch");
+        } else if (match(token, mPattern)) {
+        } else if (match(strArray[0], "^mov")) {
+            printf("matching on multiply or mov");
+            printf("matching on mov");
+        } else if (match(token, "^andeq")) {
+            return assembleMov(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
+        } else if (match(strArray[0], "^mul")) {
+            printf("matching on mul");
+            return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), 0, false);
+        } else if (match(strArray[0], "^mla")) {
+            printf("matching on mla");
+            return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), getRegisterNumber(strArray[4]), true);
+        } else if (match(strArray[0], "^andeq")) {
+            printf("matching on andeq");
+            printf("matching on andeq");
+        } else if (match(token, "^lsl")) {
+            return assembleAndEq();
+        } else if (match(strArray[0], "^lsl")) {
+            printf("matching on lsl");
+            printf("matching on lsl");
+        } else if (match(token, "^ldr")) {
+            return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
+        } else if (match(strArray[0], "^ldr")) {
+            printf("matching on ldr");
+            printf("matching on ldr");
+        } else if (match(token, "^str")) {
+            return assembleSDT(true, getRegisterNumber(strArray[1]), NULL, NULL, NULL);
+        } else if (match(strArray[0], "^str")) {
+            printf("matching on str");
+            printf("matching on str");
+            return assembleSDT(false, NULL, getRegisterNumber(strArray[1]), NULL, NULL);
+        } else {
+        } else {
+            printf("matching on dataproc");
+            printf("matching on dataproc");
+        }
+    }
     return value;
+}
+
+
+REGNUMBER getRegisterNumber(char* reg) {
+    return (u_int8_t) atoi(&reg[1]);
 }
 
 
