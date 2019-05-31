@@ -1,4 +1,4 @@
-#include "mneumonicParser.h"
+#include "mnemonicParser.h"
 
 #define Add 193486030
 #define Sub 193506191
@@ -27,8 +27,8 @@ int hash(const char *key) {
     return hash;
 }
 
-enum CondCode branchEnum(const char *mneumonic) {
-    int hashed = hash(mneumonic);
+enum CondCode branchEnum(const char *mnemonic) {
+    int hashed = hash(mnemonic);
     switch(hashed){
         case Beq:
             return (Condcode) EQ;
@@ -49,8 +49,8 @@ enum CondCode branchEnum(const char *mneumonic) {
     }
 }
 
-enum OpCode dataProcEnum(const char *mneumonic) {
-    int hashed = hash(mneumonic);
+enum OpCode dataProcEnum(const char *mnemonic) {
+    int hashed = hash(mnemonic);
     switch(hashed){
         case Add:
             return (Opcode) ADD;
