@@ -7,30 +7,19 @@
 void tokenize(char* line);
 
 int main(int argc, char **argv) {
-
-    char buff[80];
-    strcpy (buff, "mov r1 r0");
-    tokenize(buff);
-//    printf("hello world!\n");
-//    char* line1;
-//    line1 = "mov something r1 something";
-    encodeInstruction(buff);
-//    printf("finished\n");
-  return EXIT_SUCCESS;
-  // TODO function to get the number of lines in the input file
-  // TODO how to store 17 registers with 4 bits, which register left out
+    return EXIT_SUCCESS;
 }
 
 
 
-int match(const char *string, const char *pattern)
+bool match(const char *string, const char *pattern)
 {
     regex_t re;
-    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return 0;
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return false;
     int status = regexec(&re, string, 0, NULL, 0);
     regfree(&re);
-    if (status != 0) return 0;
-    return 1;
+    if (status != 0) return false;
+    return true;
 }
 
 void tokenize(char* line)
@@ -46,28 +35,26 @@ void tokenize(char* line)
 
 WORD encodeInstruction(char* line) {
     WORD value = 0;
-    const char branchPattern[] = "b*";
-    const char mPattern[] = "m*";
+    const char branchPattern[] = "^b";
+    const char mPattern[] = "^m";
+    const char sPattern[] = "^andeq";
+    const char s2Pattern[] = "^lsl";
+    const char stdPattern[] = "^str";
+    const char std2Pattern[] = "^ldr";
 
     char* token = strtok(line," ");
-
-    while (token != NULL)
-    {
-        printf ("%s\n",token);
-        token = strtok(NULL, " ");
-    }
 
     if (match(token, branchPattern)) {
         printf("matching on branch");
     } else if (match(token, mPattern)) {
         printf("matching on multiply or mov");
-    } else if (match(token, "andeq")) {
+    } else if (match(token, "^andeq")) {
         printf("matching on andeq");
-    } else if (match(token, "lsl")) {
+    } else if (match(token, "^lsl")) {
         printf("matching on lsl");
-    } else if (match(token, "ldr")) {
+    } else if (match(token, "^ldr")) {
         printf("matching on ldr");
-    } else if (match(token, "str")) {
+    } else if (match(token, "^str")) {
         printf("matching on str");
     } else {
         printf("matching on dataproc");
