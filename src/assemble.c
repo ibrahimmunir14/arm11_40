@@ -5,44 +5,8 @@
 #include "hashmapAbstract.h"
 
 int main(int argc, char **argv) {
-    // ensure we have two argument, the filenames
-    if (argc != 3) {
-        return EXIT_FAILURE;
-    }
-    // import file into contents**, each line has a \n
-    int size;
-    char *inFileName = argv[1];
-    char **contents = importAsciiFile(inFileName, &size);
-    // print contents, for debugging purposes
-    for (int i = 0; i < size; i++) {
-        printf("[%s]\n", contents[i]);
-    }
-
-    // TODO: complete implementation of first pass - build symbol table
-    // set up head node
-    pair_t headPair = {"start", 0};
-    node_t headNode = {headPair, 0};
-    displayList(&headNode);
-    for (int i = 0; i < size; i++) {
-        char *line = contents[i];
-        ADDRESS currAddress = i * 4;
-        /* TODO: if line starts with label :
-         *              extract label as char*
-         *              add label, currAddress to hashMap
-         */
-    }
-
-    // TODO: test/check implementation of second pass - assembly phase
-    WORD* instructions = calloc(size, sizeof(WORD));
-    for (int i = 0; i < size; i++) {
-        // TODO: encodeInstruction must be modified to carry the hashmap
-        instructions[i] = encodeInstruction(contents[i]);
-    }
-
-    // write instructions to output file
-    char *outFileName = argv[2];
-    binaryFileWriter(outFileName, instructions);
-    return EXIT_SUCCESS;
+    char str[] = "mul rd rm rs";
+    encodeInstruction(str);
 }
 
 
@@ -65,16 +29,6 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
     BRANCHOFFSET offset = targetAddress - currentAddress;
     return (offset >> 2);
     // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
-}
-
-int match(const char *string, const char *pattern)
-{
-  regex_t re;
-  if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return 0;
-  int status = regexec(&re, string, 0, NULL, 0);
-  regfree(&re);
-  if (status != 0) return 0;
-  return 1;
 }
 
 bool match(const char *string, const char *pattern)
@@ -100,32 +54,62 @@ void tokenize(char* line)
 
 WORD encodeInstruction(char* line) {
     WORD value = 0;
-    const char branchPattern[] = "^b";
-    const char mPattern[] = "^m";
-    const char sPattern[] = "^andeq";
-    const char s2Pattern[] = "^lsl";
-    const char stdPattern[] = "^str";
-    const char std2Pattern[] = "^ldr";
 
-    char* token = strtok(line," ");
+    char str1[100] = "beq label";
+    char strArray[10][10];
+    int i,j,ctr;
 
-    if (match(token, branchPattern)) {
+    j=0; ctr=0;
+    for(i=0;i<=(strlen(str1));i++)
+    {
+        // if space or NULL found, assign NULL into newString[ctr]
+        if(str1[i]==' '||str1[i]=='\0')
+        {
+            strArray[ctr][j]='\0';
+            ctr++;  //for next word
+            j=0;    //for next word, init index to 0
+        }
+        else
+        {
+            strArray[ctr][j]=str1[i];
+            j++;
+        }
+    }
+    for(i=0;i < ctr;i++)
+        printf(" %s\n",strArray[i]);
+
+    if (match(strArray[0], "b")) {
         printf("matching on branch");
-    } else if (match(token, mPattern)) {
-        printf("matching on multiply or mov");
-    } else if (match(token, "^andeq")) {
+    } else if (match(strArray[0], "^mov")) {
+        printf("matching on mov");
+        return assembleMov(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
+    } else if (match(strArray[0], "^mul")) {
+        printf("matching on mul");
+        return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), 0, false);
+    } else if (match(strArray[0], "^mla")) {
+        printf("matching on mla");
+        return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), getRegisterNumber(strArray[4]), true);
+    } else if (match(strArray[0], "^andeq")) {
         printf("matching on andeq");
-    } else if (match(token, "^lsl")) {
+        return assembleAndEq();
+    } else if (match(strArray[0], "^lsl")) {
         printf("matching on lsl");
-    } else if (match(token, "^ldr")) {
+        return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
+    } else if (match(strArray[0], "^ldr")) {
         printf("matching on ldr");
-    } else if (match(token, "^str")) {
+        return assembleSDT(true, getRegisterNumber(strArray[1]), NULL, NULL, NULL);
+    } else if (match(strArray[0], "^str")) {
         printf("matching on str");
+        return assembleSDT(false, NULL, getRegisterNumber(strArray[1]), NULL, NULL);
     } else {
         printf("matching on dataproc");
     }
 
     return value;
+}
+
+REGNUMBER getRegisterNumber(char* reg) {
+    return (u_int8_t) atoi(&reg[1]);
 }
 
 
