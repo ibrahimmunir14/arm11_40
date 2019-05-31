@@ -354,4 +354,3 @@ int parseOperand2(char* operand2) {
   return -1;
 }
 
-
