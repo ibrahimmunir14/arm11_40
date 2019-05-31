@@ -4,12 +4,6 @@
 #include <ctype.h>
 #include "hashmapAbstract.h"
 
-int main(int argc, char **argv) {
-    char str[] = "mul rd rm rs";
-    encodeInstruction(str);
-}
-
-
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
     WORD instr = 0;
     instr = appendNibble(instr, (BYTE) condCode);
