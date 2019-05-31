@@ -25,7 +25,7 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map);
 /* functions for encoding instructions */
 
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD* reserveMemory);
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
 /* each encode instruction returns a 32 bit integer instruction */
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);

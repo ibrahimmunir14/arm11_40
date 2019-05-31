@@ -6,35 +6,32 @@ int main(int argc, char **argv) {
     if (argc != 3) {
         return EXIT_FAILURE;
     }
-    // import file into contents**, each line has a \n
-    int size;
+    // import data into instructions array and symbol table
     char *inFileName = argv[1];
+    int numInstructions;
     node_t **symbolTable = init();
-    char **contents = importAssemblyInstr(inFileName, &size, symbolTable);
+    char **assInstructions = importAssemblyInstr(inFileName, &numInstructions, symbolTable);
+
     // print contents, for debugging purposes
-    for (int i = 0; i < size; i++) {
-        printf("[%s]\n", contents[i]);
+    for (int i = 0; i < numInstructions; i++) {
+        printf("[%s]\n", assInstructions[i]);
+    }
+    display(symbolTable);
+
+    // set up instruction and reserve memory space
+    WORD* armInstructions = calloc(numInstructions, sizeof(WORD));
+    WORD* reserveMemory = calloc(numInstructions, sizeof(WORD));
+    int numReserve = 0; // number of reserve memory locations used up (in WORDS)
+
+    // encode assembly instructions into arm words sequentially
+    for (int i = 0; i < numInstructions; i++) {
+        armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[numReserve], &numReserve);
     }
 
-//    // TODO: test/check implementation of second pass - assembly phase
-//    WORD *memory = calloc(size * 2, sizeof(WORD));
-//    WORD *reserveMemory = memory + size * sizeof(WORD);
-//
-//
-//    int *nextReserveAddress = malloc(sizeof(int));
-//    *nextReserveAddress = 0;
-//
-//    for (int i = 0; i < size; i++) {
-//        // TODO: encodeInstruction must be modified to carry the hashmap
-//        //int offsetToEmptyReserve = nextReserveAddress - i;
-//        //memory[i] = encodeInstruction(contents[i]);
-//    }
-//    //int reserveAddressUsed = nextReserveAddress - size;
-//
-//    // write instructions to output file
-//    char *outFileName = argv[2];
-//    binaryFileWriter(outFileName, memory);
-//    return EXIT_SUCCESS;
+    // write instructions and reserved memory to output file
+    char *outFileName = argv[2];
+    binaryFileWriter(outFileName, armInstructions, reserveMemory, numInstructions, numReserve);
+    return EXIT_SUCCESS;
 }
 
 char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
@@ -69,13 +66,13 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
     fclose(file);
     *numLines = instrNum - 1;
 
-    char **contents = (char **) calloc(*numLines, sizeof(char*));
+    char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
     for (int i = 0; i < *numLines; i++) {
-        contents[i] = tempContents[i];
+        assemblyInstructions[i] = tempContents[i];
     }
     free(tempContents);
 
-    return contents;
+    return assemblyInstructions;
 }
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
@@ -121,7 +118,14 @@ void tokenize(char* line)
 }
 
 // TODO pass in address to next free space in memory to str big numbers for SDT
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD* reserveMemory) {
+/*
+ * Note: This function takes in the instruction string, currentAddress, pointer to next free reserve memory location,
+ *       and pointer to counter of number of reserve locations used.
+ *       - currentAddress is needed for branch operations and SDT, to calculate offsets
+ *       - *nextReserveMemory is to be passed to SDT function, and the value/contents is to be updated directly
+ *       - *numReserve is to be passed to SDT function, and should be incremented if *nextReserveMemory is used
+ */
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
     WORD value = 0;
     char str1[100] = "beq label";
     char strArray[10][10];
@@ -246,6 +250,11 @@ int parseImmediateValue(char *expression) {
   return strtol(expression, NULL, 10);
 }
 
+/*
+ * Note for Luke: Ibrahim and Umer have discussed and come up with a simpler way of passing and updating reserve memory.
+ *                See note above executeInstruction. Please text if any confusion.
+ *                Function declaration will need to be modified, I haven't done so to avoid conflict.
+ */
 WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *reserveMemory) {
   WORD offset = 0;
   bool iFlag = false;
