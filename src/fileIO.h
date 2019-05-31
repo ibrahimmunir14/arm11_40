@@ -13,8 +13,6 @@ int getFileSize(FILE *file);
 // import binary file contents into memory, return success bool
 bool importBinaryFile(char *fileName, BYTE *memory);
 // write list of words to binary file
-void binaryFileWriter(char* fileName, WORD* instructions);
-// import ascii file contents into char* array
-char** importAsciiFile(char *fileName, int *numLines);
+void binaryFileWriter(char *fileName, const WORD* instructions, const WORD* reserveMemory, int numInstructions, int numReserve);
 
 #endif //ARM11_40_FILEIO_H

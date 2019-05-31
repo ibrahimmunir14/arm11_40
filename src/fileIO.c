@@ -25,21 +25,31 @@ bool importBinaryFile(char *fileName, BYTE *memory) {
     return true;
 }
 
-void binaryFileWriter(char *fileName, WORD* instructions) {
+void binaryFileWriter(char *fileName, const WORD* instructions, const WORD* reserveMemory, int numInstructions, int numReserve) {
     FILE * fPointer;
     // To create a new file use wb, to append to a file use ab
     fPointer = fopen(fileName, "wb");
-    int size = sizeof(instructions) / sizeof(WORD);
-    for (int i = 0; i < size; i ++) {
-        unsigned int n = instructions[i];
-        unsigned char bytes[4];
-        bytes[0] = (n >> 24) & 0xFF;
-        bytes[1] = (n >> 16) & 0xFF;
-        bytes[2] = (n >> 8) & 0xFF;
+    for (int i = 0; i < numInstructions; i ++) {
+        WORD n = instructions[i];
+        BYTE bytes[4];
+        bytes[0] = (n >> 24u) & 0xFF;
+        bytes[1] = (n >> 16u) & 0xFF;
+        bytes[2] = (n >> 8u) & 0xFF;
         bytes[3] = n & 0xFF;
         fwrite(bytes, sizeof(bytes), 1, fPointer);
         fwrite("\n", sizeof(char), 1, fPointer);
     }
+    for (int i = 0; i < numReserve; i ++) {
+        WORD n = reserveMemory[i];
+        BYTE bytes[4];
+        bytes[0] = (n >> 24u) & 0xFF;
+        bytes[1] = (n >> 16u) & 0xFF;
+        bytes[2] = (n >> 8u) & 0xFF;
+        bytes[3] = n & 0xFF;
+        fwrite(bytes, sizeof(bytes), 1, fPointer);
+        fwrite("\n", sizeof(char), 1, fPointer);
+    }
+
     fclose(fPointer);
 }
 
