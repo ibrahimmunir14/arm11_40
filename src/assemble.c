@@ -271,3 +271,4 @@ int parseOperand2(char* operand2) {
   return 0;
 }
 
+enum
