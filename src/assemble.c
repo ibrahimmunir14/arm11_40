@@ -1,8 +1,4 @@
 #include "assemble.h"
-#include "fileIO.h"
-#include <regex.h>
-#include <ctype.h>
-#include "hashmapAbstract.h"
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
@@ -45,7 +41,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < size; i++) {
         // TODO: encodeInstruction must be modified to carry the hashmap
         int offsetToEmptyReserve = nextReserveAddress - i;
-        memory[i] = encodeInstruction(contents[i], headNode, reserveMemory);
+        memory[i] = encodeInstruction(contents[i]);
     }
     int reserveAddressUsed = nextReserveAddress - size;
 
@@ -53,14 +49,6 @@ int main(int argc, char **argv) {
     char *outFileName = argv[2];
     binaryFileWriter(outFileName, memory);
     return EXIT_SUCCESS;
-}
-
-WORD encodeInstruction(char* line, node_t **hashmap, int offsetToEmptyReserve) {
-
-}
-
-void addToReserveMemory(WORD* reserveMemory, ) {
-
 }
 
 
@@ -85,17 +73,86 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
     // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
 }
 
-int regexMatch(const char *string, const char *pattern)
+bool match(const char *string, const char *pattern)
 {
-  regex_t re;
-  if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
-    return 0;
-  }
+    regex_t re;
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return false;
+    int status = regexec(&re, string, 0, NULL, 0);
+    regfree(&re);
 
-  int status = regexec(&re, string, 0, NULL, 0);
-  regfree(&re);
+    return status == 0;
+}
 
-  return status == 0;
+void tokenize(char* line)
+{
+    char* cmd = strtok(line," ");
+
+    while (cmd != NULL)
+    {
+        printf ("%s\n",cmd);
+        cmd = strtok(NULL, " ");
+    }
+}
+
+WORD encodeInstruction(char* line) {
+    WORD value = 0;
+
+    char str1[100] = "beq label";
+    char strArray[10][10];
+    int i,j,ctr;
+
+    j=0; ctr=0;
+    for(i=0;i<=(strlen(str1));i++)
+    {
+        // if space or NULL found, assign NULL into newString[ctr]
+        if(str1[i]==' '||str1[i]=='\0')
+        {
+            strArray[ctr][j]='\0';
+            ctr++;  //for next word
+            j=0;    //for next word, init index to 0
+        }
+        else
+        {
+            strArray[ctr][j]=str1[i];
+            j++;
+        }
+    }
+    for(i=0;i < ctr;i++)
+        printf(" %s\n",strArray[i]);
+
+    if (match(strArray[0], "b")) {
+        printf("matching on branch");
+    } else if (match(strArray[0], "^mov")) {
+        printf("matching on mov");
+        return assembleMov(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]), getIFlag(strArray));
+    } else if (match(strArray[0], "^mul")) {
+        printf("matching on mul");
+        return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), 0, false);
+    } else if (match(strArray[0], "^mla")) {
+        printf("matching on mla");
+        return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), getRegisterNumber(strArray[4]), true);
+    } else if (match(strArray[0], "^andeq")) {
+        printf("matching on andeq");
+        return assembleAndEq();
+    } else if (match(strArray[0], "^lsl")) {
+        printf("matching on lsl");
+        return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
+    } else if (match(strArray[0], "^ldr")) {
+        printf("matching on str");
+        return assembleSDT(false, getRegisterNumber(strArray[1]), NULL, NULL, NULL);
+    } else if (match(strArray[0], "^str")) {
+        printf("matching on str");
+        return assembleSDT(false, NULL, getRegisterNumber(strArray[1]), NULL, NULL);
+    } else {
+        printf("matching on dataproc");
+        //  return assembleDataProc()
+    }
+    return value;
+}
+
+REGNUMBER getRegisterNumber(char* reg) {
+    return (u_int8_t) atoi(&reg[1]);
+
 }
 
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
@@ -156,10 +213,8 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
 }
 
 
-
-
 int parseImmediateValue(char *expression) {
-  if (regexMatch(expression, "0x[0-9A-Fa-f]+")) {
+  if (match(expression, "0x[0-9A-Fa-f]+")) {
     return strtol(&expression[2], NULL, 16);
   }
 
@@ -178,11 +233,11 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *re
       int value = parseImmediateValue(&address[1]);
 
       if (value <= 0xFF) {
-        return assembleMov(rd, value);
+        return assembleMov(rd, value, 1);
       }
 
       *reserveMemory = value;
-      offset = *reserveMemory
+      offset = *reserveMemory;
       reserveMemory += sizeof(WORD);
 
       //add value as a word to end of assembled program
@@ -231,54 +286,73 @@ BYTE getRegNum(char *regString, char *restOfOperand) {
   return strtol(&regString[1], &restOfOperand, 10) & FULLBITS(4);
 }
 
-int parseOperand2(char* operand2) {
-  char *immediatePattern = "#.+";
-  char *shiftedRegister = "r([0-9]|1[0-6]).*";
-  if (regexMatch(operand2, immediatePattern)) {
-    WORD value = parseImmediateValue(&operand2[1]);
+bool checkIfImmediate(char* operand2) {
+  return match(operand2, "#.+");
+}
 
-    for (WORD rotation = 0; rotation < sizeof(WORD); rotation += 2) {
-      WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
+bool checkIfShiftedRegister(char* operand2) {
+  return match(operand2, "r([0-9]|1[0-6]).*");
+}
 
-      if (rotated < (1 << 8)) {
-        return appendBits(8, rotation & FULLBITS(4), (BYTE) rotated);
-      }
+int parseImmediateOperand2(char* operand2) {
+  WORD value = parseImmediateValue(&operand2[1]);
+
+  for (WORD rotation = 0; rotation < sizeof(WORD); rotation += 2) {
+    WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
+
+    if (rotated < (1 << 8)) {
+      return appendBits(8, rotation & FULLBITS(4), (BYTE) rotated);
     }
+  }
+}
 
-  } else if (regexMatch(operand2, shiftedRegister)) {
-    char *restOfOperand;
-    BYTE rm = getRegNum(operand2, restOfOperand);
+int parseShiftedRegister(char* operand2) {
+  char *restOfOperand;
+  BYTE rm = getRegNum(operand2, restOfOperand);
 
-    if (*restOfOperand == '\0') {
-      return rm;
-    }
-
-    restOfOperand++;
-    trimWhiteSpace(restOfOperand);
-
-    int shift;
-    char *shiftType = strtok(restOfOperand, " ");
-    char *shifts[4] = {"lsl", "lsr", "asr", "ror"};
-    int shiftTypeBin = findPos(shiftType, shifts, 4);
-
-    char *exp = strtok(NULL, " ");
-
-    if (regexMatch(exp, immediatePattern)) {
-      shift = parseImmediateValue(exp);
-      shift = appendBits(2, shift, shiftTypeBin);
-      shift <<= 1;
-    } else {
-      shift = getRegNum(exp, NULL);
-      shift <<= 1;
-      char *exp = strtok(NULL, " ");
-      shift <<= 1;
-      shift++;
-    }
-
-    return shift & FULLBITS(12);
+  if (*restOfOperand == '\0') {
+    return rm;
   }
 
-  printf("Error: %s is invalid operand2.\n", operand2);
-  return 0;
+  restOfOperand++;
+  trimWhiteSpace(restOfOperand);
+
+  int shift;
+  char *shiftType = strtok(restOfOperand, " ");
+  char *shifts[4] = {"lsl", "lsr", "asr", "ror"};
+  int shiftTypeBin = findPos(shiftType, shifts, 4);
+
+  char *exp = strtok(NULL, " ");
+
+  if (checkIfImmediate(restOfOperand)) {
+    shift = parseImmediateValue(exp);
+    shift = appendBits(2, shift, shiftTypeBin);
+    shift <<= 1;
+
+  } else if (checkIfShiftedRegister(restOfOperand)){
+    shift = getRegNum(exp, NULL);
+    shift <<= 1;
+    char *exp = strtok(NULL, " ");
+    shift <<= 1;
+    shift++;
+  }
+
+  return shift & FULLBITS(12);
 }
+
+int getIFlag(char* operand2) {
+  return checkIfImmediate(operand2) ? 1 : 0;
+}
+
+int parseOperand2(char* operand2) {
+  if (checkIfImmediate(operand2)) {
+    parseImmediateOperand2(operand2);
+  } else if (checkIfShiftedRegister(operand2)) {
+    parseShiftedRegister(operand2);
+  }
+
+  printf("Error: Invalid operand2.\n");
+  return -1;
+}
+
 
