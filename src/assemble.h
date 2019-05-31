@@ -21,7 +21,7 @@ void buildSymbolTable(); // Need to feed in ADT here as a pointer
 /* functions for encoding instructions */
 
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-WORD encodeInstruction(char* line);
+WORD encodeInstruction(char* line, node_t **hashmap, int nextReservedAddress);
 /* each encode instruction returns a 32 bit integer instruction */
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);
@@ -35,7 +35,7 @@ WORD assembleSpecial(enum ExtendedOpCode opCode, REGNUMBER rn, char* expression)
 
 /* helper functions for encoding DataProc */
 WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value);
-WORD assembleMov(REGNUMBER rd, int value);
+WORD assembleMov(REGNUMBER rd, int value, bool iFlag);
 WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value);
 
 /* helper functions for encodingBranch */
@@ -45,4 +45,4 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress);
 
 /* this parses the different types of values that can be placed in operand2 and passes it to the above 3 helper functions */
 int parseOperand2(char* operand2); // used by assemble dataproc and result passed to dataproc helpers
-int parseExpression(char* expression); // used by assembleSpecial and possibly by SDT + Branch
+int parseImmediateValue(char *expression); // used by assembleSpecial and possibly by SDT + Branch

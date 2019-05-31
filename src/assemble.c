@@ -32,17 +32,35 @@ int main(int argc, char **argv) {
          */
     }
 
+
+
     // TODO: test/check implementation of second pass - assembly phase
-    WORD* instructions = calloc(size, sizeof(WORD));
+    WORD *memory = calloc(size * 2, sizeof(WORD));
+    WORD *reserveMemory = memory + size * sizeof(WORD);
+
+
+    int *nextReserveAddress = malloc(sizeof(int));
+    *nextReserveAddress = 0;
+
     for (int i = 0; i < size; i++) {
         // TODO: encodeInstruction must be modified to carry the hashmap
-        instructions[i] = encodeInstruction(contents[i]);
+        int offsetToEmptyReserve = nextReserveAddress - i;
+        memory[i] = encodeInstruction(contents[i], headNode, reserveMemory);
     }
+    int reserveAddressUsed = nextReserveAddress - size;
 
     // write instructions to output file
     char *outFileName = argv[2];
-    binaryFileWriter(outFileName, instructions);
+    binaryFileWriter(outFileName, memory);
     return EXIT_SUCCESS;
+}
+
+WORD encodeInstruction(char* line, node_t **hashmap, int offsetToEmptyReserve) {
+
+}
+
+void addToReserveMemory(WORD* reserveMemory, ) {
+
 }
 
 
@@ -67,14 +85,32 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
     // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
 }
 
-int match(const char *string, const char *pattern)
+int regexMatch(const char *string, const char *pattern)
 {
   regex_t re;
-  if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return 0;
+  if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
+    return 0;
+  }
+
   int status = regexec(&re, string, 0, NULL, 0);
   regfree(&re);
-  if (status != 0) return 0;
-  return 1;
+
+  return status == 0;
+}
+
+WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
+  int operand2Value = parseOperand2(operand2);
+  switch (opCode) {
+    case MOV:
+      break;
+    case TST:
+    case TEQ:
+    case CMP:
+      break;
+    default:
+      break;
+  }
+
 }
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
@@ -93,20 +129,29 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     return value;
 }
 
-WORD assembleMov(REGNUMBER rd, int value) {
-    return 0;
+WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
+  char instructionString[6] = "111000";
+  WORD instruction = strtol(instructionString, NULL, 2);
+  instruction = appendBits(1, instruction, iFlag);
+
+  instruction = appendBits(4, instruction, MOV);
+  instruction <<= 5;
+
+  instruction = appendBits(4, instruction, rd);
+  instruction = appendBits(12, instruction, value);
+  return instruction;
 }
 
 
-int parseExpression(char* expression) {
-  if (match(expression, "0x[0-9A-Fa-f]+")) {
+int parseImmediateValue(char *expression) {
+  if (regexMatch(expression, "0x[0-9A-Fa-f]+")) {
     return strtol(&expression[2], NULL, 16);
   }
 
   return strtol(expression, NULL, 10);
 }
 
-WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *number) {
+WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *reserveMemory) {
   WORD offset = 0;
   bool iFlag = false;
   bool pFlag = false;
@@ -115,13 +160,15 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *nu
 
   if (lFlag) { //ldr
     if (address[0] == '=') {
-      int value = parseExpression(&address[1]);
+      int value = parseImmediateValue(&address[1]);
 
       if (value <= 0xFF) {
         return assembleMov(rd, value);
       }
 
-      *number = value;
+      *reserveMemory = value;
+      offset = *reserveMemory
+      reserveMemory += sizeof(WORD);
 
       //add value as a word to end of assembled program
       //PC is base register
@@ -132,7 +179,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *nu
 
   }
 
-  char instructionString[12] = "111001";
+  char instructionString[6] = "111001";
   WORD instruction = strtol(instructionString, NULL, 2);
 
   instruction = appendBits(1, instruction, iFlag);
@@ -160,6 +207,7 @@ int findPos(char *string, char *strArray[], int arraySize) {
       return i;
     }
   }
+
   return -1;
 }
 
@@ -171,8 +219,8 @@ BYTE getRegNum(char *regString, char *restOfOperand) {
 int parseOperand2(char* operand2) {
   char *immediatePattern = "#.+";
   char *shiftedRegister = "r([0-9]|1[0-6]).*";
-  if (match(operand2, immediatePattern)) {
-    WORD value = parseExpression(&operand2[1]);
+  if (regexMatch(operand2, immediatePattern)) {
+    WORD value = parseImmediateValue(&operand2[1]);
 
     for (WORD rotation = 0; rotation < sizeof(WORD); rotation += 2) {
       WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
@@ -182,7 +230,7 @@ int parseOperand2(char* operand2) {
       }
     }
 
-  } else if (match(operand2, shiftedRegister)) {
+  } else if (regexMatch(operand2, shiftedRegister)) {
     char *restOfOperand;
     BYTE rm = getRegNum(operand2, restOfOperand);
 
@@ -200,8 +248,8 @@ int parseOperand2(char* operand2) {
 
     char *exp = strtok(NULL, " ");
 
-    if (match(exp, immediatePattern)) {
-      shift = parseExpression(exp);
+    if (regexMatch(exp, immediatePattern)) {
+      shift = parseImmediateValue(exp);
       shift = appendBits(2, shift, shiftTypeBin);
       shift <<= 1;
     } else {
