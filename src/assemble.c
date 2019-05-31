@@ -94,9 +94,9 @@ void tokenize(char* line)
     }
 }
 
-WORD encodeInstruction(char* line) {
+// TODO pass in address to next free space in memory to str big numbers for SDT
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD* reserveMemory) {
     WORD value = 0;
-
     char str1[100] = "beq label";
     char strArray[10][10];
     int i,j,ctr;
@@ -139,10 +139,10 @@ WORD encodeInstruction(char* line) {
         return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
     } else if (match(strArray[0], "^ldr")) {
         printf("matching on str");
-        return assembleSDT(false, getRegisterNumber(strArray[1]), NULL, NULL, NULL);
+        return assembleSDT(false, getRegisterNumber(strArray[1]), 0, NULL, reserveMemory);
     } else if (match(strArray[0], "^str")) {
         printf("matching on str");
-        return assembleSDT(false, NULL, getRegisterNumber(strArray[1]), NULL, NULL);
+        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), NULL, reserveMemory);
     } else {
         printf("matching on dataproc");
         //  return assembleDataProc()
@@ -211,7 +211,6 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     value = appendNibble(value, rm);
     return value;
 }
-
 
 int parseImmediateValue(char *expression) {
   if (match(expression, "0x[0-9A-Fa-f]+")) {
