@@ -20,7 +20,7 @@
 // TODO create array of lines inputted in main - write to the same array index for the integer instruction?
 
 /* first pass */
-void buildSymbolTable(); // Need to feed in ADT here as a pointer
+char** importAssemblyInstr(char *fileName, int *numLines, node_t **map);
 
 /* functions for encoding instructions */
 
