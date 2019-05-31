@@ -77,6 +77,58 @@ int match(const char *string, const char *pattern)
   return 1;
 }
 
+bool match(const char *string, const char *pattern)
+{
+    regex_t re;
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return false;
+    int status = regexec(&re, string, 0, NULL, 0);
+    regfree(&re);
+    if (status != 0) return false;
+    return true;
+}
+
+void tokenize(char* line)
+{
+    char* cmd = strtok(line," ");
+
+    while (cmd != NULL)
+    {
+        printf ("%s\n",cmd);
+        cmd = strtok(NULL, " ");
+    }
+}
+
+WORD encodeInstruction(char* line) {
+    WORD value = 0;
+    const char branchPattern[] = "^b";
+    const char mPattern[] = "^m";
+    const char sPattern[] = "^andeq";
+    const char s2Pattern[] = "^lsl";
+    const char stdPattern[] = "^str";
+    const char std2Pattern[] = "^ldr";
+
+    char* token = strtok(line," ");
+
+    if (match(token, branchPattern)) {
+        printf("matching on branch");
+    } else if (match(token, mPattern)) {
+        printf("matching on multiply or mov");
+    } else if (match(token, "^andeq")) {
+        printf("matching on andeq");
+    } else if (match(token, "^lsl")) {
+        printf("matching on lsl");
+    } else if (match(token, "^ldr")) {
+        printf("matching on ldr");
+    } else if (match(token, "^str")) {
+        printf("matching on str");
+    } else {
+        printf("matching on dataproc");
+    }
+
+    return value;
+}
+
+
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
     WORD value = 224; // 0b11100000
