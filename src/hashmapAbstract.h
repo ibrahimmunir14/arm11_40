@@ -8,9 +8,6 @@
 
 #define SIZE 10
 
-//typedef struct Pair pair_t;
-//typedef struct node node_t;
-
 typedef struct Pair {
     char *key;
     int value;
@@ -21,7 +18,7 @@ typedef struct node {
     struct node *next;
 } node_t;
 
-int addHashmap(node_t **hashmap, pair_t pair);
+int addHashmapEntry(node_t **hashmap, char *key, int value);
 
 int getHashmap(node_t **hashmap, char *key);
 
