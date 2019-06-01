@@ -1,6 +1,14 @@
 #include "assemble.h"
 #include "hashmapAbstract.h"
 
+// TODO getRegNum and getRegisterNumber maybe duplicated
+// TODO add documentation to all functions
+// TODO separate functions out into separate files
+// TODO add assembleSpecial functions
+// TODO finish off SDT - luke
+// TODO finish off DataProcGeneral - luke
+// TODO understand parts of the codebase
+
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
     if (argc != 3) {
@@ -34,90 +42,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
-    /* requires, as parameters, the input file name, pointer to number of lines, symbol table */
-    // open input file
-    FILE *file;
-    if ((file = fopen(fileName, "r")) == NULL) {
-        perror("Error: could not open input file.");
-        exit(EXIT_FAILURE);
-    }
-
-    // store instruction in tempContents, store labels in map
-    char** tempContents = (char **) calloc(MAX_LINES_ASCII, sizeof(char*));
-    int instrNum = 0; // number of instructions stored in tempContents
-    for (int i = 0; i < MAX_LINES_ASCII; i++) {
-        // stop loop at end of file
-        if (feof(file)) {
-            break;
-        }
-        // allocate memory and read in line
-        tempContents[instrNum] = (char *) calloc(MAX_LINE_LENGTH, sizeof(char));
-        fgets(tempContents[instrNum], MAX_LINE_LENGTH, file);
-        if (match(tempContents[instrNum], ".*:")) {
-            // line read in is a label: add to map, allow tempContents entry to be overwritten
-            char *key = strtok(tempContents[instrNum], ":");
-            ADDRESS value = instrNum * 4;
-            addHashmapEntry(map, key, value);
-        } else { // line read in is an instruction: keep stored in tempContents
-            instrNum++;
-        }
-    }
-    fclose(file);
-    *numLines = instrNum - 1;
-
-    char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
-    for (int i = 0; i < *numLines; i++) {
-        assemblyInstructions[i] = tempContents[i];
-    }
-    free(tempContents);
-
-    return assemblyInstructions;
-}
-
-WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
-    WORD instr = 0;
-    instr = appendNibble(instr, (BYTE) condCode);
-    instr = appendNibble(instr, 10); // 0b1010
-    instr = appendNibble(instr, calculateBranchOffset(target, currentAddress));
-    return instr;
-}
-
-BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
-    // TODO: differentiate between label target and address target
-    ADDRESS targetAddress;
-    /* TODO: if label target:
-     *          targetAddress = lookup label in table
-     *       else:
-     *          targetAddress = atoi(target) (*4?)
-     */
-    BRANCHOFFSET offset = targetAddress - currentAddress;
-    return (offset >> 2);
-    // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
-}
-
-bool match(const char *string, const char *pattern)
-{
-    regex_t re;
-    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return false;
-    int status = regexec(&re, string, 0, NULL, 0);
-    regfree(&re);
-
-    return status == 0;
-}
-
-void tokenize(char* line)
-{
-    char* cmd = strtok(line," ");
-
-    while (cmd != NULL)
-    {
-        printf ("%s\n",cmd);
-        cmd = strtok(NULL, " ");
-    }
-}
-
-// TODO pass in address to next free space in memory to str big numbers for SDT
 /*
  * Note: This function takes in the instruction string, currentAddress, pointer to next free reserve memory location,
  *       and pointer to counter of number of reserve locations used.
@@ -180,8 +104,14 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
     return value;
 }
 
-REGNUMBER getRegisterNumber(char* reg) {
-    return (uint8_t) atoi(&reg[1]);
+/* assembling functions */
+
+WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
+    WORD instr = 0;
+    instr = appendNibble(instr, (BYTE) condCode);
+    instr = appendNibble(instr, 10); // 0b1010
+    instr = appendNibble(instr, calculateBranchOffset(target, currentAddress));
+    return instr;
 }
 
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
@@ -212,6 +142,7 @@ WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int
   return instruction;
 }
 
+// below 3 functions call assembleDataProcGeneral with correct arguments
 WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
 }
@@ -224,6 +155,7 @@ WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
   return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
 };
 
+// assembling instructions for MUL and MLA commands
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
     WORD value = 224; // 0b11100000
@@ -238,14 +170,6 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     value = appendNibble(value, 9); // 0b1001
     value = appendNibble(value, rm);
     return value;
-}
-
-int parseImmediateValue(char *expression) {
-  if (match(expression, "0x[0-9A-Fa-f]+")) {
-    return strtol(&expression[2], NULL, 16);
-  }
-
-  return strtol(expression, NULL, 10);
 }
 
 /*
@@ -297,25 +221,77 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *re
   return instruction;
 }
 
+/* helper functions section */
+
+char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
+    /* requires, as parameters, the input file name, pointer to number of lines, symbol table */
+    // open input file
+    FILE *file;
+    if ((file = fopen(fileName, "r")) == NULL) {
+        perror("Error: could not open input file.");
+        exit(EXIT_FAILURE);
+    }
+
+    // store instruction in tempContents, store labels in map
+    char** tempContents = (char **) calloc(MAX_LINES_ASCII, sizeof(char*));
+    int instrNum = 0; // number of instructions stored in tempContents
+    for (int i = 0; i < MAX_LINES_ASCII; i++) {
+        // stop loop at end of file
+        if (feof(file)) {
+            break;
+        }
+        // allocate memory and read in line
+        tempContents[instrNum] = (char *) calloc(MAX_LINE_LENGTH, sizeof(char));
+        fgets(tempContents[instrNum], MAX_LINE_LENGTH, file);
+        if (match(tempContents[instrNum], ".*:")) {
+            // line read in is a label: add to map, allow tempContents entry to be overwritten
+            char *key = strtok(tempContents[instrNum], ":");
+            ADDRESS value = instrNum * 4;
+            addHashmapEntry(map, key, value);
+        } else { // line read in is an instruction: keep stored in tempContents
+            instrNum++;
+        }
+    }
+    fclose(file);
+    *numLines = instrNum - 1;
+
+    char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
+    for (int i = 0; i < *numLines; i++) {
+        assemblyInstructions[i] = tempContents[i];
+    }
+    free(tempContents);
+
+    return assemblyInstructions;
+}
+
+// used by assemble branch
+BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
+    // TODO: differentiate between label target and address target
+    ADDRESS targetAddress;
+    /* TODO: if label target:
+     *          targetAddress = lookup label in table
+     *       else:
+     *          targetAddress = atoi(target) (*4?)
+     */
+    BRANCHOFFSET offset = targetAddress - currentAddress;
+    return (offset >> 2);
+    // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
+}
+
+// used to REGEX match instructions
+bool match(const char *string, const char *pattern)
+{
+    regex_t re;
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return false;
+    int status = regexec(&re, string, 0, NULL, 0);
+    regfree(&re);
+    return status == 0;
+}
+
 void trimWhiteSpace(char *string) {
   while (isspace(string[0])) {
     string++;
   }
-}
-
-int findPos(char *string, char *strArray[], int arraySize) {
-  for (int i = 0; i < arraySize; i++) {
-    if (strArray[i] == string) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-BYTE getRegNum(char *regString, char *restOfOperand) {
-  trimWhiteSpace(regString);
-  return strtol(&regString[1], &restOfOperand, 10) & FULLBITS(4);
 }
 
 bool checkIfImmediate(char* operand2) {
@@ -326,56 +302,31 @@ bool checkIfShiftedRegister(char* operand2) {
   return match(operand2, "r([0-9]|1[0-6]).*");
 }
 
-int parseImmediateOperand2(char* operand2) {
-  WORD value = parseImmediateValue(&operand2[1]);
-
-  for (WORD rotation = 0; rotation < sizeof(WORD); rotation += 2) {
-    WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
-
-    if (rotated < (1 << 8)) {
-      return appendBits(8, rotation & FULLBITS(4), (BYTE) rotated);
+int findPos(char *string, char *strArray[], int arraySize) {
+    for (int i = 0; i < arraySize; i++) {
+        if (strArray[i] == string) {
+            return i;
+        }
     }
-  }
+    return -1;
 }
 
-int parseShiftedRegister(char* operand2) {
-  char *restOfOperand;
-  BYTE rm = getRegNum(operand2, restOfOperand);
+BYTE getRegNum(char *regString, char *restOfOperand) {
+    trimWhiteSpace(regString);
+    return strtol(&regString[1], &restOfOperand, 10) & FULLBITS(4);
+}
 
-  if (*restOfOperand == '\0') {
-    return rm;
-  }
-
-  restOfOperand++;
-  trimWhiteSpace(restOfOperand);
-
-  int shift;
-  char *shiftType = strtok(restOfOperand, " ");
-  char *shifts[4] = {"lsl", "lsr", "asr", "ror"};
-  int shiftTypeBin = findPos(shiftType, shifts, 4);
-
-  char *exp = strtok(NULL, " ");
-
-  if (checkIfImmediate(restOfOperand)) {
-    shift = parseImmediateValue(exp);
-    shift = appendBits(2, shift, shiftTypeBin);
-    shift <<= 1;
-
-  } else if (checkIfShiftedRegister(restOfOperand)){
-    shift = getRegNum(exp, NULL);
-    shift <<= 1;
-    char *exp = strtok(NULL, " ");
-    shift <<= 1;
-    shift++;
-  }
-
-  return shift & FULLBITS(12);
+REGNUMBER getRegisterNumber(char* reg) {
+    return (uint8_t) atoi(&reg[1]);
 }
 
 int getIFlag(char* operand2) {
   return checkIfImmediate(operand2) ? 1 : 0;
 }
 
+/* parsing functions used by SDT, DataProc, and encodeInstruction functions */
+
+// this is the main function which delegates to the 3 helper functions below
 int parseOperand2(char* operand2) {
   if (checkIfImmediate(operand2)) {
     parseImmediateOperand2(operand2);
@@ -387,3 +338,56 @@ int parseOperand2(char* operand2) {
   return -1;
 }
 
+int parseShiftedRegister(char* operand2) {
+    char *restOfOperand;
+    BYTE rm = getRegNum(operand2, restOfOperand);
+
+    if (*restOfOperand == '\0') {
+        return rm;
+    }
+
+    restOfOperand++;
+    trimWhiteSpace(restOfOperand);
+
+    int shift;
+    char *shiftType = strtok(restOfOperand, " ");
+    char *shifts[4] = {"lsl", "lsr", "asr", "ror"};
+    int shiftTypeBin = findPos(shiftType, shifts, 4);
+
+    char *exp = strtok(NULL, " ");
+
+    if (checkIfImmediate(restOfOperand)) {
+        shift = parseImmediateValue(exp);
+        shift = appendBits(2, shift, shiftTypeBin);
+        shift <<= 1;
+
+    } else if (checkIfShiftedRegister(restOfOperand)){
+        shift = getRegNum(exp, NULL);
+        shift <<= 1;
+        char *exp = strtok(NULL, " ");
+        shift <<= 1;
+        shift++;
+    }
+
+    return shift & FULLBITS(12);
+}
+
+int parseImmediateOperand2(char* operand2) {
+    WORD value = parseImmediateValue(&operand2[1]);
+
+    for (WORD rotation = 0; rotation < sizeof(WORD); rotation += 2) {
+        WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
+
+        if (rotated < (1 << 8)) {
+            return appendBits(8, rotation & FULLBITS(4), (BYTE) rotated);
+        }
+    }
+}
+
+int parseImmediateValue(char *expression) {
+    if (match(expression, "0x[0-9A-Fa-f]+")) {
+        return strtol(&expression[2], NULL, 16);
+    }
+
+    return strtol(expression, NULL, 10);
+}
