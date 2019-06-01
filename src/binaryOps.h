@@ -5,7 +5,7 @@
 #include "machineDataTypes.h"
 
 // macro: value representing numBits 1s in a row
-#define FULLBITS(numBits) ((1 << (numBits)) - 1)
+#define FULLBITS(numBits) ((1u << ((BYTE) (numBits))) - 1u)
 // macro: extract the chosen bits (using number scheme from spec, big-endian), and return right-aligned bits
 #define GETBITS(word, startBitNo, numBits) (FULLBITS(numBits) & ((word) >> (BYTE) (1 + (startBitNo) - (numBits))))
 

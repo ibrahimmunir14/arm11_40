@@ -1,4 +1,5 @@
 #include "fileIO.h"
+#include "binaryOps.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,23 +30,26 @@ void binaryFileWriter(char *fileName, const WORD* instructions, const WORD* rese
     FILE * fPointer;
     // To create a new file use wb, to append to a file use ab
     fPointer = fopen(fileName, "wb");
+    printf("\n\n*** Output: Instructions ***\n");
     for (int i = 0; i < numInstructions; i ++) {
         WORD n = instructions[i];
+        printf("0x%08x\n", n);
         BYTE bytes[4];
-        bytes[0] = (n >> 24u) & 0xFF;
-        bytes[1] = (n >> 16u) & 0xFF;
-        bytes[2] = (n >> 8u) & 0xFF;
-        bytes[3] = n & 0xFF;
+        bytes[0] = (n >> 24u) & FULLBITS(8);
+        bytes[1] = (n >> 16u) & FULLBITS(8);
+        bytes[2] = (n >> 8u) & FULLBITS(8);
+        bytes[3] = n & FULLBITS(8);
         fwrite(bytes, sizeof(bytes), 1, fPointer);
         fwrite("\n", sizeof(char), 1, fPointer);
     }
+    printf("\n*** Output: ReserveMemory ***\n");
     for (int i = 0; i < numReserve; i ++) {
         WORD n = reserveMemory[i];
         BYTE bytes[4];
-        bytes[0] = (n >> 24u) & 0xFF;
-        bytes[1] = (n >> 16u) & 0xFF;
-        bytes[2] = (n >> 8u) & 0xFF;
-        bytes[3] = n & 0xFF;
+        bytes[0] = (n >> 24u) & FULLBITS(8);
+        bytes[1] = (n >> 16u) & FULLBITS(8);
+        bytes[2] = (n >> 8u) & FULLBITS(8);
+        bytes[3] = n & FULLBITS(8);
         fwrite(bytes, sizeof(bytes), 1, fPointer);
         fwrite("\n", sizeof(char), 1, fPointer);
     }
