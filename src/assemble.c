@@ -169,10 +169,10 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
         return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
     } else if (match(strArray[0], "^ldr")) {
         printf("matching on str");
-        return assembleSDT(false, getRegisterNumber(strArray[1]), 0, NULL, reserveMemory);
+        return assembleSDT(false, getRegisterNumber(strArray[1]), 0, &currentAddress, nextReserveMemory, numReserve); // TODO LUKE - why do you want a pointer when you can just take the value or current address.
     } else if (match(strArray[0], "^str")) {
         printf("matching on str");
-        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), NULL, reserveMemory);
+        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), &currentAddress, nextReserveMemory, numReserve);
     } else {
         printf("matching on dataproc");
         //  return assembleDataProc()
@@ -182,7 +182,6 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 
 REGNUMBER getRegisterNumber(char* reg) {
     return (uint8_t) atoi(&reg[1]);
-
 }
 
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
@@ -197,7 +196,6 @@ WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* oper
 
       break;
   }
-
 }
 
 WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag, bool sFlag) {
