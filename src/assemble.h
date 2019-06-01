@@ -54,6 +54,7 @@ int parseOperand2(char* operand2); // used by assemble dataproc and result passe
 int parseImmediateValue(char *expression); // used by assembleSpecial and possibly by SDT + Branch
 
 bool match(const char *string, const char *pattern);
-REGNUMBER getRegisterNumber(char *regString, char *restOfOperand);
+REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand);
+    REGNUMBER getRegNum(char *regString);
 
 int getIFlag(char* operand2);
