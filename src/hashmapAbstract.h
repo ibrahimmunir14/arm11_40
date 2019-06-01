@@ -18,6 +18,8 @@ typedef struct node {
     struct node *next;
 } node_t;
 
+node_t **init();
+
 int addHashmapEntry(node_t **hashmap, char *key, int value);
 
 int getHashmap(node_t **hashmap, char *key);

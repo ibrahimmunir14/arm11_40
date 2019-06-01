@@ -20,16 +20,16 @@
 // TODO create array of lines inputted in main - write to the same array index for the integer instruction?
 
 /* first pass */
-void buildSymbolTable(); // Need to feed in ADT here as a pointer
+char** importAssemblyInstr(char *fileName, int *numLines, node_t **map);
 
 /* functions for encoding instructions */
 
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-WORD encodeInstruction(char* line);
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
 /* each encode instruction returns a 32 bit integer instruction */
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);
-WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *number);
+WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *reserveMemory);
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
