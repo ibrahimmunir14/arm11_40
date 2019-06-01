@@ -127,15 +127,15 @@ void tokenize(char* line)
  */
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
     WORD value = 0;
-    char str1[100] = "beq label";
+//    char str1[100] = "beq label";
     char strArray[10][10];
     int i,j,ctr;
 
     j=0; ctr=0;
-    for(i=0;i<=(strlen(str1));i++)
+    for(i=0;i<=(strlen(line));i++)
     {
         // if space or NULL found, assign NULL into newString[ctr]
-        if(str1[i]==' '||str1[i]=='\0')
+        if(line[i]==' '||line[i]=='\0'||line[i]==','||line[i]=='\n')
         {
             strArray[ctr][j]='\0';
             ctr++;  //for next word
@@ -143,38 +143,38 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
         }
         else
         {
-            strArray[ctr][j]=str1[i];
+            strArray[ctr][j]=line[i];
             j++;
         }
     }
-    for(i=0;i < ctr;i++)
-        printf(" %s\n",strArray[i]);
+    for(i=0;i < ctr-1;i++)
+        printf(" '%s'\n",strArray[i]);
 
-    if (match(strArray[0], "b")) {
-        printf("matching on branch");
+    if (match(strArray[0], "^b")) {
+        printf("matching on branch\n");
     } else if (match(strArray[0], "^mov")) {
-        printf("matching on mov");
-        return assembleMov(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]), getIFlag(strArray));
+        printf("matching on mov\n");
+//        return assembleMov(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]), getIFlag(strArray[2]));
     } else if (match(strArray[0], "^mul")) {
-        printf("matching on mul");
+        printf("matching on mul\n");
         return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), 0, false);
     } else if (match(strArray[0], "^mla")) {
-        printf("matching on mla");
+        printf("matching on mla\n");
         return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), getRegisterNumber(strArray[4]), true);
     } else if (match(strArray[0], "^andeq")) {
-        printf("matching on andeq");
-        return assembleAndEq();
+        printf("matching on andeq\n");
+//        return assembleAndEq();
     } else if (match(strArray[0], "^lsl")) {
-        printf("matching on lsl");
-        return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
+        printf("matching on lsl\n");
+//        return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
     } else if (match(strArray[0], "^ldr")) {
-        printf("matching on str");
-        return assembleSDT(false, getRegisterNumber(strArray[1]), 0, &currentAddress, nextReserveMemory, numReserve); // TODO LUKE - why do you want a pointer when you can just take the value or current address.
+        printf("matching on ldr\n");
+//        return assembleSDT(false, getRegisterNumber(strArray[1]), 0, &currentAddress, nextReserveMemory, numReserve); // TODO LUKE - why do you want a pointer when you can just take the value or current address.
     } else if (match(strArray[0], "^str")) {
-        printf("matching on str");
-        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), &currentAddress, nextReserveMemory, numReserve);
+        printf("matching on str\n");
+//        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), &currentAddress, nextReserveMemory, numReserve);
     } else {
-        printf("matching on dataproc");
+        printf("matching on dataproc\n");
         //  return assembleDataProc()
     }
     return value;
