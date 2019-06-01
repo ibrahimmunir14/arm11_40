@@ -355,4 +355,10 @@ int parseOperand2(char* operand2) {
   return -1;
 }
 
+WORD assembleAndEq(void) {
 
+}
+
+WORD assembleLSL(REGNUMBER rn, int value) {
+
+}
