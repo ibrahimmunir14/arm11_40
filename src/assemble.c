@@ -93,7 +93,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 //        return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
     } else if (match(strArray[0], "^ldr")) {
         printf("matching on ldr\n");
-//        return assembleSDT(false, getRegisterNumber(strArray[1]), 0, &currentAddress, nextReserveMemory, numReserve); // TODO LUKE - why do you want a pointer when you can just take the value or current address.
+        return assembleSDT(false, getRegisterNumber(strArray[1]), strArray[2], currentAddress, nextReserveMemory, numReserve);
     } else if (match(strArray[0], "^str")) {
         printf("matching on str\n");
 //        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), &currentAddress, nextReserveMemory, numReserve);
@@ -177,7 +177,8 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
  *                See note above executeInstruction. Please text if any confusion.
  *                Function declaration will need to be modified, I haven't done so to avoid conflict.
  */
-WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *reserveMemory) {
+WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
+  REGNUMBER rn;
   WORD offset = 0;
   bool iFlag = false;
   bool pFlag = false;
@@ -185,20 +186,17 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *re
 
 
   if (lFlag) { //ldr
-    if (address[0] == '=') {
-      int value = parseImmediateValue(&address[1]);
+    if (sdtAddressParameter[0] == '=') {
+      int value = parseImmediateValue(&sdtAddressParameter[1]);
 
       if (value <= 0xFF) {
         return assembleMov(rd, value, 1);
       }
 
-      *reserveMemory = value;
-      offset = *reserveMemory;
-      reserveMemory += sizeof(WORD);
-
-      //add value as a word to end of assembled program
-      //PC is base register
-      //offset is offset from current address to address of value
+      *nextReserveMemory = value;
+      offset = nextReserveMemory - currentAddress;
+      *numReserve++;
+      rn = REG_PC;
 
     }
   } else { //str
@@ -311,14 +309,11 @@ int findPos(char *string, char *strArray[], int arraySize) {
     return -1;
 }
 
-BYTE getRegNum(char *regString, char *restOfOperand) {
+REGNUMBER getRegisterNumber(char *regString, char *restOfOperand) {
     trimWhiteSpace(regString);
-    return strtol(&regString[1], &restOfOperand, 10) & FULLBITS(4);
+    return strtol(&regString[1], &restOfOperand, 10);
 }
 
-REGNUMBER getRegisterNumber(char* reg) {
-    return (uint8_t) atoi(&reg[1]);
-}
 
 int getIFlag(char* operand2) {
   return checkIfImmediate(operand2) ? 1 : 0;
@@ -338,7 +333,7 @@ int parseOperand2(char* operand2) {
   return -1;
 }
 
-g
+
 WORD assembleAndEq(void) {
 
 }

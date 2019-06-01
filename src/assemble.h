@@ -29,7 +29,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 /* each encode instruction returns a 32 bit integer instruction */
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);
-WORD assembleSDT(bool lFlag, REGNUMBER rd, REGNUMBER rn, char* address, WORD *reserveMemory);
+WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
@@ -54,6 +54,6 @@ int parseOperand2(char* operand2); // used by assemble dataproc and result passe
 int parseImmediateValue(char *expression); // used by assembleSpecial and possibly by SDT + Branch
 
 bool match(const char *string, const char *pattern);
-REGNUMBER getRegisterNumber(char* reg);
+REGNUMBER getRegisterNumber(char *regString, char *restOfOperand);
 
 int getIFlag(char* operand2);
