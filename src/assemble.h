@@ -36,7 +36,7 @@ WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* oper
 /* special is for andeq and lsl, can be split into 2 different functions later */
 /* can call encodeDataProc from inside this instruction */
 WORD assembleAndEq(void);
-WORD assembleLSL(REGNUMBER rn, int value);
+WORD assembleLSL(REGNUMBER rn, char* operand2);
 
 
 /* helper functions for encoding DataProc */

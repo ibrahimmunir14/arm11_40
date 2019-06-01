@@ -1,5 +1,6 @@
 #include "assemble.h"
 #include "hashmapAbstract.h"
+#include "mnemonicParser.h"
 
 // TODO getRegNum and getRegisterNumber maybe duplicated
 // TODO add documentation to all functions
@@ -52,56 +53,70 @@ int main(int argc, char **argv) {
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
     WORD value = 0;
 //    char str1[100] = "beq label";
-    char strArray[10][10];
-    int i,j,ctr;
+//    char strArray[10][10];
+//    int i,j,ctr;
+//
+//    j=0; ctr=0;
+//    for(i=0;i<=(strlen(line));i++)
+//    {
+//        // if space or NULL found, assign NULL into newString[ctr]
+//        if(line[i]==' '||line[i]=='\0'||line[i]==','||line[i]=='\n')
+//        {
+//            strArray[ctr][j]='\0';
+//            ctr++;  //for next word
+//            j=0;    //for next word, init index to 0
+//        }
+//        else
+//        {
+//            strArray[ctr][j]=line[i];
+//            j++;
+//        }
+//    }
+//    for(i=0;i < ctr-1;i++)
+//        printf(" '%s'\n",strArray[i]);
 
-    j=0; ctr=0;
-    for(i=0;i<=(strlen(line));i++)
-    {
-        // if space or NULL found, assign NULL into newString[ctr]
-        if(line[i]==' '||line[i]=='\0'||line[i]==','||line[i]=='\n')
-        {
-            strArray[ctr][j]='\0';
-            ctr++;  //for next word
-            j=0;    //for next word, init index to 0
-        }
-        else
-        {
-            strArray[ctr][j]=line[i];
-            j++;
-        }
-    }
-    for(i=0;i < ctr-1;i++)
-        printf(" '%s'\n",strArray[i]);
+    char* remainder = *line;
+    char* command = strtok_r(remainder, " ", &remainder);
 
-    if (match(strArray[0], "^b")) {
+    if (match(command, "^b")) {
         printf("matching on branch\n");
-    } else if (match(strArray[0], "^mov")) {
-        printf("matching on mov\n");
-//        return assembleMov(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]), getIFlag(strArray[2]));
-    } else if (match(strArray[0], "^mul")) {
-        printf("matching on mul\n");
-        return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), 0, false);
-    } else if (match(strArray[0], "^mla")) {
-        printf("matching on mla\n");
-        return assembleMultiply(getRegisterNumber(strArray[1]), getRegisterNumber(strArray[2]), getRegisterNumber(strArray[3]), getRegisterNumber(strArray[4]), true);
-    } else if (match(strArray[0], "^andeq")) {
+        return assembleBranch(branchEnum(command), remainder, currentAddress);
+    } else if (match(command, "^andeq")) {
         printf("matching on andeq\n");
-//        return assembleAndEq();
-    } else if (match(strArray[0], "^lsl")) {
-        printf("matching on lsl\n");
-//        return assembleLSL(getRegisterNumber(strArray[1]), parseOperand2(strArray[2]));
-    } else if (match(strArray[0], "^ldr")) {
-        printf("matching on ldr\n");
-        return assembleSDT(false, getRegisterNumber(strArray[1]), strArray[2], currentAddress, nextReserveMemory, numReserve);
-    } else if (match(strArray[0], "^str")) {
-        printf("matching on str\n");
-//        return assembleSDT(false, 0, getRegisterNumber(strArray[1]), &currentAddress, nextReserveMemory, numReserve);
+        return assembleAndEq();
     } else {
-        printf("matching on dataproc\n");
-        //  return assembleDataProc()
+        // the rest of the instructions specify a register as their 2nd argument
+        char* reg1 = strtok_r(remainder, " ", &remainder);
+        if (match(command, "^mov")) {
+            printf("matching on mov\n");
+            return assembleMov(getRegisterNumber(reg1), parseOperand2(remainder), getIFlag(remainder));
+        } else if (match(command, "^lsl")) {
+            printf("matching on lsl\n");
+            return assembleLSL(getRegisterNumber(reg1), remainder);
+        } else if (match(command, "^ldr")) {
+            printf("matching on ldr\n");
+            return assembleSDT(true, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, numReserve);
+        } else if (match(command, "^str")) {
+            printf("matching on str\n");
+            return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, numReserve);
+        } else {
+            // the rest of the instructions specify a register as their 3rd argument
+            char* reg2 = strtok_r(remainder, " ", &remainder);
+            if (match(command, "^mul")) {
+                printf("matching on mul\n");
+                char* reg3 = strtok_r(remainder, " ", &remainder);
+                return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), 0, false);
+            } else if (match(command, "^mla")) {
+                printf("matching on mla\n");
+                char* reg3 = strtok_r(remainder, " ", &remainder);
+                char* reg4 = strtok_r(remainder, " ", &remainder);
+                return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), getRegisterNumber(reg4), true);
+            } else {
+                printf("matching on dataproc\n");
+                return assembleDataProc(dataProcEnum(command), getRegisterNumber(reg1), getRegisterNumber(reg2), remainder);
+            }
+        }
     }
-    return value;
 }
 
 /* assembling functions */
@@ -217,6 +232,15 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
   instruction = appendBits(12, instruction, offset);
 
   return instruction;
+}
+
+WORD assembleAndEq(void) {
+    return 0;
+}
+
+WORD assembleLSL(REGNUMBER rn, char* operand2) {
+    // TODO - amelia use parse operand 2 to get values for the 2nd arg (ask luke about it)
+    return 0;
 }
 
 /* helper functions section */
