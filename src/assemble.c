@@ -126,7 +126,7 @@ WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
-    WORD value = 224; // 0b11100000
+    WORD value = 224; // 0b11100000 // Why can't we use the 0bxx version?
     if (aFlag) {
         value = appendNibble(value, 2); // 0b0010
     } else {
