@@ -18,11 +18,12 @@
 #define Ble 193487384
 #define B 177671
 
-int hash(const char *key) {
+static int hash(const char *key) {
     unsigned long hash = 5381;
     int c;
-    while (c = *key++)
-        hash = ((hash << 5) + hash) + c;
+    while ((c = *key++)) {
+        hash = ((hash << 5u) + hash) + c;
+    }
 
     return hash;
 }
