@@ -22,7 +22,6 @@
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
-    parseImmediateOperand2("#163840");
 
     if (argc != 3) {
         return EXIT_FAILURE;
@@ -171,7 +170,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
   WORD offset = 0;
   bool iFlag = true;
   bool pFlag = true;
-  bool uFlag = false; //used for optional parts
+  bool uFlag = true; //used for optional parts
 
   if (sdtAddressParameter[0] == '=') {
     int value = parseImmediateValue(&sdtAddressParameter[1]);
@@ -181,7 +180,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     }
 
     *nextReserveMemory = value;
-    offset = *reserveAddress - currentAddress;
+    offset = *reserveAddress - currentAddress - 8;
     *reserveAddress += 4;
     rn = REG_PC;
     iFlag = false;
