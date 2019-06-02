@@ -272,12 +272,16 @@ WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
 }
 
 WORD assembleAndEq(void) {
-    return 0;
+  return 0;
 }
 
-WORD assembleLSL(REGNUMBER rn, char *operand2) {
-    OpFlagPair opFlag = parseOperand2(operand2);
-    return assembleMov(rn, opFlag.operand2, opFlag.iflag);
+WORD assembleLSL(REGNUMBER rn, char *expression) {
+  int lslShift = parseImmediateValue(&expression[1]);
+  lslShift = appendBits(2, lslShift, LSL);
+  lslShift <<= 1;
+  lslShift = appendNibble(lslShift, rn);
+
+  return assembleMov(rn, lslShift & FULLBITS(12), 0);
 }
 
 
