@@ -163,9 +163,9 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
 
 WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
   REGNUMBER rn;
-  char *normalRegPattern = "^\\[r([0-9]|1[0-6])\\]$";
-  char *preIndexPattern = "^\\[r([0-9]|1[0-6]),.+\\]";
-  char *postIndexPattern = "^\\[r([0-9]|1[0-6])\\],.+";
+  char *normalRegPattern = "^\\[r([0-9]|1[0-6])\\]$"; // e.g. [r5], aka offset is 0
+  char *preIndexPattern = "^\\[r([0-9]|1[0-6]),.+\\]"; // e.g. [r5, X] : offset 'X' is immediate or shifted reg
+  char *postIndexPattern = "^\\[r([0-9]|1[0-6])\\],.+"; // e.g. [r5] X : offset 'X' is immediate or shifted reg
 
   WORD offset = 0;
   bool iFlag = true;
@@ -173,6 +173,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
   bool uFlag = true; //used for optional parts
 
   if (sdtAddressParameter[0] == '=') {
+      // address is an immediate expression, use PC as base, put an offset etc.
     int value = parseImmediateValue(&sdtAddressParameter[1]);
 
     if (value <= 0xFF) {
@@ -186,12 +187,16 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     iFlag = false;
 
   } else {
+      //
     rn = getRegisterNumber(&sdtAddressParameter[1]);
     sdtAddressParameter = trimWhiteSpace(sdtAddressParameter);
 
     if (match(sdtAddressParameter, normalRegPattern)) {
+      // address is register, offset is 0
       offset = 0;
+      iFlag = false;
     } else {
+      // address is register plus some offset
       if (match(sdtAddressParameter, preIndexPattern)) {
         pFlag = true;
       } else if (match(sdtAddressParameter, postIndexPattern)) {
@@ -201,8 +206,15 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
       strtok(sdtAddressParameter, ",");
       char *expression = strtok(NULL, "]");
       expression = trimWhiteSpace(expression);
+      /* Note: the address is a register Rn with offset applied
+       *       Rn can be extracted, four lines above
+       *       Offset is immediate value (I=0), or a register Rm shifted (I=1)
+       *       The first case is assumed here, second case is optional
+       *       TODO: Implement shifted register case, set I Flag accordingly
+       *             Implement negative offset, set U Flag accordingly
+       */
       offset = parseImmediateValue(&expression[1]);
-
+      iFlag = false;
     }
   }
 
