@@ -27,12 +27,12 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map);
 /* functions for encoding instructions */
 
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress);
 /* each encode instruction returns a 32 bit integer instruction */
 
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
-WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
+WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress);
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
 
 /* helper functions for encoding DataProc */

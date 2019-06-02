@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     // import data into instructions array and symbol table
     char *inFileName = argv[1];
     int numInstructions;
-    node_t **symbolTable = init();
+    node_t **symbolTable = initHashmap();
     char **assInstructions = importAssemblyInstr(inFileName, &numInstructions, symbolTable);
 
     // print contents, for debugging purposes
@@ -26,16 +26,16 @@ int main(int argc, char **argv) {
     // set up instruction and reserve memory space
     WORD* armInstructions = calloc(numInstructions, sizeof(WORD));
     WORD* reserveMemory = calloc(numInstructions, sizeof(WORD));
-    int numReserve = 0; // number of reserve memory locations used up (in WORDS)
+    ADDRESS reserveAddress = 4 * numInstructions; // address of next free reserve memory location (in BYTEs)
 
     // encode assembly instructions into arm words sequentially
     for (int i = 0; i < numInstructions; i++) {
-        armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[numReserve], &numReserve);
+        armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[(reserveAddress / 4) - numInstructions], &reserveAddress);
     }
 
     // write instructions and reserved memory to output file
     char *outFileName = argv[2];
-    binaryFileWriter(outFileName, armInstructions, reserveMemory, numInstructions, numReserve);
+    binaryFileWriter(outFileName, armInstructions, reserveMemory, numInstructions, (reserveAddress / 4) - numInstructions);
     return EXIT_SUCCESS;
 }
 
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
  *       - *nextReserveMemory is to be passed to SDT function, and the value/contents is to be updated directly
  *       - *numReserve is to be passed to SDT function, and should be incremented if *nextReserveMemory is used
  */
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
     WORD value = 0;
 //    char str1[100] = "beq label";
 //    char strArray[10][10];
@@ -71,8 +71,8 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 //    for(i=0;i < ctr-1;i++)
 //        printf(" '%s'\n",strArray[i]);
 
-    char* remainder = *line;
-    char* command = strtok_r(remainder, " ", &remainder);
+    char* remainder = line;
+    char* command = strtok_r(line, " ", &remainder);
 
     if (match(command, "^b")) {
         printf("matching on branch\n");
@@ -82,7 +82,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
         return assembleAndEq();
     } else {
         // the rest of the instructions specify a register as their 2nd argument
-        char* reg1 = strtok_r(remainder, " ", &remainder);
+        char* reg1 = strtok_r(remainder, ",", &remainder);
         if (match(command, "^mov")) {
             printf("matching on mov\n");
             return assembleMov(getRegisterNumber(reg1), parseOperand2(remainder), getIFlag(remainder));
@@ -91,21 +91,21 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
             return assembleLSL(getRegisterNumber(reg1), remainder);
         } else if (match(command, "^ldr")) {
             printf("matching on ldr\n");
-            return assembleSDT(true, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, numReserve);
+            return assembleSDT(true, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, reserveAddress);
         } else if (match(command, "^str")) {
             printf("matching on str\n");
-            return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, numReserve);
+            return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, reserveAddress);
         } else {
             // the rest of the instructions specify a register as their 3rd argument
-            char* reg2 = strtok_r(remainder, " ", &remainder);
+            char* reg2 = strtok_r(remainder, ",", &remainder);
             if (match(command, "^mul")) {
                 printf("matching on mul\n");
-                char* reg3 = strtok_r(remainder, " ", &remainder);
+                char* reg3 = strtok_r(remainder, ",", &remainder);
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), 0, false);
             } else if (match(command, "^mla")) {
                 printf("matching on mla\n");
-                char* reg3 = strtok_r(remainder, " ", &remainder);
-                char* reg4 = strtok_r(remainder, " ", &remainder);
+                char* reg3 = strtok_r(remainder, ",", &remainder);
+                char* reg4 = strtok_r(remainder, ",", &remainder);
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), getRegisterNumber(reg4), true);
             } else {
                 printf("matching on dataproc\n");
@@ -140,7 +140,7 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     return value;
 }
 
-WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
+WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
   REGNUMBER rn;
   char *normalRegPattern = "[Rn]";
   char *preIndexPattern = "[Rn,.+]";
@@ -159,8 +159,8 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     }
 
     *nextReserveMemory = value;
-    offset = nextReserveMemory - currentAddress;
-    *numReserve++;
+    offset = *reserveAddress - currentAddress;
+    *reserveAddress += 4;
     rn = REG_PC;
     iFlag = false;
 
