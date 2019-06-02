@@ -27,12 +27,12 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map);
 /* functions for encoding instructions */
 
 /* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable);
 /* each encode instruction returns a 32 bit integer instruction */
 
-WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress);
+WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress, node_t **symbolTable);
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
-WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve);
+WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress);
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
 
 /* helper functions for encoding DataProc */
@@ -47,7 +47,7 @@ WORD assembleAndEq(void);
 WORD assembleLSL(REGNUMBER rn, char* operand2);
 
 /* helper functions for encodingBranch */
-BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress);
+BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress, node_t **symbolTable);
 
 /* helper functions for parsing */
 
@@ -68,5 +68,5 @@ int getIFlag(char* operand2);
 /* utility functions */
 bool match(const char *string, const char *pattern);
 WORD rotateLeft(WORD num, int shiftAmount);
-void trimWhiteSpace(char *string);
+char* trimWhiteSpace(char *string);
 int findPos(char *string, char *strArray[], int arraySize);

@@ -8,7 +8,8 @@ LDLIBS = -lm
 
 all: assemble emulate
 
-assemble: assemble.o
+assemble: assemble.o binaryOps.o fileIO.o hashmap.o mnemonicParser.o
+	$(CC) assemble.o binaryOps.o fileIO.o hashmap.o mnemonicParser.o -o assemble $(LDLIBS)
 
 emulate: emulate.o binaryOps.o fileIO.o
 	$(CC) emulate.o binaryOps.o fileIO.o -o emulate $(LDLIBS)
@@ -21,8 +22,16 @@ binaryOps.o: binaryOps.h binaryOps.c
 
 binaryOps.h: machineDataTypes.h
 
-binaryFileLoader.o: fileIO.h machineDataTypes.h fileIO.c
+fileIO.o: fileIO.h machineDataTypes.h fileIO.c
 	$(CC) $(CFLAGS) fileIO.c -c -o fileIO.o
+
+hashmap.o: hashmapAbstract.h hashmap.c
+	$(CC) $(CFLAGS) hashmap.c -c -o hashmap.o
+
+mnemonicParser.o: mnemonicParser.h machineDataTypes.h mnemonicParser.c
+	$(CC) $(CFLAGS) mnemonicParser.c -c -o mnemonicParser.o
+
+mnemonicParser.h: machineDataTypes.h
 
 clean:
 	rm -f $(wildcard *.o)
