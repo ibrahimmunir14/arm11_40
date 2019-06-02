@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
     // encode assembly instructions into arm words sequentially
     for (int i = 0; i < numInstructions; i++) {
         armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[(reserveAddress / 4) - numInstructions], &reserveAddress);
+        printf("0x%08x\n", armInstructions[i]);
     }
 
     // write instructions and reserved memory to output file
@@ -41,13 +42,13 @@ int main(int argc, char **argv) {
 
 /*
  * Note: This function takes in the instruction string, currentAddress, pointer to next free reserve memory location,
- *       and pointer to counter of number of reserve locations used.
+ *       and pointer to total address number of next free reserve memory location
  *       - currentAddress is needed for branch operations and SDT, to calculate offsets
  *       - *nextReserveMemory is to be passed to SDT function, and the value/contents is to be updated directly
- *       - *numReserve is to be passed to SDT function, and should be incremented if *nextReserveMemory is used
+ *       - *reserveAddress is to be passed to SDT function to calculate offset, and should be increased by 4 if used
  */
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
-    WORD value = 0;
+//    WORD value = 0;
 //    char str1[100] = "beq label";
 //    char strArray[10][10];
 //    int i,j,ctr;
@@ -289,7 +290,7 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
 
     char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
     for (int i = 0; i < *numLines; i++) {
-        assemblyInstructions[i] = tempContents[i];
+        assemblyInstructions[i] = strtok(tempContents[i], "\n");
     }
     free(tempContents);
 
@@ -299,7 +300,7 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
 // used by assemble branch
 BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
     // TODO: differentiate between label target and address target
-    ADDRESS targetAddress;
+    ADDRESS targetAddress = 0;
     /* TODO: if label target:
      *          targetAddress = lookup label in table
      *       else:
@@ -325,13 +326,13 @@ int parseImmediateValue(char *expression) {
 // this is the main function which delegates to the 3 helper functions below
 int parseOperand2(char* operand2) {
   if (checkIfImmediate(operand2)) {
-    parseImmediateOperand2(operand2);
+    return parseImmediateOperand2(operand2);
   } else if (checkIfShiftedRegister(operand2)) {
-    parseShiftedRegister(operand2);
+    return parseShiftedRegister(operand2);
+  } else {
+      printf("Error: Invalid operand2.\n");
+      return -1;
   }
-
-  printf("Error: Invalid operand2.\n");
-  return -1;
 }
 
 REGNUMBER getRegisterNumber(char *regString) {
@@ -356,6 +357,9 @@ int parseImmediateOperand2(char* operand2) {
   WORD value = parseImmediateValue(&operand2[1]);
 
   //
+  if (value < (1 << 8)) {
+      return value;
+  }
   for (WORD halfRotation = 0; halfRotation * 2 < sizeof(WORD); halfRotation++) {
     WORD rotated = rotateLeft(value, halfRotation * 2);
 
@@ -369,7 +373,7 @@ int parseImmediateOperand2(char* operand2) {
 }
 
 int parseShiftedRegister(char* operand2) {
-    char *shiftString;
+    char *shiftString = "\0";
     BYTE rm = getRegNumWithRest(operand2, shiftString);
 
     // if register is not shifted
