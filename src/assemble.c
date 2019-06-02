@@ -22,9 +22,12 @@
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
+    parseImmediateOperand2("#163840");
+
     if (argc != 3) {
         return EXIT_FAILURE;
     }
+
     // import data into instructions array and symbol table
     char *inFileName = argv[1];
     int numInstructions;
@@ -376,17 +379,18 @@ bool checkIfShiftedRegister(char* operand2) {
 
 int parseImmediateOperand2(char* operand2) {
   WORD value = parseImmediateValue(&operand2[1]);
-
+  printf("%d\n", value);
   //
   if (value < (1 << 8)) {
       return value;
   }
-  for (WORD halfRotation = 0; halfRotation * 2 < sizeof(WORD); halfRotation++) {
+  for (WORD halfRotation = 0; halfRotation * 2 < sizeof(WORD) * 8u; halfRotation++) {
     WORD rotated = rotateLeft(value, halfRotation * 2);
 
     if (rotated < (1 << 8)) {
       return appendBits(8, halfRotation & FULLBITS(4), rotated);
     }
+    printf("%d\n", rotated);
   }
 
   printf("Error: Number cannot be represented as a rotated byte.\n");
@@ -437,8 +441,8 @@ int getIFlag(char* operand2) {
 
 /* utility functions */
 
-WORD rotateLeft(WORD num, int shiftAmount) {
-  return num << shiftAmount | num >> (sizeof(WORD) - shiftAmount);
+WORD rotateLeft(WORD num, unsigned int shiftAmount) {
+  return (num << shiftAmount) | (num >> (sizeof(WORD) * 8 - shiftAmount));
 }
 
 // used to REGEX match instructions
