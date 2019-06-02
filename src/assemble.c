@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
     // encode assembly instructions into arm words sequentially
     for (int i = 0; i < numInstructions; i++) {
-        armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[(reserveAddress / 4) - numInstructions], &reserveAddress);
+        armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[(reserveAddress / 4) - numInstructions], &reserveAddress, symbolTable);
         printf("0x%08x\n", armInstructions[i]);
     }
 
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
  *       - *nextReserveMemory is to be passed to SDT function, and the value/contents is to be updated directly
  *       - *reserveAddress is to be passed to SDT function to calculate offset, and should be increased by 4 if used
  */
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable) {
 //    WORD value = 0;
 //    char str1[100] = "beq label";
 //    char strArray[10][10];
@@ -78,7 +78,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 
     if (match(command, "^b")) {
         printf("matching on branch\n");
-        return assembleBranch(branchEnum(command), remainder, currentAddress);
+        return assembleBranch(branchEnum(command), remainder, currentAddress, symbolTable);
     } else if (match(command, "^andeq")) {
         printf("matching on andeq\n");
         return assembleAndEq();
@@ -118,11 +118,11 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 }
 
 /* assembling functions */
-WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
+WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress, node_t **symbolTable) {
     WORD instr = 0;
     instr = appendNibble(instr, (BYTE) condCode);
     instr = appendNibble(instr, 10); // 0b1010
-    instr = appendNibble(instr, calculateBranchOffset(target, currentAddress));
+    instr = appendBits(24, instr, calculateBranchOffset(target, currentAddress, symbolTable));
     return instr;
 }
 
@@ -282,7 +282,8 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
             char *key = strtok(tempContents[instrNum], ":");
             ADDRESS value = instrNum * 4;
             addHashmapEntry(map, key, value);
-        } else { // line read in is an instruction: keep stored in tempContents
+        } else if (tempContents[instrNum][0] != '\n') {
+            // line read in is an instruction: keep stored in tempContents
             instrNum++;
         }
     }
@@ -299,15 +300,13 @@ char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
 }
 
 // used by assemble branch
-BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
-    // TODO: differentiate between label target and address target
-    ADDRESS targetAddress = 0;
-    /* TODO: if label target:
-     *          targetAddress = lookup label in table
-     *       else:
-     *          targetAddress = atoi(target) (*4?)
-     */
-    BRANCHOFFSET offset = targetAddress - currentAddress;
+BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress, node_t **symbolTable) {
+    ADDRESS targetAddress;
+//    targetAddress = (match(target, "^(\\+|-)?\\d+$"))
+//            ? // how to interpret target being a number
+//            : getHashmapValue(symbolTable, target);
+    targetAddress = getHashmapValue(symbolTable, target);
+    BRANCHOFFSET offset = targetAddress - currentAddress - 8;
     return (offset >> 2);
     // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
 }
