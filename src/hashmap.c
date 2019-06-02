@@ -70,11 +70,10 @@ static node_t *deleteList(node_t *head, const char *key) { //returns pointer to 
 static void displayList(node_t *head) {
     int count = 0;
     while (head != NULL) {
-        printf("Node[%d]:\t(value) %d\t\t(key) %s\t\t", count, head->pair.value, head->pair.key);
+        printf("Node[%d]:    (value) %d\t(key) %s\t", count, head->pair.value, head->pair.key);
         count++;
         head = head->next;
     }
-    printf("\n");
 }
 
 

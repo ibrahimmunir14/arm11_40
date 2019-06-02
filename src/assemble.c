@@ -34,7 +34,6 @@ int main(int argc, char **argv) {
     // encode assembly instructions into arm words sequentially
     for (int i = 0; i < numInstructions; i++) {
         armInstructions[i] = encodeInstruction(assInstructions[i], i * 4, &reserveMemory[(reserveAddress / 4) - numInstructions], &reserveAddress, symbolTable);
-        printf("0x%08x\n", armInstructions[i]);
     }
 
     // write instructions and reserved memory to output file
@@ -51,30 +50,6 @@ int main(int argc, char **argv) {
  *       - *reserveAddress is to be passed to SDT function to calculate offset, and should be increased by 4 if used
  */
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable) {
-//    WORD value = 0;
-//    char str1[100] = "beq label";
-//    char strArray[10][10];
-//    int i,j,ctr;
-//
-//    j=0; ctr=0;
-//    for(i=0;i<=(strlen(line));i++)
-//    {
-//        // if space or NULL found, assign NULL into newString[ctr]
-//        if(line[i]==' '||line[i]=='\0'||line[i]==','||line[i]=='\n')
-//        {
-//            strArray[ctr][j]='\0';
-//            ctr++;  //for next word
-//            j=0;    //for next word, init index to 0
-//        }
-//        else
-//        {
-//            strArray[ctr][j]=line[i];
-//            j++;
-//        }
-//    }
-//    for(i=0;i < ctr-1;i++)
-//        printf(" '%s'\n",strArray[i]);
-
     char* remainder = line;
     char* command = strtok_r(line, " ", &remainder);
     remainder = trimWhiteSpace(remainder);
@@ -386,18 +361,14 @@ bool checkIfShiftedRegister(char* operand2) {
 
 int parseImmediateOperand2(char* operand2) {
   WORD value = parseImmediateValue(&operand2[1]);
-  printf("%d\n", value);
-  //
   if (value < (1 << 8)) {
       return value;
   }
   for (WORD halfRotation = 0; halfRotation * 2 < sizeof(WORD) * 8u; halfRotation++) {
     WORD rotated = rotateLeft(value, halfRotation * 2);
-
     if (rotated < (1 << 8)) {
       return appendBits(8, halfRotation & FULLBITS(4), rotated);
     }
-    printf("%d\n", rotated);
   }
 
   printf("Error: Number cannot be represented as a rotated byte.\n");
