@@ -1,11 +1,24 @@
 #include "assemble.h"
 
+/*
+ * tested using test suite and individual instruction checking:
+ * - all branch instructions work fine
+ * - all multiply instructions work fine
+ * - all sdt instructions NOT working
+ * -   functionality of reserve memory space works fine
+ * - some data proc functions work
+ *     priority to ensure operand2 calculation works
+ */
+
 // TODO add documentation to all functions
 // TODO separate functions out into separate files
 // TODO add assembleSpecial functions
 // TODO understand parts of the codebase
 // TODO add const where possible
 // TODO remove duplicate calls to trimWhiteSpace and other functions
+// TODO: fix SDT assembly
+// TODO: fix DataProc assembly
+// TODO tests not passing for large operand2s
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
@@ -75,6 +88,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
 
     char* remainder = line;
     char* command = strtok_r(line, " ", &remainder);
+    remainder = trimWhiteSpace(remainder);
 
     if (match(command, "^b")) {
         printf("matching on branch\n");
@@ -84,7 +98,8 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
         return assembleAndEq();
     } else {
         // the rest of the instructions specify a register as their 2nd argument
-        char* reg1 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
+        char* reg1 = strtok_r(remainder, ",", &remainder);
+        remainder = trimWhiteSpace(remainder);
         if (match(command, "^mov")) {
             printf("matching on mov\n");
             return assembleMov(getRegisterNumber(reg1), parseOperand2(remainder), getIFlag(remainder));
@@ -99,14 +114,15 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
             return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, reserveAddress);
         } else {
             // the rest of the instructions specify a register as their 3rd argument
-            char* reg2 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
+            char* reg2 = strtok_r(remainder, ",", &remainder);
+            remainder = trimWhiteSpace(remainder);
             if (match(command, "^mul")) {
                 printf("matching on mul\n");
                 char* reg3 = strtok_r(remainder, ",", &remainder);
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), 0, false);
             } else if (match(command, "^mla")) {
                 printf("matching on mla\n");
-                char* reg3 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
+                char* reg3 = strtok_r(remainder, ",", &remainder);
                 char* reg4 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), getRegisterNumber(reg4), true);
             } else {
