@@ -5,6 +5,7 @@
 // TODO add assembleSpecial functions
 // TODO understand parts of the codebase
 // TODO add const where possible
+// TODO remove duplicate calls to trimWhiteSpace and other functions
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
@@ -83,7 +84,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
         return assembleAndEq();
     } else {
         // the rest of the instructions specify a register as their 2nd argument
-        char* reg1 = strtok_r(remainder, ",", &remainder);
+        char* reg1 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
         if (match(command, "^mov")) {
             printf("matching on mov\n");
             return assembleMov(getRegisterNumber(reg1), parseOperand2(remainder), getIFlag(remainder));
@@ -98,15 +99,15 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
             return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, reserveAddress);
         } else {
             // the rest of the instructions specify a register as their 3rd argument
-            char* reg2 = strtok_r(remainder, ",", &remainder);
+            char* reg2 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
             if (match(command, "^mul")) {
                 printf("matching on mul\n");
                 char* reg3 = strtok_r(remainder, ",", &remainder);
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), 0, false);
             } else if (match(command, "^mla")) {
                 printf("matching on mla\n");
-                char* reg3 = strtok_r(remainder, ",", &remainder);
-                char* reg4 = strtok_r(remainder, ",", &remainder);
+                char* reg3 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
+                char* reg4 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), getRegisterNumber(reg4), true);
             } else {
                 printf("matching on dataproc\n");
@@ -167,7 +168,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
 
   } else {
     rn = getRegisterNumber(strtok(sdtAddressParameter, ","));
-    trimWhiteSpace(sdtAddressParameter);
+    sdtAddressParameter = trimWhiteSpace(sdtAddressParameter);
 
     if (match(sdtAddressParameter, normalRegPattern)) {
       offset = 0;
@@ -340,7 +341,7 @@ REGNUMBER getRegisterNumber(char *regString) {
 }
 
 REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
-  trimWhiteSpace(regString);
+  regString = trimWhiteSpace(regString);
   return strtol(&regString[1], &restOfOperand, 10);
 }
 
@@ -383,7 +384,7 @@ int parseShiftedRegister(char* operand2) {
 
     // if register is shifted
     shiftString++; // ignore comma
-    trimWhiteSpace(shiftString);
+    shiftString = trimWhiteSpace(shiftString);
 
 
     // find binary representation of shift type
@@ -434,10 +435,14 @@ bool match(const char *string, const char *pattern) {
 }
 
 // removes any whitespace from front of string
-void trimWhiteSpace(char *string) {
-  while (isspace(string[0])) {
-    string++;
-  }
+char* trimWhiteSpace(char *string) {
+    // pointer cannot be updated from here, so string++ does not work
+    // in place shift does not work because string is a string literal so cannot be modified
+    // we must instead return a pointer to the first non-space char
+    while (isspace(string[0])) {
+        string++;
+    }
+    return string;
 }
 
 // finds the position of a string in a string array

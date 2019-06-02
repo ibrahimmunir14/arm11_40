@@ -68,5 +68,5 @@ int getIFlag(char* operand2);
 /* utility functions */
 bool match(const char *string, const char *pattern);
 WORD rotateLeft(WORD num, int shiftAmount);
-void trimWhiteSpace(char *string);
+char* trimWhiteSpace(char *string);
 int findPos(char *string, char *strArray[], int arraySize);
