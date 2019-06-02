@@ -163,9 +163,9 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
 
 WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
   REGNUMBER rn;
-  char *normalRegPattern = "[Rn]";
-  char *preIndexPattern = "[Rn,.+]";
-  char *postIndexPattern = "[Rn],.+";
+  char *normalRegPattern = "^\\[r([0-9]|1[0-6])\\]$";
+  char *preIndexPattern = "^\\[r([0-9]|1[0-6]),.+\\]";
+  char *postIndexPattern = "^\\[r([0-9]|1[0-6])\\],.+";
 
   WORD offset = 0;
   bool iFlag = true;
@@ -186,19 +186,23 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     iFlag = false;
 
   } else {
-    rn = getRegisterNumber(strtok(sdtAddressParameter, ","));
+    rn = getRegisterNumber(&sdtAddressParameter[1]);
     sdtAddressParameter = trimWhiteSpace(sdtAddressParameter);
 
     if (match(sdtAddressParameter, normalRegPattern)) {
       offset = 0;
     } else {
-      char *expression = &strtok(NULL, ",")[1];
-      offset = parseImmediateValue(expression);
       if (match(sdtAddressParameter, preIndexPattern)) {
         pFlag = true;
       } else if (match(sdtAddressParameter, postIndexPattern)) {
         pFlag = false;
       }
+
+      strtok(sdtAddressParameter, ",");
+      char *expression = strtok(NULL, "]");
+      expression = trimWhiteSpace(expression);
+      offset = parseImmediateValue(&expression[1]);
+
     }
   }
 
@@ -212,8 +216,8 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
   instruction <<= 2;
 
   instruction = appendBits(1, instruction, lFlag);
-  instruction = appendBits(4, instruction, rn);
-  instruction = appendBits(4, instruction, rd);
+  instruction = appendNibble(instruction, rn);
+  instruction = appendNibble(instruction, rd);
   instruction = appendBits(12, instruction, offset);
 
   return instruction;
