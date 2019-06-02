@@ -106,6 +106,11 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
             printf("matching on mov\n");
             OpFlagPair opFlag = parseOperand2(remainder);
             return assembleMov(getRegisterNumber(reg1), opFlag.operand2, opFlag.iflag);
+        } else if (match(command, "^(tst|teq|cmp)")) {
+          printf("matching on tst/teq/cmp\n");
+          OpFlagPair opFlag = parseOperand2(remainder);
+          return assembleDataProcFlags(dataProcEnum(command), getRegisterNumber(reg1), opFlag.operand2, opFlag.iflag);
+
         } else if (match(command, "^lsl")) {
             printf("matching on lsl\n");
             return assembleLSL(getRegisterNumber(reg1), remainder);
@@ -129,8 +134,9 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
                 char* reg4 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), getRegisterNumber(reg4), true);
             } else {
-                printf("matching on dataproc\n");
-                return assembleDataProc(dataProcEnum(command), getRegisterNumber(reg1), getRegisterNumber(reg2), remainder);
+                printf("matching on general dataproc\n");
+                OpFlagPair opFlag = parseOperand2(remainder);
+                return assembleDataProcResult(dataProcEnum(command), getRegisterNumber(reg1), getRegisterNumber(reg2), opFlag.operand2, opFlag.iflag);
             }
         }
     }
@@ -221,21 +227,6 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
   instruction = appendBits(12, instruction, offset);
 
   return instruction;
-}
-
-WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
-  OpFlagPair opFlag = parseOperand2(operand2);
-
-
-  // delegates assembling to helper functions based on opcode
-  switch (opCode) {
-    case TST:
-    case TEQ:
-    case CMP:
-      return assembleDataProcFlags(opCode, rn, opFlag.operand2, opFlag.iflag);
-    default:
-      return assembleDataProcResult(opCode, rd, rn, opFlag.operand2, opFlag.iflag);
-  }
 }
 
 // general assembly that takes all arguments
@@ -348,12 +339,11 @@ int parseImmediateValue(char *expression) {
 
 // this is the main function which delegates to the 3 helper functions below
 OpFlagPair parseOperand2(char *operand2) {
-    int parsedOp2 = parseImmediateOperand2(operand2);
     if (checkIfImmediate(operand2)) {
-        OpFlagPair opFlagPair = {parsedOp2, 1};
+        OpFlagPair opFlagPair = {parseImmediateOperand2(operand2), 1};
         return opFlagPair;
     } else if (checkIfShiftedRegister(operand2)) {
-        OpFlagPair opFlagPair = {parsedOp2, 0};
+        OpFlagPair opFlagPair = {parseShiftedRegister(operand2), 0};
         return opFlagPair;
     }
 
