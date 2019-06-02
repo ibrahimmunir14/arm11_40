@@ -73,4 +73,3 @@ int parseShiftedRegister(char* operand2);
 bool match(const char *string, const char *pattern);
 WORD rotateLeft(WORD num, unsigned int shiftAmount);
 char* trimWhiteSpace(char *string);
-int findPos(char *string, char *strArray[], int arraySize);

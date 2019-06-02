@@ -1,24 +1,11 @@
 #include "assemble.h"
 
-/*
- * tested using test suite and individual instruction checking:
- * - all branch instructions work fine
- * - all multiply instructions work fine
- * - all sdt instructions NOT working
- * -   functionality of reserve memory space works fine
- * - some data proc functions work
- *     priority to ensure operand2 calculation works
- */
-
 // TODO add documentation to all functions
 // TODO separate functions out into separate files
 // TODO add assembleSpecial functions
 // TODO understand parts of the codebase
 // TODO add const where possible
 // TODO remove duplicate calls to trimWhiteSpace and other functions
-// TODO: fix SDT assembly
-// TODO: fix DataProc assembly
-// TODO tests not passing for large operand2s
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
@@ -168,77 +155,88 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
 }
 
 WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
-  REGNUMBER rn;
-  char *normalRegPattern = "^\\[r([0-9]|1[0-6])\\]$"; // e.g. [r5], aka offset is 0
-  char *preIndexPattern = "^\\[r([0-9]|1[0-6]),.+\\]"; // e.g. [r5, X] : offset 'X' is immediate or shifted reg
-  char *postIndexPattern = "^\\[r([0-9]|1[0-6])\\],.+"; // e.g. [r5] X : offset 'X' is immediate or shifted reg
+    REGNUMBER rn;
+    char *normalRegPattern = "^\\[r([0-9]|1[0-6])\\]$"; // e.g. [r5], aka offset is 0
+    char *preIndexPattern = "^\\[r([0-9]|1[0-6]),.+\\]"; // e.g. [r5, X] : offset 'X' is immediate or shifted reg
+    char *postIndexPattern = "^\\[r([0-9]|1[0-6])\\],.+"; // e.g. [r5] X : offset 'X' is immediate or shifted reg
 
-  WORD offset = 0;
-  bool iFlag = true;
-  bool pFlag = true;
-  bool uFlag = true; //used for optional parts
+    WORD offset = 0;
+    bool iFlag = true;
+    bool pFlag = true;
+    bool uFlag = true; //used for optional parts
 
-  if (sdtAddressParameter[0] == '=') {
-      // address is an immediate expression, use PC as base, put an offset etc.
-    int value = parseImmediateValue(&sdtAddressParameter[1]);
+    if (sdtAddressParameter[0] == '=') {
+        // address is an immediate expression, use PC as base, put an offset etc.
+        int value = parseImmediateValue(&sdtAddressParameter[1]);
 
-    if (value <= 0xFF) {
-      return assembleMov(rd, value, 1);
-    }
+        if (value <= 0xFF) {
+            return assembleMov(rd, value, 1);
+        }
 
-    *nextReserveMemory = value;
-    offset = *reserveAddress - currentAddress - 8;
-    *reserveAddress += 4;
-    rn = REG_PC;
-    iFlag = false;
+        *nextReserveMemory = value;
+        offset = *reserveAddress - currentAddress - 8;
+        *reserveAddress += 4;
+        rn = REG_PC;
+        iFlag = false;
 
-  } else {
-      //
-    rn = getRegisterNumber(&sdtAddressParameter[1]);
-    sdtAddressParameter = trimWhiteSpace(sdtAddressParameter);
-
-    if (match(sdtAddressParameter, normalRegPattern)) {
-      // address is register, offset is 0
-      offset = 0;
-      iFlag = false;
     } else {
-      // address is register plus some offset
-      if (match(sdtAddressParameter, preIndexPattern)) {
-        pFlag = true;
-      } else if (match(sdtAddressParameter, postIndexPattern)) {
-        pFlag = false;
-      }
-
-      strtok(sdtAddressParameter, ",");
-      char *expression = strtok(NULL, "]");
-      expression = trimWhiteSpace(expression);
-      /* Note: the address is a register Rn with offset applied
-       *       Rn can be extracted, four lines above
-       *       Offset is immediate value (I=0), or a register Rm shifted (I=1)
-       *       The first case is assumed here, second case is optional
-       *       TODO: Implement shifted register case, set I Flag accordingly
-       *             Implement negative offset, set U Flag accordingly
-       */
-      offset = parseImmediateValue(&expression[1]);
-      iFlag = false;
+        // address is register rn with some offset applied
+        if (match(sdtAddressParameter, normalRegPattern)) {
+            // address is register, offset is 0
+            rn = getRegisterNumber(trimWhiteSpace(strtok(&sdtAddressParameter[1], "]")));
+            offset = 0;
+            iFlag = false;
+        } else {
+            // address is register plus some offset
+            if (match(sdtAddressParameter, preIndexPattern)) {
+                pFlag = true;
+                rn = getRegisterNumber(trimWhiteSpace(strtok(&sdtAddressParameter[1], ",")));
+                char* offsetStr = trimWhiteSpace(strtok(NULL, "]"));
+                if (offsetStr[0] == '#') {
+                    // offset is immediate
+                    uFlag = offsetStr[1] != '-';
+                    offset = parseImmediateValue(&offsetStr[uFlag ? 1 : 2]);
+                    iFlag = false;
+                } else {
+                    // offset is shifted register
+                    uFlag = offsetStr[0] != '-';
+                    offset = parseShiftedRegister(&offsetStr[uFlag ? 0 : 1]);
+                    iFlag = true;
+                }
+            } else if (match(sdtAddressParameter, postIndexPattern)) {
+                pFlag = false;
+                rn = getRegisterNumber(trimWhiteSpace(strtok(&sdtAddressParameter[1], "]")));
+                char* offsetStr = strtok(NULL, ",");
+                if (offsetStr[0] == '#') {
+                    // offset is immediate
+                    uFlag = offsetStr[1] != '-';
+                    offset = parseImmediateValue(&offsetStr[uFlag ? 1 : 2]);
+                    iFlag = false;
+                } else {
+                    // offset is shifted register
+                    uFlag = offsetStr[0] != '-';
+                    offset = parseShiftedRegister(&offsetStr[uFlag ? 0 : 1]);
+                    iFlag = true;
+                }
+            }
+        }
     }
-  }
 
 
-  char instructionString[6] = "111001";
-  WORD instruction = strtol(instructionString, NULL, 2);
+    char instructionString[6] = "111001";
+    WORD instruction = strtol(instructionString, NULL, 2);
 
-  instruction = appendBits(1, instruction, iFlag);
-  instruction = appendBits(1, instruction, pFlag);
-  instruction = appendBits(1, instruction, uFlag);
-  instruction <<= 2;
+    instruction = appendBits(1, instruction, iFlag);
+    instruction = appendBits(1, instruction, pFlag);
+    instruction = appendBits(1, instruction, uFlag);
+    instruction <<= 2;
 
-  instruction = appendBits(1, instruction, lFlag);
-  instruction = appendNibble(instruction, rn);
-  instruction = appendNibble(instruction, rd);
-  instruction = appendBits(12, instruction, offset);
+    instruction = appendBits(1, instruction, lFlag);
+    instruction = appendNibble(instruction, rn);
+    instruction = appendNibble(instruction, rd);
+    instruction = appendBits(12, instruction, offset);
 
-  return instruction;
+    return instruction;
 }
 
 // general assembly that takes all arguments
@@ -407,8 +405,9 @@ int parseImmediateOperand2(char* operand2) {
 }
 
 int parseShiftedRegister(char* operand2) {
-    char *shiftString = "\0";
-    BYTE rm = getRegNumWithRest(operand2, shiftString);
+    char *shiftString;
+    operand2 = trimWhiteSpace(operand2);
+    BYTE rm = strtol(&operand2[1], &shiftString, 10);
 
     // if register is not shifted
     if (*shiftString == '\0') {
@@ -422,8 +421,12 @@ int parseShiftedRegister(char* operand2) {
 
     // find binary representation of shift type
     char *shiftType = strtok(shiftString, " ");
-    char *shifts[4] = {"lsl", "lsr", "asr", "ror"}; //TODO: Find a better solution to this
-    int shiftTypeBin = findPos(shiftType, shifts, 4);
+    BYTE shiftTypeBin;
+    if (strncmp(shiftType, "lsl", 3) == 0) shiftTypeBin = 0;
+    if (strncmp(shiftType, "lsr", 3) == 0) shiftTypeBin = 1;
+    if (strncmp(shiftType, "asr", 3) == 0) shiftTypeBin = 2;
+    if (strncmp(shiftType, "ror", 3) == 0) shiftTypeBin = 3;
+
 
     char *shiftAmount = strtok(NULL, " ");
 
@@ -440,12 +443,9 @@ int parseShiftedRegister(char* operand2) {
         shift <<= 1;
         shift++;
     }
-
-    return shift & FULLBITS(12);
-}
-
-int getIFlag(char* operand2) {
-  return checkIfImmediate(operand2) ? 1 : 0;
+// shift currently does not store rm
+    int res = appendBits(4, shift, rm);
+    return res & FULLBITS(12);
 }
 
 /* utility functions */
@@ -476,14 +476,4 @@ char* trimWhiteSpace(char *string) {
         string++;
     }
     return string;
-}
-
-// finds the position of a string in a string array
-int findPos(char *string, char *strArray[], int arraySize) {
-  for (int i = 0; i < arraySize; i++) {
-    if (strArray[i] == string) {
-      return i;
-    }
-  }
-  return -1;
 }
