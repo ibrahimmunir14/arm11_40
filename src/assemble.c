@@ -1,13 +1,10 @@
 #include "assemble.h"
-#include "hashmapAbstract.h"
 
-// TODO getRegNum and getRegNum maybe duplicated
 // TODO add documentation to all functions
 // TODO separate functions out into separate files
 // TODO add assembleSpecial functions
-// TODO finish off SDT - luke
-// TODO finish off DataProcGeneral - luke
 // TODO understand parts of the codebase
+// TODO add const where possible
 
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
@@ -52,70 +49,73 @@ int main(int argc, char **argv) {
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
     WORD value = 0;
 //    char str1[100] = "beq label";
-    char strArray[10][10];
-    int i,j,ctr;
+//    char strArray[10][10];
+//    int i,j,ctr;
+//
+//    j=0; ctr=0;
+//    for(i=0;i<=(strlen(line));i++)
+//    {
+//        // if space or NULL found, assign NULL into newString[ctr]
+//        if(line[i]==' '||line[i]=='\0'||line[i]==','||line[i]=='\n')
+//        {
+//            strArray[ctr][j]='\0';
+//            ctr++;  //for next word
+//            j=0;    //for next word, init index to 0
+//        }
+//        else
+//        {
+//            strArray[ctr][j]=line[i];
+//            j++;
+//        }
+//    }
+//    for(i=0;i < ctr-1;i++)
+//        printf(" '%s'\n",strArray[i]);
 
-    j=0; ctr=0;
-    for(i=0;i<=(strlen(line));i++)
-    {
-        // if space or NULL found, assign NULL into newString[ctr]
-        if(line[i]==' '||line[i]=='\0'||line[i]==','||line[i]=='\n')
-        {
-            strArray[ctr][j]='\0';
-            ctr++;  //for next word
-            j=0;    //for next word, init index to 0
-        }
-        else
-        {
-            strArray[ctr][j]=line[i];
-            j++;
-        }
-    }
-    for(i=0;i < ctr-1;i++)
-        printf(" '%s'\n",strArray[i]);
+    char* remainder = *line;
+    char* command = strtok_r(remainder, " ", &remainder);
 
-    if (match(strArray[0], "^b")) {
+    if (match(command, "^b")) {
         printf("matching on branch\n");
-    } else if (match(strArray[0], "^mov")) {
-        printf("matching on mov\n");
-//        return assembleMov(getRegNum(strArray[1]), parseOperand2(strArray[2]), getIFlag(strArray[2]));
-    } else if (match(strArray[0], "^mul")) {
-        printf("matching on mul\n");
-        return assembleMultiply(getRegNum(strArray[1]), getRegNum(strArray[2]),
-                                getRegNum(strArray[3]), 0, false);
-    } else if (match(strArray[0], "^mla")) {
-        printf("matching on mla\n");
-        return assembleMultiply(getRegNum(strArray[1]), getRegNum(strArray[2]), getRegNum(strArray[3]),
-                                getRegNum(strArray[4]), true);
-    } else if (match(strArray[0], "^andeq")) {
+        return assembleBranch(branchEnum(command), remainder, currentAddress);
+    } else if (match(command, "^andeq")) {
         printf("matching on andeq\n");
-//        return assembleAndEq();
-    } else if (match(strArray[0], "^lsl")) {
-        printf("matching on lsl\n");
-//        return assembleLSL(getRegNum(strArray[1]), parseOperand2(strArray[2]));
-    } else if (match(strArray[0], "^ldr")) {
-        printf("matching on ldr\n");
-        return assembleSDT(false, getRegNum(strArray[1]), strArray[2], currentAddress, nextReserveMemory, numReserve);
-    } else if (match(strArray[0], "^str")) {
-        printf("matching on str\n");
-//        return assembleSDT(false, 0, getRegNum(strArray[1]), &currentAddress, nextReserveMemory, numReserve);
+        return assembleAndEq();
     } else {
-        printf("matching on dataproc\n");
-        //  return assembleDataProc()
+        // the rest of the instructions specify a register as their 2nd argument
+        char* reg1 = strtok_r(remainder, " ", &remainder);
+        if (match(command, "^mov")) {
+            printf("matching on mov\n");
+            return assembleMov(getRegisterNumber(reg1), parseOperand2(remainder), getIFlag(remainder));
+        } else if (match(command, "^lsl")) {
+            printf("matching on lsl\n");
+            return assembleLSL(getRegisterNumber(reg1), remainder);
+        } else if (match(command, "^ldr")) {
+            printf("matching on ldr\n");
+            return assembleSDT(true, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, numReserve);
+        } else if (match(command, "^str")) {
+            printf("matching on str\n");
+            return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, numReserve);
+        } else {
+            // the rest of the instructions specify a register as their 3rd argument
+            char* reg2 = strtok_r(remainder, " ", &remainder);
+            if (match(command, "^mul")) {
+                printf("matching on mul\n");
+                char* reg3 = strtok_r(remainder, " ", &remainder);
+                return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), 0, false);
+            } else if (match(command, "^mla")) {
+                printf("matching on mla\n");
+                char* reg3 = strtok_r(remainder, " ", &remainder);
+                char* reg4 = strtok_r(remainder, " ", &remainder);
+                return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), getRegisterNumber(reg4), true);
+            } else {
+                printf("matching on dataproc\n");
+                return assembleDataProc(dataProcEnum(command), getRegisterNumber(reg1), getRegisterNumber(reg2), remainder);
+            }
+        }
     }
-    return value;
 }
 
 /* assembling functions */
-
-bool checkIfImmediate(char* operand2) {
-  return match(operand2, "#.+");
-}
-
-int getIFlag(char* operand2) {
-  return checkIfImmediate(operand2) ? 1 : 0;
-}
-
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress) {
     WORD instr = 0;
     instr = appendNibble(instr, (BYTE) condCode);
@@ -124,47 +124,6 @@ WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress
     return instr;
 }
 
-WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
-  int operand2Value = parseOperand2(operand2);
-  int iFlag = getIFlag(operand2);
-  switch (opCode) {
-    case TST:
-    case TEQ:
-    case CMP:
-      return assembleDataProcFlags(opCode, rn, operand2Value, iFlag);
-    default:
-      return assembleDataProcResult(opCode, rd, rn, operand2Value, iFlag);
-  }
-}
-
-WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag, bool sFlag) {
-  char instructionString[6] = "111000";
-  WORD instruction = strtol(instructionString, NULL, 2);
-  instruction = appendBits(1, instruction, iFlag);
-
-  instruction = appendNibble(instruction, opCode);
-  instruction = appendBits(1, instruction, sFlag);
-
-  instruction = appendNibble(instruction, rn);
-  instruction = appendNibble(instruction, rd);
-  instruction = appendBits(12, instruction, value);
-  return instruction;
-}
-
-// below 3 functions call assembleDataProcGeneral with correct arguments
-WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
-  return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
-}
-
-WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag) {
-  return assembleDataProcGeneral(opCode, 0, rn, value, iFlag, 1);
-}
-
-WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
-  return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
-};
-
-// assembling instructions for MUL and MLA commands
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
     // intialise with cond code and default bits
     WORD value = 224; // 0b11100000
@@ -179,13 +138,6 @@ WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bo
     value = appendNibble(value, 9); // 0b1001
     value = appendNibble(value, rm);
     return value;
-}
-
-
-void trimWhiteSpace(char *string) {
-  while (isspace(string[0])) {
-    string++;
-  }
 }
 
 WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, int *numReserve) {
@@ -213,7 +165,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     iFlag = false;
 
   } else {
-    rn = getRegNum(strtok(sdtAddressParameter, ","));
+    rn = getRegisterNumber(strtok(sdtAddressParameter, ","));
     trimWhiteSpace(sdtAddressParameter);
 
     if (match(sdtAddressParameter, normalRegPattern)) {
@@ -245,6 +197,61 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
 
   return instruction;
 }
+
+WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
+  int operand2Value = parseOperand2(operand2);
+  int iFlag = getIFlag(operand2);
+
+  // delegates assembling to helper functions based on opcode
+  switch (opCode) {
+    case TST:
+    case TEQ:
+    case CMP:
+      return assembleDataProcFlags(opCode, rn, operand2Value, iFlag);
+    default:
+      return assembleDataProcResult(opCode, rd, rn, operand2Value, iFlag);
+  }
+}
+
+// general assembly that takes all arguments
+WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag, bool sFlag) {
+  char instructionString[6] = "111000";
+  WORD instruction = strtol(instructionString, NULL, 2);
+  instruction = appendBits(1, instruction, iFlag);
+
+  instruction = appendNibble(instruction, opCode);
+  instruction = appendBits(1, instruction, sFlag);
+
+  instruction = appendNibble(instruction, rn);
+  instruction = appendNibble(instruction, rd);
+  instruction = appendBits(12, instruction, value);
+  return instruction;
+}
+
+// data proc that stores result
+WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
+  return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
+}
+
+// data proc that only changes flags
+WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag) {
+  return assembleDataProcGeneral(opCode, 0, rn, value, iFlag, 1);
+}
+
+// mov as a data proc instruction
+WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
+  return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
+}
+
+WORD assembleAndEq(void) {
+    return 0;
+}
+
+WORD assembleLSL(REGNUMBER rn, char* operand2) {
+    // TODO - amelia use parse operand 2 to get values for the 2nd arg (ask luke about it)
+    return 0;
+}
+
 
 /* helper functions section */
 
@@ -303,44 +310,15 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress) {
     // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
 }
 
-// used to REGEX match instructions
-bool match(const char *string, const char *pattern)
-{
-    regex_t re;
-    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return false;
-    int status = regexec(&re, string, 0, NULL, 0);
-    regfree(&re);
-    return status == 0;
+int parseImmediateValue(char *expression) {
+  if (match(expression, "0x[0-9A-Fa-f]+")) {
+    // expression in hex
+    return strtol(&expression[2], NULL, 16);
+  }
+
+  // expression in dec
+  return strtol(expression, NULL, 10);
 }
-
-
-
-
-
-bool checkIfShiftedRegister(char* operand2) {
-  return match(operand2, "r([0-9]|1[0-6]).*");
-}
-
-int findPos(char *string, char *strArray[], int arraySize) {
-    for (int i = 0; i < arraySize; i++) {
-        if (strArray[i] == string) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
-  trimWhiteSpace(regString);
-  return strtol(&regString[1], &restOfOperand, 10);
-}
-
-REGNUMBER getRegNum(char *regString) {
-  return getRegNumWithRest(regString, NULL);
-}
-
-
-
 
 /* parsing functions used by SDT, DataProc, and encodeInstruction functions */
 
@@ -356,42 +334,71 @@ int parseOperand2(char* operand2) {
   return -1;
 }
 
-
-WORD assembleAndEq(void) {
-
+REGNUMBER getRegisterNumber(char *regString) {
+  return getRegNumWithRest(regString, NULL);
 }
 
-WORD assembleLSL(REGNUMBER rn, int value) {
+REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
+  trimWhiteSpace(regString);
+  return strtol(&regString[1], &restOfOperand, 10);
+}
 
+
+bool checkIfImmediate(char* operand2) {
+  return match(operand2, "(#|=).+");
+}
+
+bool checkIfShiftedRegister(char* operand2) {
+  return match(operand2, "r([0-9]|1[0-6]).*");
+}
+
+int parseImmediateOperand2(char* operand2) {
+  WORD value = parseImmediateValue(&operand2[1]);
+
+  //
+  for (WORD halfRotation = 0; halfRotation * 2 < sizeof(WORD); halfRotation++) {
+    WORD rotated = rotateLeft(value, halfRotation * 2);
+
+    if (rotated < (1 << 8)) {
+      return appendBits(8, halfRotation & FULLBITS(4), rotated);
+    }
+  }
+
+  printf("Error: Number cannot be represented as a rotated byte.\n");
+  return -1;
 }
 
 int parseShiftedRegister(char* operand2) {
-    char *restOfOperand;
-    BYTE rm = getRegNum(operand2, restOfOperand);
+    char *shiftString;
+    BYTE rm = getRegNumWithRest(operand2, shiftString);
 
-    if (*restOfOperand == '\0') {
+    // if register is not shifted
+    if (*shiftString == '\0') {
         return rm;
     }
 
-    restOfOperand++;
-    trimWhiteSpace(restOfOperand);
+    // if register is shifted
+    shiftString++; // ignore comma
+    trimWhiteSpace(shiftString);
 
-    int shift;
-    char *shiftType = strtok(restOfOperand, " ");
-    char *shifts[4] = {"lsl", "lsr", "asr", "ror"};
+
+    // find binary representation of shift type
+    char *shiftType = strtok(shiftString, " ");
+    char *shifts[4] = {"lsl", "lsr", "asr", "ror"}; //TODO: Find a better solution to this
     int shiftTypeBin = findPos(shiftType, shifts, 4);
 
-    char *exp = strtok(NULL, " ");
+    char *shiftAmount = strtok(NULL, " ");
 
-    if (checkIfImmediate(restOfOperand)) {
-        shift = parseImmediateValue(exp);
+    int shift;
+    if (checkIfImmediate(shiftAmount)) {
+        shift = parseImmediateValue(&shiftAmount[1]);
         shift = appendBits(2, shift, shiftTypeBin);
         shift <<= 1;
 
-    } else if (checkIfShiftedRegister(restOfOperand)){
-        shift = getRegNum(exp, NULL);
+    } else if (checkIfShiftedRegister(shiftAmount)){
+        shift = getRegisterNumber(shiftAmount);
         shift <<= 1;
-        char *exp = strtok(NULL, " ");
+        shift = appendBits(2, shift, shiftTypeBin);
         shift <<= 1;
         shift++;
     }
@@ -399,22 +406,42 @@ int parseShiftedRegister(char* operand2) {
     return shift & FULLBITS(12);
 }
 
-int parseImmediateOperand2(char* operand2) {
-    WORD value = parseImmediateValue(&operand2[1]);
-
-    for (WORD rotation = 0; rotation < sizeof(WORD); rotation += 2) {
-        WORD rotated = (value >> rotation | value << (sizeof(WORD) - rotation));
-
-        if (rotated < (1 << 8)) {
-            return appendBits(8, rotation & FULLBITS(4), (BYTE) rotated);
-        }
-    }
+int getIFlag(char* operand2) {
+  return checkIfImmediate(operand2) ? 1 : 0;
 }
 
-int parseImmediateValue(char *expression) {
-    if (match(expression, "0x[0-9A-Fa-f]+")) {
-        return strtol(&expression[2], NULL, 16);
-    }
+/* utility functions */
 
-    return strtol(expression, NULL, 10);
+WORD rotateLeft(WORD num, int shiftAmount) {
+  return num << shiftAmount | num >> (sizeof(WORD) - shiftAmount);
+}
+
+// used to REGEX match instructions
+bool match(const char *string, const char *pattern) {
+  regex_t re;
+  if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
+    return false;
+  }
+
+  int status = regexec(&re, string, 0, NULL, 0);
+  regfree(&re);
+
+  return status == 0;
+}
+
+// removes any whitespace from front of string
+void trimWhiteSpace(char *string) {
+  while (isspace(string[0])) {
+    string++;
+  }
+}
+
+// finds the position of a string in a string array
+int findPos(char *string, char *strArray[], int arraySize) {
+  for (int i = 0; i < arraySize; i++) {
+    if (strArray[i] == string) {
+      return i;
+    }
+  }
+  return -1;
 }

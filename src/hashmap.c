@@ -127,7 +127,7 @@ void displayList(node_t *head) {
 }
 
 //hashes key to get hash code
-int hash(char *key) {
+int hash(const char *key) { //TODO remove one of the two hash functions / call it something else
     unsigned long hash = 5381;
     int c;
     while (c = *key++)

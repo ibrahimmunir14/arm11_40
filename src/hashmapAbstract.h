@@ -30,7 +30,7 @@ int sizeHashmap(node_t **hashmap);
 
 node_t **deleteHashmap(node_t **hashmap, char *key); // returns pointer to head of hashmap (so can delete head)
 
-int hash(char *key);
+int hash(const char *key);
 
 void pushList(node_t *head, pair_t pair);
 
