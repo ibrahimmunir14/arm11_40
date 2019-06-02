@@ -102,7 +102,8 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
         remainder = trimWhiteSpace(remainder);
         if (match(command, "^mov")) {
             printf("matching on mov\n");
-            return assembleMov(getRegisterNumber(reg1), parseOperand2(remainder), getIFlag(remainder));
+            OpFlagPair opFlag = parseOperand2(remainder);
+            return assembleMov(getRegisterNumber(reg1), opFlag.operand2, opFlag.iflag);
         } else if (match(command, "^lsl")) {
             printf("matching on lsl\n");
             return assembleLSL(getRegisterNumber(reg1), remainder);
@@ -217,17 +218,17 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
 }
 
 WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2) {
-  int operand2Value = parseOperand2(operand2);
-  int iFlag = getIFlag(operand2);
+  OpFlagPair opFlag = parseOperand2(operand2);
+
 
   // delegates assembling to helper functions based on opcode
   switch (opCode) {
     case TST:
     case TEQ:
     case CMP:
-      return assembleDataProcFlags(opCode, rn, operand2Value, iFlag);
+      return assembleDataProcFlags(opCode, rn, opFlag.operand2, opFlag.iflag);
     default:
-      return assembleDataProcResult(opCode, rd, rn, operand2Value, iFlag);
+      return assembleDataProcResult(opCode, rd, rn, opFlag.operand2, opFlag.iflag);
   }
 }
 
@@ -265,9 +266,9 @@ WORD assembleAndEq(void) {
     return 0;
 }
 
-WORD assembleLSL(REGNUMBER rn, char* operand2) {
-    // TODO - amelia use parse operand 2 to get values for the 2nd arg (ask luke about it)
-    return 0;
+WORD assembleLSL(REGNUMBER rn, char *operand2) {
+    OpFlagPair opFlag = parseOperand2(operand2);
+    return assembleMov(rn, opFlag.operand2, opFlag.iflag);
 }
 
 
@@ -340,15 +341,19 @@ int parseImmediateValue(char *expression) {
 /* parsing functions used by SDT, DataProc, and encodeInstruction functions */
 
 // this is the main function which delegates to the 3 helper functions below
-int parseOperand2(char* operand2) {
-  if (checkIfImmediate(operand2)) {
-    return parseImmediateOperand2(operand2);
-  } else if (checkIfShiftedRegister(operand2)) {
-    return parseShiftedRegister(operand2);
-  } else {
-      printf("Error: Invalid operand2.\n");
-      return -1;
-  }
+OpFlagPair parseOperand2(char *operand2) {
+    int parsedOp2 = parseImmediateOperand2(operand2);
+    if (checkIfImmediate(operand2)) {
+        OpFlagPair opFlagPair = {parsedOp2, 1};
+        return opFlagPair;
+    } else if (checkIfShiftedRegister(operand2)) {
+        OpFlagPair opFlagPair = {parsedOp2, 0};
+        return opFlagPair;
+    }
+
+    printf("Error: Invalid operand2.\n");
+    OpFlagPair errorPair = {-1, -1};
+    return errorPair;
 }
 
 REGNUMBER getRegisterNumber(char *regString) {

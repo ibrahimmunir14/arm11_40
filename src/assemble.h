@@ -52,8 +52,13 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress, node_t 
 /* helper functions for parsing */
 
 /* this parses the different types of values that can be placed in operand2 and passes it to the above 3 helper functions */
+// struct to store operand2 and iflag after parsing
+typedef struct opFlagPair {
+    int operand2;
+    int iflag;
+} OpFlagPair;
 int parseImmediateValue(char *expression); // parses a dec or hex value into an int
-int parseOperand2(char* operand2); // used by assemble dataproc and result passed to dataproc helpers
+OpFlagPair parseOperand2(char* operand2); // used by assemble dataproc and result passed to dataproc helpers
 REGNUMBER getRegisterNumber(char *regString); // get reg number
 REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand); // get reg number and return remaining string
 
@@ -63,7 +68,6 @@ bool checkIfImmediate(char* operand2);
 bool checkIfShiftedRegister(char* operand2);
 int parseImmediateOperand2(char* operand2);
 int parseShiftedRegister(char* operand2);
-int getIFlag(char* operand2);
 
 /* utility functions */
 bool match(const char *string, const char *pattern);
