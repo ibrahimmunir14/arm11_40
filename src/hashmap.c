@@ -104,7 +104,7 @@ int addHashmapEntry(node_t **hashmap, char *key, int value) {
 
 //get value from hashmap for given key
 int getHashmapValue(node_t **hashmap, char *key) {
-    int hashedKey = hash(key);
+    int hashedKey = hash(key) % SIZE;
     return getList(hashmap[hashedKey], key);
 }
 
