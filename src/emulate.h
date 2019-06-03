@@ -15,28 +15,32 @@ struct MachineState {
     WORD instrToDecode;
 };
 
-// apply a shift on val specified by shift amount, optionally update status bits
-WORD shift(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state);
+// apply a shift on val specified by shiftAndUpdateStatus amount, optionally update status bits
+WORD shiftAndUpdateStatus(WORD val,
+                          BYTE shiftAmount,
+                          bool updateCPSR,
+                          enum ShiftType shiftType,
+                          struct MachineState *state);
 
 /* functions related to memory access */
 // returns a word (4 bytes) directly from memory given the address of the first byte
-WORD readFourBytes(ADDRESS startAddress, struct MachineState *state);
+WORD readFourBytes(ADDRESS startAddress, const struct MachineState *state);
 // returns a word (4 bytes) from memory given the address of the first byte; converts to big-endian
-WORD readWord(ADDRESS startAddress, struct MachineState *state);
+WORD readWord(ADDRESS startAddress, const struct MachineState *state);
 // write a word (4 bytes) to memory in little-endian given the start address and big-endian word
 void writeWord(WORD word, ADDRESS startAddress, struct MachineState *state);
 
 /* helper functions for main program */
 // read the next instruction from memory pointed to by PC register
-WORD readNextInstr(struct MachineState *state);
+WORD readNextInstr(const struct MachineState *state);
 // print current state of machine
-void printResults(struct MachineState *state);
+void printResults(const struct MachineState *state);
 // check condition code
-bool checkCondition(enum CondCode condCode, struct MachineState *state);
+bool checkCondition(enum CondCode condCode, const struct MachineState *state);
 
 /* helper functions related to CPSR status bits */
 // check flag is set
-bool isSet(enum StatusFlag, struct MachineState *state);
+bool isSet(enum StatusFlag, const struct MachineState *state);
 // set flag (to 1)
 void setFlag(enum StatusFlag, struct MachineState *state);
 // clear flag (to 0)

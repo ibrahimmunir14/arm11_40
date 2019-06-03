@@ -1,15 +1,7 @@
 #include "assemble.h"
 
-// TODO add documentation to all functions
-// TODO separate functions out into separate files
-// TODO add assembleSpecial functions
-// TODO understand parts of the codebase
-// TODO add const where possible
-// TODO remove duplicate calls to trimWhiteSpace and other functions
-
 int main(int argc, char **argv) {
     // ensure we have two argument, the filenames
-
     if (argc != 3) {
         return EXIT_FAILURE;
     }
@@ -17,8 +9,10 @@ int main(int argc, char **argv) {
     // import data into instructions array and symbol table
     char *inFileName = argv[1];
     int numInstructions;
+
+    // create array of instructions and symbol table
     node_t **symbolTable = initHashmap();
-    char **assInstructions = importAssemblyInstr(inFileName, &numInstructions, symbolTable);
+    char **assInstructions = importAssemblyInstructions(inFileName, &numInstructions, symbolTable);
 
     // print contents, for debugging purposes
     for (int i = 0; i < numInstructions; i++) {
@@ -38,59 +32,53 @@ int main(int argc, char **argv) {
 
     // write instructions and reserved memory to output file
     char *outFileName = argv[2];
-    binaryFileWriter(outFileName, armInstructions, reserveMemory, numInstructions, (reserveAddress / 4) - numInstructions);
+    writeToBinaryFile(outFileName, armInstructions, reserveMemory, numInstructions, (reserveAddress / 4) - numInstructions);
     return EXIT_SUCCESS;
 }
 
-/*
- * Note: This function takes in the instruction string, currentAddress, pointer to next free reserve memory location,
- *       and pointer to total address number of next free reserve memory location
- *       - currentAddress is needed for branch operations and SDT, to calculate offsets
- *       - *nextReserveMemory is to be passed to SDT function, and the value/contents is to be updated directly
- *       - *reserveAddress is to be passed to SDT function to calculate offset, and should be increased by 4 if used
- */
+
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable) {
     char* remainder = line;
     char* command = strtok_r(line, " ", &remainder);
     remainder = trimWhiteSpace(remainder);
 
-    if (match(command, "^b")) {
+    if (regexMatch(command, "^b")) {
         printf("matching on branch\n");
         return assembleBranch(branchEnum(command), remainder, currentAddress, symbolTable);
-    } else if (match(command, "^andeq")) {
+    } else if (regexMatch(command, "^andeq")) {
         printf("matching on andeq\n");
         return assembleAndEq();
     } else {
         // the rest of the instructions specify a register as their 2nd argument
         char* reg1 = strtok_r(remainder, ",", &remainder);
         remainder = trimWhiteSpace(remainder);
-        if (match(command, "^mov")) {
+        if (regexMatch(command, "^mov")) {
             printf("matching on mov\n");
             OpFlagPair opFlag = parseOperand2(remainder);
             return assembleMov(getRegisterNumber(reg1), opFlag.operand2, opFlag.iflag);
-        } else if (match(command, "^(tst|teq|cmp)")) {
+        } else if (regexMatch(command, "^(tst|teq|cmp)")) {
           printf("matching on tst/teq/cmp\n");
           OpFlagPair opFlag = parseOperand2(remainder);
           return assembleDataProcFlags(dataProcEnum(command), getRegisterNumber(reg1), opFlag.operand2, opFlag.iflag);
 
-        } else if (match(command, "^lsl")) {
+        } else if (regexMatch(command, "^lsl")) {
             printf("matching on lsl\n");
             return assembleLSL(getRegisterNumber(reg1), remainder);
-        } else if (match(command, "^ldr")) {
+        } else if (regexMatch(command, "^ldr")) {
             printf("matching on ldr\n");
             return assembleSDT(true, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, reserveAddress);
-        } else if (match(command, "^str")) {
+        } else if (regexMatch(command, "^str")) {
             printf("matching on str\n");
             return assembleSDT(false, getRegisterNumber(reg1), remainder, currentAddress, nextReserveMemory, reserveAddress);
         } else {
             // the rest of the instructions specify a register as their 3rd argument
             char* reg2 = strtok_r(remainder, ",", &remainder);
             remainder = trimWhiteSpace(remainder);
-            if (match(command, "^mul")) {
+            if (regexMatch(command, "^mul")) {
                 printf("matching on mul\n");
                 char* reg3 = strtok_r(remainder, ",", &remainder);
                 return assembleMultiply(getRegisterNumber(reg1), getRegisterNumber(reg2), getRegisterNumber(reg3), 0, false);
-            } else if (match(command, "^mla")) {
+            } else if (regexMatch(command, "^mla")) {
                 printf("matching on mla\n");
                 char* reg3 = strtok_r(remainder, ",", &remainder);
                 char* reg4 = trimWhiteSpace(strtok_r(remainder, ",", &remainder));
@@ -104,29 +92,70 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
     }
 }
 
+char** importAssemblyInstructions(char *fileName, int *numLines, node_t **map) {
+
+  // open input file
+  FILE *file;
+  if ((file = fopen(fileName, "r")) == NULL) {
+    perror("Error: could not open input file.");
+    exit(EXIT_FAILURE);
+  }
+
+  // store instruction in tempContents, store labels in map
+  char** tempContents = (char **) calloc(MAX_LINES_ASCII, sizeof(char*));
+  int instrNum = 0; // number of instructions stored in tempContents
+  for (int i = 0; i < MAX_LINES_ASCII; i++) {
+    // stop loop at end of file
+    if (feof(file)) {
+      break;
+    }
+    // allocate memory and read in line
+    tempContents[instrNum] = (char *) calloc(MAX_LINE_LENGTH, sizeof(char));
+    fgets(tempContents[instrNum], MAX_LINE_LENGTH, file);
+    if (regexMatch(tempContents[instrNum], ".*:")) {
+      // line read in is a label: add to map, allow tempContents entry to be overwritten
+      char *key = strtok(tempContents[instrNum], ":");
+      ADDRESS value = instrNum * 4;
+      addHashmapEntry(map, key, value);
+    } else if (tempContents[instrNum][0] != '\n') {
+      // line read in is an instruction: keep stored in tempContents
+      instrNum++;
+    }
+  }
+  fclose(file);
+  *numLines = instrNum - 1;
+
+  char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
+  for (int i = 0; i < *numLines; i++) {
+    assemblyInstructions[i] = strtok(tempContents[i], "\n");
+  }
+  free(tempContents);
+
+  return assemblyInstructions;
+}
+
 /* assembling functions */
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress, node_t **symbolTable) {
-    WORD instr = 0;
-    instr = appendNibble(instr, (BYTE) condCode);
-    instr = appendNibble(instr, 10); // 0b1010
-    instr = appendBits(24, instr, calculateBranchOffset(target, currentAddress, symbolTable));
-    return instr;
+    // initialise with cond code
+    WORD instruction = condCode;
+    instruction = appendNibble(instruction, 10);
+    instruction = appendBits(24, instruction, calculateBranchOffset(target, currentAddress, symbolTable));
+    return instruction;
 }
 
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag) {
-    // intialise with cond code and default bits
-    WORD value = 224; // 0b11100000 // Why can't we use the 0bxx version?
-    if (aFlag) {
-        value = appendNibble(value, 2); // 0b0010
-    } else {
-        value = appendNibble(value, 0); // 0b0000
-    }
-    value = appendNibble(value, rd);
-    value = appendNibble(value, rn);
-    value = appendNibble(value, rs);
-    value = appendNibble(value, 9); // 0b1001
-    value = appendNibble(value, rm);
-    return value;
+    // initialise with cond code and default bits
+    char instructionString[8] = "11100000";
+    WORD instruction = strtol(instructionString, NULL, 2);
+
+    instruction = aFlag ? appendNibble(instruction, 2) : appendNibble(instruction, 0);
+
+    instruction = appendNibble(instruction, rd);
+    instruction = appendNibble(instruction, rn);
+    instruction = appendNibble(instruction, rs);
+    instruction = appendNibble(instruction, 9);
+    instruction = appendNibble(instruction, rm);
+    return instruction;
 }
 
 WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress) {
@@ -138,7 +167,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     WORD offset = 0;
     bool iFlag = true;
     bool pFlag = true;
-    bool uFlag = true; //used for optional parts
+    bool uFlag = true;
 
     if (sdtAddressParameter[0] == '=') {
         // address is an immediate expression, use PC as base, put an offset etc.
@@ -149,21 +178,21 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
         }
 
         *nextReserveMemory = value;
-        offset = *reserveAddress - currentAddress - 8;
+        offset = *reserveAddress - currentAddress - BYTE_BITS;
         *reserveAddress += 4;
         rn = REG_PC;
         iFlag = false;
 
     } else {
         // address is register rn with some offset applied
-        if (match(sdtAddressParameter, normalRegPattern)) {
+        if (regexMatch(sdtAddressParameter, normalRegPattern)) {
             // address is register, offset is 0
             rn = getRegisterNumber(trimWhiteSpace(strtok(&sdtAddressParameter[1], "]")));
             offset = 0;
             iFlag = false;
         } else {
             // address is register plus some offset
-            if (match(sdtAddressParameter, preIndexPattern)) {
+            if (regexMatch(sdtAddressParameter, preIndexPattern)) {
                 pFlag = true;
                 rn = getRegisterNumber(trimWhiteSpace(strtok(&sdtAddressParameter[1], ",")));
                 char* offsetStr = trimWhiteSpace(strtok(NULL, "]"));
@@ -178,7 +207,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
                     offset = parseShiftedRegister(&offsetStr[uFlag ? 0 : 1]);
                     iFlag = true;
                 }
-            } else if (match(sdtAddressParameter, postIndexPattern)) {
+            } else if (regexMatch(sdtAddressParameter, postIndexPattern)) {
                 pFlag = false;
                 rn = getRegisterNumber(trimWhiteSpace(strtok(&sdtAddressParameter[1], "]")));
                 char* offsetStr = strtok(NULL, ",");
@@ -197,7 +226,7 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
         }
     }
 
-
+    // initialise with cond code and default bits
     char instructionString[6] = "111001";
     WORD instruction = strtol(instructionString, NULL, 2);
 
@@ -214,8 +243,8 @@ WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS cu
     return instruction;
 }
 
-// general assembly that takes all arguments
 WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag, bool sFlag) {
+  // initialise with cond code and default bits
   char instructionString[6] = "111000";
   WORD instruction = strtol(instructionString, NULL, 2);
   instruction = appendBits(1, instruction, iFlag);
@@ -229,21 +258,19 @@ WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int
   return instruction;
 }
 
-// data proc that stores result
 WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
 }
 
-// data proc that only changes flags
 WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, 0, rn, value, iFlag, 1);
 }
 
-// mov as a data proc instruction
 WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
   return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
 }
 
+/* special instruction assembling functions */
 WORD assembleAndEq(void) {
   return 0;
 }
@@ -254,79 +281,33 @@ WORD assembleLSL(REGNUMBER rn, char *expression) {
   lslShift <<= 1;
   lslShift = appendNibble(lslShift, rn);
 
+  // parse as a mov isntruction with a shift
   return assembleMov(rn, lslShift & FULLBITS(12), 0);
 }
 
-
-/* helper functions section */
-
-char** importAssemblyInstr(char *fileName, int *numLines, node_t **map) {
-    /* requires, as parameters, the input file name, pointer to number of lines, symbol table */
-    // open input file
-    FILE *file;
-    if ((file = fopen(fileName, "r")) == NULL) {
-        perror("Error: could not open input file.");
-        exit(EXIT_FAILURE);
-    }
-
-    // store instruction in tempContents, store labels in map
-    char** tempContents = (char **) calloc(MAX_LINES_ASCII, sizeof(char*));
-    int instrNum = 0; // number of instructions stored in tempContents
-    for (int i = 0; i < MAX_LINES_ASCII; i++) {
-        // stop loop at end of file
-        if (feof(file)) {
-            break;
-        }
-        // allocate memory and read in line
-        tempContents[instrNum] = (char *) calloc(MAX_LINE_LENGTH, sizeof(char));
-        fgets(tempContents[instrNum], MAX_LINE_LENGTH, file);
-        if (match(tempContents[instrNum], ".*:")) {
-            // line read in is a label: add to map, allow tempContents entry to be overwritten
-            char *key = strtok(tempContents[instrNum], ":");
-            ADDRESS value = instrNum * 4;
-            addHashmapEntry(map, key, value);
-        } else if (tempContents[instrNum][0] != '\n') {
-            // line read in is an instruction: keep stored in tempContents
-            instrNum++;
-        }
-    }
-    fclose(file);
-    *numLines = instrNum - 1;
-
-    char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
-    for (int i = 0; i < *numLines; i++) {
-        assemblyInstructions[i] = strtok(tempContents[i], "\n");
-    }
-    free(tempContents);
-
-    return assemblyInstructions;
-}
-
-// used by assemble branch
 BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress, node_t **symbolTable) {
-    ADDRESS targetAddress;
-//    targetAddress = (match(target, "^(\\+|-)?\\d+$"))
-//            ? // how to interpret target being a number
-//            : getHashmapValue(symbolTable, target);
-    targetAddress = getHashmapValue(symbolTable, target);
-    BRANCHOFFSET offset = targetAddress - currentAddress - 8;
-    return (offset >> 2);
-    // note: this returns the whole offset in 32 bits, we only store the bottom 24 bits
+  // use symbol table to find the difference in addresses
+  ADDRESS targetAddress = getHashmapValue(symbolTable, target);
+  BRANCHOFFSET offset = targetAddress - currentAddress - BYTE_BITS;
+  return (offset >> 2);
 }
 
-int parseImmediateValue(char *expression) {
-  if (match(expression, "0x[0-9A-Fa-f]+")) {
+/* helper functions for parsing */
+int parseImmediateValueWithRest(char *expression, char *restOfString) {
+  if (regexMatch(expression, "0x[0-9A-Fa-f]+")) {
     // expression in hex
-    return strtol(&expression[2], NULL, 16);
+    return strtol(&expression[2], &restOfString, HEX_BASE);
   }
 
   // expression in dec
-  return strtol(expression, NULL, 10);
+  return strtol(expression, &restOfString, DEC_BASE);
 }
 
-/* parsing functions used by SDT, DataProc, and encodeInstruction functions */
+int parseImmediateValue(char *expression) {
+  return parseImmediateValueWithRest(expression, NULL);
+}
 
-// this is the main function which delegates to the 3 helper functions below
+/* helper functions for parsing operand2 */
 OpFlagPair parseOperand2(char *operand2) {
     if (checkIfImmediate(operand2)) {
         OpFlagPair opFlagPair = {parseImmediateOperand2(operand2), 1};
@@ -336,7 +317,7 @@ OpFlagPair parseOperand2(char *operand2) {
         return opFlagPair;
     }
 
-    printf("Error: Invalid operand2.\n");
+    perror("Error: Invalid operand2.\n");
     OpFlagPair errorPair = {-1, -1};
     return errorPair;
 }
@@ -347,26 +328,27 @@ REGNUMBER getRegisterNumber(char *regString) {
 
 REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
   regString = trimWhiteSpace(regString);
-  return strtol(&regString[1], &restOfOperand, 10);
+  return strtol(&regString[1], &restOfOperand, DEC_BASE);
 }
 
-
-bool checkIfImmediate(char* operand2) {
-  return match(operand2, "(#|=).+");
+bool checkIfImmediate(const char* operand2) {
+  return regexMatch(operand2, "(#|=).+");
 }
 
-bool checkIfShiftedRegister(char* operand2) {
-  return match(operand2, "r([0-9]|1[0-6]).*");
+bool checkIfShiftedRegister(const char* operand2) {
+  return regexMatch(operand2, "r([0-9]|1[0-6]).*");
 }
 
+/* helper functions for parsing operand2 */
 int parseImmediateOperand2(char* operand2) {
   WORD value = parseImmediateValue(&operand2[1]);
-  if (value < (1 << 8)) {
-      return value;
-  }
-  for (WORD halfRotation = 0; halfRotation * 2 < sizeof(WORD) * 8u; halfRotation++) {
+
+  // check each even rotation for representation
+  for (WORD halfRotation = 0; halfRotation * 2 < WORD_BITS; halfRotation++) {
     WORD rotated = rotateLeft(value, halfRotation * 2);
-    if (rotated < (1 << 8)) {
+
+    // return the value if it is representable in 8 bits
+    if (rotated <= 0xFF) {
       return appendBits(8, halfRotation & FULLBITS(4), rotated);
     }
   }
@@ -378,7 +360,7 @@ int parseImmediateOperand2(char* operand2) {
 int parseShiftedRegister(char* operand2) {
     char *shiftString;
     operand2 = trimWhiteSpace(operand2);
-    BYTE rm = strtol(&operand2[1], &shiftString, 10);
+    BYTE rm =   strtol(&operand2[1], &shiftString, DEC_BASE);
 
     // if register is not shifted
     if (*shiftString == '\0') {
@@ -393,56 +375,55 @@ int parseShiftedRegister(char* operand2) {
     // find binary representation of shift type
     char *shiftType = strtok(shiftString, " ");
     BYTE shiftTypeBin;
-    if (strncmp(shiftType, "lsl", 3) == 0) shiftTypeBin = 0;
-    if (strncmp(shiftType, "lsr", 3) == 0) shiftTypeBin = 1;
-    if (strncmp(shiftType, "asr", 3) == 0) shiftTypeBin = 2;
-    if (strncmp(shiftType, "ror", 3) == 0) shiftTypeBin = 3;
+    if (strncmp(shiftType, "lsl", 3) == 0) {
+      shiftTypeBin = 0;
+    } else if (strncmp(shiftType, "lsr", 3) == 0) {
+      shiftTypeBin = 1;
+    } else if (strncmp(shiftType, "asr", 3) == 0) {
+      shiftTypeBin = 2;
+    } else if (strncmp(shiftType, "ror", 3) == 0) {
+      shiftTypeBin = 3;
+    }
 
 
     char *shiftAmount = strtok(NULL, " ");
 
     int shift;
     if (checkIfImmediate(shiftAmount)) {
+        // parse shift amount as an immediate value
         shift = parseImmediateValue(&shiftAmount[1]);
         shift = appendBits(2, shift, shiftTypeBin);
         shift <<= 1;
 
     } else if (checkIfShiftedRegister(shiftAmount)){
+        // parse shift amount as a reg value
         shift = getRegisterNumber(shiftAmount);
         shift <<= 1;
         shift = appendBits(2, shift, shiftTypeBin);
         shift <<= 1;
         shift++;
     }
-// shift currently does not store rm
+    // shift currently does not store rm
     int res = appendBits(4, shift, rm);
     return res & FULLBITS(12);
 }
 
 /* utility functions */
-
-WORD rotateLeft(WORD num, unsigned int shiftAmount) {
-  return (num << shiftAmount) | (num >> (sizeof(WORD) * 8 - shiftAmount));
-}
-
-// used to REGEX match instructions
-bool match(const char *string, const char *pattern) {
-  regex_t re;
-  if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
+// used to REGEX regexMatch instructions
+bool regexMatch(const char *string, const char *pattern) {
+  regex_t matcher;
+  if (regcomp(&matcher, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
     return false;
   }
 
-  int status = regexec(&re, string, 0, NULL, 0);
-  regfree(&re);
+  int status = regexec(&matcher, string, 0, NULL, 0);
+  regfree(&matcher);
 
   return status == 0;
 }
 
-// removes any whitespace from front of string
+// return string with whitespace removed
 char* trimWhiteSpace(char *string) {
-    // pointer cannot be updated from here, so string++ does not work
-    // in place shift does not work because string is a string literal so cannot be modified
-    // we must instead return a pointer to the first non-space char
     while (isspace(string[0])) {
         string++;
     }

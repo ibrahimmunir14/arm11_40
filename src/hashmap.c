@@ -1,18 +1,5 @@
 #include "hashmapAbstract.h"
 
-//
-//int main() {
-//    // example implementation
-//    node_t **hash_table = initHashmap();
-//
-//    addHashmapEntry(hash_table, "t1", 1);
-//    addHashmapEntry(hash_table, "t2", 2);
-//    addHashmapEntry(hash_table, "t3", 3);
-//
-//    display(hash_table);
-//
-//}
-
 //hashes key to get hash code
 static int hash(const char *key) {
     unsigned long hash = 5381;

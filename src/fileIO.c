@@ -1,7 +1,4 @@
 #include "fileIO.h"
-#include "binaryOps.h"
-#include <stdlib.h>
-#include <string.h>
 
 int getFileSize(FILE *file) {
     int original = (int) ftell(file);
@@ -9,60 +6,64 @@ int getFileSize(FILE *file) {
     fseek(file, 0, SEEK_END);
     int size = (int) ftell(file);
 
+    // reset pointer to original position
     fseek(file, 0, original);
     return size;
 }
 
-bool importBinaryFile(char *fileName, BYTE *memory) {
+bool importBinaryFile(const char *fileName, BYTE *memory) {
     FILE *file;
+
+    // open file
     if ((file = fopen(fileName, "rb")) == NULL) {
         return false;
     }
+
+    // get all file lines
     int size = getFileSize(file);
     for (int i = 0; i < size; i++) {
         memory[i] = (BYTE) getc(file);
     }
+
     fclose(file);
     return true;
 }
 
-void binaryFileWriter(char *fileName, const WORD* instructions, const WORD* reserveMemory, int numInstructions, int numReserve) {
-    FILE * fPointer;
-    fPointer = fopen(fileName, "wb");
-    printf("\n\n*** Output: Instructions ***\n");
-    for (int i = 0; i < numInstructions; i ++) {
-        WORD n = instructions[i];
-        BYTE bytes[4];
-        bytes[3] = (n >> 24u) & FULLBITS(8);
-        bytes[2] = (n >> 16u) & FULLBITS(8);
-        bytes[1] = (n >> 8u) & FULLBITS(8);
-        bytes[0] = n & FULLBITS(8);
-        fwrite(bytes, sizeof(bytes), 1, fPointer);
-        if (ferror(fPointer)) {
-            perror("Error writing to binary output file.");
-        }
-        printf("'%02x%02x%02x%02x'\n", bytes[0], bytes[1], bytes[2], bytes[3]);
+void writeWords(FILE *fPointer, int numOfWords, const WORD *contents) {
+  for (int i = 0; i < numOfWords; i++) {
+    WORD n = contents[i];
+    BYTE bytes[4];
+    bytes[3] = (n >> 24u) & FULLBITS(8);
+    bytes[2] = (n >> 16u) & FULLBITS(8);
+    bytes[1] = (n >> 8u) & FULLBITS(8);
+    bytes[0] = n & FULLBITS(8);
+    fwrite(bytes, sizeof(bytes), 1, fPointer);
+
+    if (ferror(fPointer)) {
+      perror("Error writing to binary output file.");
     }
-    printf("\n*** Output: ReserveMemory ***\n");
-    for (int i = 0; i < numReserve; i ++) {
-        WORD n = reserveMemory[i];
-        //printf("'%08x'\n", n);
-        BYTE bytes[4];
-        bytes[3] = (n >> 24u) & FULLBITS(8);
-        bytes[2] = (n >> 16u) & FULLBITS(8);
-        bytes[1] = (n >> 8u) & FULLBITS(8);
-        bytes[0] = n & FULLBITS(8);
-        fwrite(bytes, sizeof(bytes), 1, fPointer);
-        if (ferror(fPointer)) {
-            perror("Error writing to binary output file.");
-        }
-        printf("'%02x%02x%02x%02x'\n", bytes[0], bytes[1], bytes[2], bytes[3]);
+  }
+}
+
+void writeToBinaryFile(const char *fileName, const WORD *instructions, const WORD *reserveMemory, int numInstructions, int numReserve) {
+    FILE *fPointer;
+
+    // open file
+    if ((fPointer = fopen(fileName, "wb")) == NULL) {
+      perror("Error writing to binary output file.");
+      return;
     }
+
+    // write instructions and reserve memory
+    writeWords(fPointer, numInstructions, instructions);
+    writeWords(fPointer, numReserve, reserveMemory);
 
     fclose(fPointer);
 }
 
-char** importAsciiFile(char *fileName, int *numLines) {
+
+
+char** importAsciiFile(const char *fileName, int *numLines) {
     FILE *file;
     if ((file = fopen(fileName, "r")) == NULL) {
         perror("Error: could not open input file.");

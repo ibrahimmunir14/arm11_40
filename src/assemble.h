@@ -18,58 +18,73 @@
 #include "hashmapAbstract.h"
 #include "mnemonicParser.h"
 
-// TODO create some sort of enum expression to fulfill all different types of expressions
-// TODO create array of lines inputted in main - write to the same array index for the integer instruction?
-
-/* first pass */
-char** importAssemblyInstr(char *fileName, int *numLines, node_t **map);
+#define HEX_BASE 16u
+#define DEC_BASE 10u
 
 /* functions for encoding instructions */
 
-/* parseInstruction delegates to the specific encoding functions - big switch statement in here */
-WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable);
-/* each encode instruction returns a 32 bit integer instruction */
 
+// converts an assembly instruction into binary by delegating to helper functions
+WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable);
+/*
+ * Note: This function takes in the instruction string, currentAddress, pointer to next free reserve memory location,
+ *       and pointer to total address number of next free reserve memory location
+ *       - currentAddress is needed for branch operations and SDT, to calculate offsets
+ *       - *nextReserveMemory is to be passed to SDT function, and the value/contents is to be updated directly
+ *       - *reserveAddress is to be passed to SDT function to calculate offset, and should be increased by 4 if used
+ */
+
+
+// return array of assembly instructions and symbol table from labels to addresses
+char** importAssemblyInstructions(char *fileName, int *numLines, node_t **map);
+
+/* assembling functions */
 WORD assembleBranch(enum CondCode condCode, char* target, ADDRESS currentAddress, node_t **symbolTable);
 WORD assembleMultiply(REGNUMBER rd, REGNUMBER rm, REGNUMBER rs, REGNUMBER rn, bool aFlag);
 WORD assembleSDT(bool lFlag, REGNUMBER rd, char* sdtAddressParameter, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress);
-WORD assembleDataProc(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, char* operand2);
-
-/* helper functions for encoding DataProc */
+// general data proc assembly that takes all arguments
 WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag, bool sFlag);
+
+/* helper functions for encoding DataProc for specific instructions */
 WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag);
 WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag);
 WORD assembleMov(REGNUMBER rd, int value, bool iFlag);
 
-/* special is for andeq and lsl, can be split into 2 different functions later */
-/* can call encodeDataProc from inside this instruction */
+/* special instruction assembling functions */
 WORD assembleAndEq(void);
 WORD assembleLSL(REGNUMBER rn, char* operand2);
 
-/* helper functions for encodingBranch */
+// returns the offset of a branch instruction (in 32 bits)
 BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress, node_t **symbolTable);
 
-/* helper functions for parsing */
 
-/* this parses the different types of values that can be placed in operand2 and passes it to the above 3 helper functions */
+/* helper functions for parsing */
 // struct to store operand2 and iflag after parsing
 typedef struct opFlagPair {
     int operand2;
     int iflag;
 } OpFlagPair;
-int parseImmediateValue(char *expression); // parses a dec or hex value into an int
-OpFlagPair parseOperand2(char* operand2); // used by assemble dataproc and result passed to dataproc helpers
-REGNUMBER getRegisterNumber(char *regString); // get reg number
-REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand); // get reg number and return remaining string
+
+// parses a dec or hex value into an int
+int parseImmediateValue(char *expression);
+// parses a dec or hex value into an int and return remaining string
+int parseImmediateValueWithRest(char *expression, char *restOfString);
+// used by assemble dataproc and result passed to dataproc helpers
+OpFlagPair parseOperand2(char* operand2);
+// get reg number
+REGNUMBER getRegisterNumber(char *regString);
+// get reg number and return remaining string
+REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand);
 
 
 /* helper functions for parsing operand2 */
-bool checkIfImmediate(char* operand2);
-bool checkIfShiftedRegister(char* operand2);
+bool checkIfImmediate(const char* operand2);
+bool checkIfShiftedRegister(const char* operand2);
 int parseImmediateOperand2(char* operand2);
 int parseShiftedRegister(char* operand2);
 
 /* utility functions */
-bool match(const char *string, const char *pattern);
-WORD rotateLeft(WORD num, unsigned int shiftAmount);
+// check if string matches a regex pattern
+bool regexMatch(const char *string, const char *pattern);
+// return string with leading whitespace characters removed
 char* trimWhiteSpace(char *string);
