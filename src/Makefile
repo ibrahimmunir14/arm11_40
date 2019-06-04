@@ -8,11 +8,11 @@ LDLIBS = -lm
 
 all: assemble emulate
 
-assemble: assemble.o binaryOps.o fileIO.o hashmap.o mnemonicParser.o
-	$(CC) assemble.o binaryOps.o fileIO.o hashmap.o mnemonicParser.o -o assemble $(LDLIBS)
+assemble: assemble.o binaryOps.o fileIO.o hashmap.o mnemonicParser.o assembleUtils.o assembleParsing.o 
+	$(CC) assemble.o binaryOps.o fileIO.o hashmap.o mnemonicParser.o assembleUtils.o assembleParsing.o -o assemble $(LDLIBS)
 
-emulate: emulate.o binaryOps.o fileIO.o
-	$(CC) emulate.o binaryOps.o fileIO.o -o emulate $(LDLIBS)
+emulate: emulate.o binaryOps.o fileIO.o emulateGetting.o emulateStatus.o
+	$(CC) emulate.o binaryOps.o fileIO.o emulateGetting.o emulateStatus.o -o emulate $(LDLIBS)
 
 emulate.o: emulate.h emulate.c binaryOps.h fileIO.h
 	$(CC) $(CFLAGS) emulate.c -c -o emulate.o
@@ -32,6 +32,20 @@ mnemonicParser.o: mnemonicParser.h machineDataTypes.h mnemonicParser.c
 	$(CC) $(CFLAGS) mnemonicParser.c -c -o mnemonicParser.o
 
 mnemonicParser.h: machineDataTypes.h
+
+assembleUtils.o: assembleUtils.h assembleUtils.c
+	$(CC) $(CFLAGS) assembleUtils.c -c -o assembleUtils.o
+
+assembleParsing.o: assembleParsing.h assembleUtils.h binaryOps.h assembleParsing.c
+	$(CC) $(CFLAGS) assembleParsing.c -c -o assembleParsing.o
+
+assembleParsing.h: machineDataTypes.h
+
+emulateGetting.o: emulateGetting.h binaryOps.h emulateStatus.h emulateGetting.c
+	$(CC) $(CFLAGS) emulateGetting.c -c -o emulateGetting.o
+
+emulateStatus.o: emulateStatus.h binaryOps.h emulateStatus.c
+	$(CC) $(CFLAGS) emulateStatus.c -c -o emulateStatus.o
 
 clean:
 	rm -f $(wildcard *.o)

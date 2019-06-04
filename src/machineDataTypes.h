@@ -18,6 +18,13 @@ typedef int32_t SDTOFFSET;     // SDT offset: imm offset 12 bits; reg offset is 
 typedef uint32_t DPOPERAND2;     // imm operand2 8 bits; reg operand2 is 32 bits
 typedef int32_t BRANCHOFFSET; // branch offset is signed 24-bit offset
 
+struct MachineState {
+  REGISTER *registers; // (R13=SP; R14=LR; R15=PC; R16=CPSR)
+  BYTE *memory;       // 64kb memory capacity, 1 word is 4 bytes
+  WORD instrToExecute;
+  WORD instrToDecode;
+};
+
 // define constants related to registers
 #define BYTE_BITS 8u
 #define NIBBLE_BITS 4u

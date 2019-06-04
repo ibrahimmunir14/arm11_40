@@ -53,23 +53,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-WORD shiftAndUpdateStatus(WORD val, BYTE shiftAmount, bool updateCPSR, enum ShiftType shiftType, struct MachineState *state) {
-    bool carryOutBit = false;
-    // shift value
-    WORD result = shift(val, shiftAmount, shiftType, &carryOutBit);
-
-    // update status register with carry out bit
-    if (updateCPSR) {
-        if (carryOutBit) {
-          setFlag(C, state);
-        } else {
-          clearFlag(C, state);
-        }
-    }
-
-    return result;
-}
-
 /* functions related to memory access */
 WORD readFourBytes(ADDRESS startAddress, const struct MachineState *state) {
     return (WORD) state->memory[startAddress] << 24u
@@ -95,47 +78,23 @@ WORD readNextInstr(const struct MachineState *state) {
     return readWord((ADDRESS) state->registers[REG_PC], state);
 }
 void printResults(const struct MachineState *state) {
-    printf("Registers:\n");
-    // print contents of general registers R0-R12
-    for (int i = 0; i < NUM_GENERAL_REG; i++) {
-        printf("$%-2i : %10i (0x%08x)\n", i, state->registers[i], state->registers[i]);
-    }
-    // print contents of pc and cpsr
-    printf("PC  : %10i (0x%08x)\n", state->registers[REG_PC], state->registers[REG_PC]);
-    printf("CPSR: %10i (0x%08x)\n", state->registers[REG_CPSR], state->registers[REG_CPSR]);
+  printf("Registers:\n");
+  // print contents of general registers R0-R12
+  for (int i = 0; i < NUM_GENERAL_REG; i++) {
+    printf("$%-2i : %10i (0x%08x)\n", i, state->registers[i], state->registers[i]);
+  }
+  // print contents of pc and cpsr
+  printf("PC  : %10i (0x%08x)\n", state->registers[REG_PC], state->registers[REG_PC]);
+  printf("CPSR: %10i (0x%08x)\n", state->registers[REG_CPSR], state->registers[REG_CPSR]);
 
-    // print contents of non-zero memory locations
-    printf("Non-zero memory:\n");
-    for (int i = 0; i < MEM_SIZE; i += sizeof(WORD)) {
-        WORD word = readFourBytes((ADDRESS) i, state);
-        if (word != 0) {
-            printf("0x%08x: 0x%08x\n", i, word);
-        }
+  // print contents of non-zero memory locations
+  printf("Non-zero memory:\n");
+  for (int i = 0; i < MEM_SIZE; i += sizeof(WORD)) {
+    WORD word = readFourBytes((ADDRESS) i, state);
+    if (word != 0) {
+      printf("0x%08x: 0x%08x\n", i, word);
     }
-}
-bool checkCondition(enum CondCode condCode, const struct MachineState *state) {
-    // check condition is met
-    switch (condCode) {
-        case AL: return true;
-        case EQ: return isSet(Z, state);
-        case NE: return !isSet(Z, state);
-        case GE: return isSet(N, state) == isSet(V, state);
-        case LT: return isSet(N, state) != isSet(V, state);
-        case GT: return !isSet(Z, state) && (isSet(N, state) == isSet(V, state));
-        case LE: return isSet(Z, state) || (isSet(N, state) != isSet(V, state));
-        default: return false;
-    }
-}
-
-/* helper functions related to CPSR status bits */
-bool isSet(enum StatusFlag flag, const struct MachineState *state) {
-    return (GETBITS(state->registers[REG_CPSR], WORD_BITS - 1, NIBBLE_BITS) & (BYTE) flag) == flag;
-}
-void setFlag(enum StatusFlag flag, struct MachineState *state) {
-    state->registers[REG_CPSR] = state->registers[REG_CPSR] | (WORD) ((BYTE) flag << CPSR_POS);
-}
-void clearFlag(enum StatusFlag flag, struct MachineState *state) {
-    state->registers[REG_CPSR] = state->registers[REG_CPSR] & (~ (WORD) ((BYTE) flag << CPSR_POS));
+  }
 }
 
 /* functions for execution of instructions */
@@ -338,103 +297,4 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             }
         }
     }
-}
-
-/* helper functions for execution of instructions */
-enum InstrType getInstrType(WORD instr) {
-    switch (GETBITS(instr, 27, 2)) {
-        case 2: { // 10 in bits 27-26; branch
-            return instrBranch;
-        }
-        case 1: { // 01 in bits 27-26; single data transfer
-            return instrSDT;
-        }
-        case 0: { // 00 in bits 27-26
-            bool iFlag = GETBIT(instr, 25);
-            bool seventhBit = GETBIT(instr, 7);
-            bool fourthBit = GETBIT(instr, 4);
-
-            if (!iFlag && seventhBit && fourthBit) {
-                return instrMultiply;
-            }
-
-            return instrDataProcessing;
-        }
-        default: {// unknown instruction type
-            return instrUnknown;
-        }
-    }
-}
-
-enum DataProcType getDataProcType(WORD instr) {
-    bool iFlag = GETBIT(instr, 25);
-    // immediate value
-    if (iFlag) {
-      return dataProcOp2Imm;
-    }
-
-    // shifted register
-    bool fourthBit = GETBIT(instr, 4);
-    if (fourthBit) {
-      return dataProcOp2RegShiftReg;
-    }
-
-    return dataProcOp2RegShiftConst;
-
-}
-
-enum SdtType getSdtType(WORD instr) {
-    bool iFlag = GETBIT(instr, 25);
-    // immediate value offset
-    if (!iFlag) {
-      return sdtOffsetImm;
-    }
-
-    // shifted register offset
-    bool fourthBit = GETBIT(instr, 4);
-    if (fourthBit) {
-      return sdtOffsetRegShiftReg;
-    }
-
-    return sdtOffsetRegShiftConst;
-}
-
-enum OpCode getOpCode(WORD instr) {
-    return (enum OpCode) GETNIBBLE(instr, 24);
-}
-
-SDTOFFSET getSDTOffset(enum SdtType sdtType, WORD offsetBits, struct MachineState *state) {
-    return (sdtType == sdtOffsetImm)
-           ? offsetBits // offset is immediate value
-           : getOperandFromRegisterShift(offsetBits, (sdtType == sdtOffsetRegShiftReg), false, state); // shifted reg
-}
-
-DPOPERAND2 getDPOperand2(enum DataProcType dataProcType, WORD operand2Bits, bool modifyCPSR, struct MachineState *state) {
-    return (dataProcType == dataProcOp2Imm)
-           ? getOperandFromImmRotation(operand2Bits, modifyCPSR, state) // operand2 is immediate value
-           : getOperandFromRegisterShift(operand2Bits, (dataProcType == dataProcOp2RegShiftReg), modifyCPSR, state); // shifted reg
-}
-
-DPOPERAND2 getOperandFromImmRotation(WORD operandBits, bool modifyCPSR, struct MachineState *state) {
-    WORD immValue = GETBITS(operandBits, 7, 8);
-    BYTE rotAmount = 2 * GETNIBBLE(operandBits, 11);
-    return shiftAndUpdateStatus(immValue, rotAmount, modifyCPSR, ROR, state);
-}
-
-WORD getOperandFromRegisterShift(WORD operandBits, bool regShift, bool modifyCPSR, struct MachineState *state) {
-    REGNUMBER rm = GETNIBBLE((WORD) operandBits, 3);
-    REGISTER rmContents = state->registers[rm];
-    enum ShiftType shiftType = GETBITS(operandBits, 6, 2);
-
-    // calculate shiftAndUpdateStatus, specified by a 5-bit unsigned int
-    BYTE shiftAmount;
-    if (regShift) { // shiftAndUpdateStatus specified by register, bottom byte
-        REGNUMBER rs = GETNIBBLE(operandBits, 11);
-        REGISTER rsContents = state->registers[rs];
-        shiftAmount = rsContents & FULLBITS(8);
-    } else { // shiftAndUpdateStatus by a constant amount
-        shiftAmount = GETBITS(operandBits, 11, 5);
-    }
-
-    return shiftAndUpdateStatus(rmContents, shiftAmount, modifyCPSR, shiftType, state);
 }
