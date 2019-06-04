@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-
+// super function delegating to all relevant assembling functions with arguments correctly parsed
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable) {
     char* remainder = line;
     char* command = strtok_r(line, " ", &remainder);
@@ -92,6 +92,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
     }
 }
 
+// feeding each line in a file into the index of an array
 char** importAssemblyInstructions(char *fileName, int *numLines, node_t **map) {
 
   // open input file
@@ -257,15 +258,12 @@ WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int
   instruction = appendBits(12, instruction, value);
   return instruction;
 }
-
 WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
 }
-
 WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, 0, rn, value, iFlag, 1);
 }
-
 WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
   return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
 }
@@ -274,7 +272,6 @@ WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
 WORD assembleAndEq(void) {
   return 0;
 }
-
 WORD assembleLSL(REGNUMBER rn, char *expression) {
   int lslShift = parseImmediateValue(&expression[1]);
   lslShift = appendBits(2, lslShift, LSL);
@@ -302,9 +299,23 @@ int parseImmediateValueWithRest(char *expression, char *restOfString) {
   // expression in dec
   return strtol(expression, &restOfString, DEC_BASE);
 }
-
 int parseImmediateValue(char *expression) {
   return parseImmediateValueWithRest(expression, NULL);
+}
+
+REGNUMBER getRegisterNumber(char *regString) {
+  return getRegNumWithRest(regString, NULL);
+}
+REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
+  regString = trimWhiteSpace(regString);
+  return strtol(&regString[1], &restOfOperand, DEC_BASE);
+}
+
+bool checkIfImmediate(const char* operand2) {
+  return regexMatch(operand2, "(#|=).+");
+}
+bool checkIfShiftedRegister(const char* operand2) {
+  return regexMatch(operand2, "r([0-9]|1[0-6]).*");
 }
 
 /* helper functions for parsing operand2 */
@@ -321,25 +332,6 @@ OpFlagPair parseOperand2(char *operand2) {
     OpFlagPair errorPair = {-1, -1};
     return errorPair;
 }
-
-REGNUMBER getRegisterNumber(char *regString) {
-  return getRegNumWithRest(regString, NULL);
-}
-
-REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
-  regString = trimWhiteSpace(regString);
-  return strtol(&regString[1], &restOfOperand, DEC_BASE);
-}
-
-bool checkIfImmediate(const char* operand2) {
-  return regexMatch(operand2, "(#|=).+");
-}
-
-bool checkIfShiftedRegister(const char* operand2) {
-  return regexMatch(operand2, "r([0-9]|1[0-6]).*");
-}
-
-/* helper functions for parsing operand2 */
 int parseImmediateOperand2(char* operand2) {
   WORD value = parseImmediateValue(&operand2[1]);
 
@@ -356,7 +348,6 @@ int parseImmediateOperand2(char* operand2) {
   printf("Error: Number cannot be represented as a rotated byte.\n");
   return -1;
 }
-
 int parseShiftedRegister(char* operand2) {
     char *shiftString;
     operand2 = trimWhiteSpace(operand2);
