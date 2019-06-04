@@ -164,29 +164,46 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
       offsetValue = -offsetValue;
     }
 
+    bool isGPIO = false;
     if (pFlag) { // transfer data using address after offset
         // ensure address is in bounds
         if (memAddress + offsetValue > FULLBITS(16)) {
-            if (!checkGPIOInstruction(memAddress + offsetValue)) {
+          isGPIO = checkGPIOInstruction(memAddress + offsetValue);
+            if (!isGPIO) {
                 return;
             }
         }
         if (ldstFlag) { // load word from memory
+          if (isGPIO) {
+            state->registers[rd] = memAddress + offsetValue;
+          } else {
             state->registers[rd] = readWord((ADDRESS) memAddress + offsetValue, state);
+          }
+
         } else { // store word in memory
+          if (!isGPIO) {
             writeWord((WORD) state->registers[rd], (ADDRESS) memAddress + offsetValue, state);
+          }
         }
     } else { // transfer data then update base register
         // ensure address is in bounds
         if (memAddress > FULLBITS(16)) {
-            if (!checkGPIOInstruction(memAddress)) {
-                return;
-            }
+          isGPIO = checkGPIOInstruction(memAddress);
+          if (!isGPIO) {
+            return;
+          }
         }
         if (ldstFlag) { // load word from memory
+          if (isGPIO) {
+            state->registers[rd] = memAddress;
+          } else {
             state->registers[rd] = readWord((ADDRESS) memAddress, state);
+          }
+
         } else { // store word in memory
+          if (!isGPIO) {
             writeWord((WORD) state->registers[rd], (ADDRESS) memAddress, state);
+          }
         }
         // apply offset to source/des register contents
         state->registers[rn] += offsetValue;
