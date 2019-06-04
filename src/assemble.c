@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-
+// super function delegating to all relevant assembling functions with arguments correctly parsed
 WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemory, ADDRESS *reserveAddress, node_t **symbolTable) {
     char* remainder = line;
     char* command = strtok_r(line, " ", &remainder);
@@ -92,6 +92,7 @@ WORD encodeInstruction(char* line, ADDRESS currentAddress, WORD *nextReserveMemo
     }
 }
 
+// feeding each line in a file into the index of an array
 char** importAssemblyInstructions(char *fileName, int *numLines, node_t **map) {
   // open input file
   FILE *file;
@@ -256,15 +257,12 @@ WORD assembleDataProcGeneral(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int
   instruction = appendBits(12, instruction, value);
   return instruction;
 }
-
 WORD assembleDataProcResult(enum OpCode opCode, REGNUMBER rd, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, rd, rn, value, iFlag, 0);
 }
-
 WORD assembleDataProcFlags(enum OpCode opCode, REGNUMBER rn, int value, bool iFlag) {
   return assembleDataProcGeneral(opCode, 0, rn, value, iFlag, 1);
 }
-
 WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
   return assembleDataProcGeneral(MOV, rd, 0, value, iFlag, 0);
 }
@@ -273,14 +271,13 @@ WORD assembleMov(REGNUMBER rd, int value, bool iFlag) {
 WORD assembleAndEq(void) {
   return 0;
 }
-
 WORD assembleLSL(REGNUMBER rn, char *expression) {
   int lslShift = parseImmediateValue(&expression[1]);
   lslShift = appendBits(2, lslShift, LSL);
   lslShift <<= 1;
   lslShift = appendNibble(lslShift, rn);
 
-  // parse as a mov isntruction with a shift
+  // parse as a mov instruction with a shift
   return assembleMov(rn, lslShift & FULLBITS(12), 0);
 }
 
@@ -290,4 +287,3 @@ BRANCHOFFSET calculateBranchOffset(char* target, ADDRESS currentAddress, node_t 
   BRANCHOFFSET offset = targetAddress - currentAddress - BYTE_BITS;
   return (offset >> 2);
 }
-

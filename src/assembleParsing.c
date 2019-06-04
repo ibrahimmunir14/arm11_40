@@ -10,9 +10,23 @@ int parseImmediateValueWithRest(char *expression, char *restOfString) {
   // expression in dec
   return strtol(expression, &restOfString, DEC_BASE);
 }
-
 int parseImmediateValue(char *expression) {
   return parseImmediateValueWithRest(expression, NULL);
+}
+
+REGNUMBER getRegisterNumber(char *regString) {
+  return getRegNumWithRest(regString, NULL);
+}
+REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
+  regString = trimWhiteSpace(regString);
+  return strtol(&regString[1], &restOfOperand, DEC_BASE);
+}
+
+bool checkIfImmediate(const char* operand2) {
+  return regexMatch(operand2, "(#|=).+");
+}
+bool checkIfShiftedRegister(const char* operand2) {
+  return regexMatch(operand2, "r([0-9]|1[0-6]).*");
 }
 
 /* helper functions for parsing operand2 */
@@ -29,25 +43,6 @@ OpFlagPair parseOperand2(char *operand2) {
   OpFlagPair errorPair = {-1, -1};
   return errorPair;
 }
-
-REGNUMBER getRegisterNumber(char *regString) {
-  return getRegNumWithRest(regString, NULL);
-}
-
-REGNUMBER getRegNumWithRest(char *regString, char *restOfOperand) {
-  regString = trimWhiteSpace(regString);
-  return strtol(&regString[1], &restOfOperand, DEC_BASE);
-}
-
-bool checkIfImmediate(const char* operand2) {
-  return regexMatch(operand2, "(#|=).+");
-}
-
-bool checkIfShiftedRegister(const char* operand2) {
-  return regexMatch(operand2, "r([0-9]|1[0-6]).*");
-}
-
-/* helper functions for parsing operand2 */
 int parseImmediateOperand2(char* operand2) {
   WORD value = parseImmediateValue(&operand2[1]);
 
@@ -64,7 +59,6 @@ int parseImmediateOperand2(char* operand2) {
   printf("Error: Number cannot be represented as a rotated byte.\n");
   return -1;
 }
-
 int parseShiftedRegister(char* operand2) {
   char *shiftString;
   operand2 = trimWhiteSpace(operand2);
