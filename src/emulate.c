@@ -167,8 +167,9 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
     if (pFlag) { // transfer data using address after offset
         // ensure address is in bounds
         if (memAddress + offsetValue > FULLBITS(16)) {
-            printf("Error: Out of bounds memory access at address 0x%08x\n", memAddress + offsetValue);
-            return;
+            if (!checkGPIOInstruction(memAddress + offsetValue)) {
+                return;
+            }
         }
         if (ldstFlag) { // load word from memory
             state->registers[rd] = readWord((ADDRESS) memAddress + offsetValue, state);
@@ -178,8 +179,9 @@ void performSdt(enum SdtType sdtType, bool pFlag, bool upFlag, bool ldstFlag, RE
     } else { // transfer data then update base register
         // ensure address is in bounds
         if (memAddress > FULLBITS(16)) {
-            printf("Error: Out of bounds memory access at address 0x%08x\n", memAddress);
-            return;
+            if (!checkGPIOInstruction(memAddress)) {
+                return;
+            }
         }
         if (ldstFlag) { // load word from memory
             state->registers[rd] = readWord((ADDRESS) memAddress, state);
@@ -297,4 +299,28 @@ void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sF
             }
         }
     }
+}
+
+bool checkGPIOInstruction(REGISTER regContents) {
+    switch (regContents) {
+        case 0x20200000:
+            printf("One GPIO pin from 0 to 9 has been accessed\n");
+            break;
+        case 0x20200004:
+            printf("One GPIO pin from 10 to 19 has been accessed\n");
+            break;
+        case 0x20200008:
+            printf("One GPIO pin from 20 to 29 has been accessed\n");
+            break;
+        case 0x2020001C:
+            printf("PIN ON\n");
+            break;
+        case 0x20200028:
+            printf("PIN OFF\n");
+            break;
+        default:
+            printf("Error: Out of bounds memory access at address 0x%08x\n", regContents);
+            return false;
+    }
+    return true;
 }

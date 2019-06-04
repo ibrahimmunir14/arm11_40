@@ -36,4 +36,5 @@ void performMultiply(bool aFlag, bool sFlag, REGNUMBER rd, REGNUMBER rn, REGNUMB
 // perform a data processing instruction with the given parameters and state
 void performDataProc(enum DataProcType dataProcType, enum OpCode opCode, bool sFlag, BYTE rn, BYTE rd, WORD operand2Bits, struct MachineState *state);
 
+bool checkGPIOInstruction(REGISTER regContents);
 #endif //ARM11_40_EMULATE_H
