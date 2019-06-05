@@ -4,18 +4,73 @@
 
 \begin{document}
 
-\title{Our Extension...}
-\author{TODO}
+\title{Our Extension....}
+\author{Group 40 - Amelia Khavari, Ibrahim Munir-Zubair, Luke Texon, Umer Hasan}
 
 \maketitle
 
-\section{Introduction}
+\section{Assembler}
+We approached the assembler in a similar way to emulator where we split the 
+assemble module into smaller submodules: the main module where the assembly is done, 
+a module for parsing operands, a module with miscellaneous utility functions, 
+a mnemonic parser for changing strings into enums and 
+a hash map module for the symbol table. Required functions were declared  within header files 
+before implementation, albeit many declarations needed later revision.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+We also made use of, and updated, several modules that we had previously used in emulator: 
+the binary operations module, as we were still working with binary strings, 
+and the binary file I/O module, for writing to binary files.     
+
+We opted for a two-pass implementation of assembly to avoid any memory complications.
+The program initially produces the symbol table from the assembly code and counts the number of lines.
+Not only must the converted instructions be written to the binary file, but the contents of the reserve memory
+must also be written to the file. To avoid the continual reallocation of memory or the use of a linked list, 
+a static amount of memory is allocated for reserve memory. 
+Each instruction requires at most one reserve memory location, so at most the number of 
+reserve memory locations used is equal to the number of instructions; therefore, we allocated the 
+same amount of memory to the reserve memory as we did the instructions.
+
+After initializing any data structures to be used, the program converts each assembly 
+code line into binary and adds them to an array of intructions. 
+To do this, it uses regular expressions to find the type of each instruction and
+it delegates assembly to the appropriate helper function accordingly.
+There are helper functions for each type of instruction. The single data transfer helper function 
+must be passed the next reserve memory location 
+so that the program is able to store any immediate values that are too large for a mov instruction.
+
+There are three specific helper functions for assembling data processing instructions,
+one for each different instruction format.
+Each of them call and pass specific values to a general helper function that handles 
+the conversion to machine code. 
+After assembly, the machine code instructions and reserve memory are written to the binary file specified.
+
+Each member was assigned to implement either a helper function or an entire module, depending on the difficulty.
+In some cases, we worked as a whole group to code or debug some aspects of the program.
+This occurred when we needed group input on parts of the implementation. 
+
+\newpage
+
+\section{Extension}
+\subsection{Description}
+[extension description, example of use]
+
+\subsection{Design and Implementation}
+[high-level details of the design]
+
+\subsection{Challenges}
+[discussion of any problems/challenges that had to be overcome during extenson implementation]
+
+\subsection{Testing}
+[how the implementation was tested, discussion of how effective the testing was]
+
+\section{Group Reflection}
+[how well did the group programme? discussion of how effective the communication and splitting work between the group was, things to be done differently or the same in future]
+
+\section{Individual Reflection}
+[at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
+\subsection{Amelia's Reflection}
+\subsection{Ibrahim's Reflection}
+\subsection{Luke's Reflection}
+\subsection{Umer's Reflection}
 
 \end{document}
