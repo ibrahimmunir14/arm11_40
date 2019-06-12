@@ -14,9 +14,9 @@ void free_arrays(char **dates, double **doubles, double *prices);
 void parse_csv(char **dates, double **doubles, double *prices);
 double log_return(int index, double **doubles);
 double ema_log_return(int index, double **doubles);
-double rsi(double *prices);
-double macd(double shortEMA, double longEMA);
-double roc(double *prices);
+double rsi(int index, double *prices);
+double macd(int index, double shortEMA, double longEMA);
+double roc(int index, double *prices);
 
 
 
@@ -42,7 +42,15 @@ int input_creator(void) {
   return 0;
 }
 
-double roc(double *prices) {
+
+
+double roc(int index, double *prices) {
   // ( (close - close n periods ago) / close n periods ago )  * 100
+  if (index >= ROC_PERIODS) {
+    double ret = ((prices[index] - prices[index - ROC_PERIODS]) / prices[index - ROC_PERIODS]) * 100;
+    return ret;
+  } else {
+    return 0;
+  }
 }
 
