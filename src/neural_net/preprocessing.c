@@ -1,27 +1,33 @@
 #include "preprocessing.h"
 #include <assert.h>
+#include <malloc.h>
 
 // TODO parse_csv
 // TODO PUT THESE INTO OTHER FILES
 // TODO allocate inputs and prices elsewhere
 
-int input_creator(void) {
-  double **inputs = calloc(NUMBER_OF_DAYS, sizeof(double*));
+int numOfDays(int x) {
+  static int numOfDays = MAX_NUMBER_OF_DAYS;
+  if (x != 0) numOfDays = x;
+  return numOfDays;
+}
 
-  double *prices = calloc(NUMBER_OF_DAYS, sizeof(double));
-  char **dates = calloc(NUMBER_OF_DAYS, sizeof(char*));
-  double *volumes = calloc(NUMBER_OF_DAYS, sizeof(double));
-//  double *shortEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
-//  double *longEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
-//  double *logEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
+int input_creator(void) {
+  double **inputs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
+  double *prices = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
+  char **dates = calloc(MAX_NUMBER_OF_DAYS, sizeof(char*));
+  double *volumes = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
+  double *shortEMAs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
+  double *longEMAs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
+  double *logEMAs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
   if (!inputs || !prices || !volumes || !dates
-  //|| !shortEMAs || !longEMAs || !logEMAs
+  || !shortEMAs || !longEMAs || !logEMAs
   ) {
     perror("Calloc for arrays failed\n");
     exit(EXIT_FAILURE);
   }
 
-  for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
+  for (int i = 0; i < MAX_NUMBER_OF_DAYS; i ++) {
     dates[i] = malloc(DATE_SIZE * sizeof(char));
     inputs[i] = calloc(NUMBER_OF_INPUTS, sizeof(double));
     if (!inputs[i] || !dates[i]) {
@@ -34,22 +40,47 @@ int input_creator(void) {
   parse_csv(dates, volumes, prices);
 
   // create 2d input array
-  for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
-//    create_one_input_entry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
+  for (int i = 0; i < numOfDays(0); i ++) {
+    create_one_input_entry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
   }
 
+  // realloc arrays
+  logEMAs   = (double *)  realloc(logEMAs, (size_t) numOfDays(0)+1);
+  prices    = (double *)  realloc(prices, (size_t) numOfDays(0)+1);
+  volumes   = (double *)  realloc(volumes, (size_t) numOfDays(0)+1);
+  shortEMAs = (double *)  realloc(shortEMAs, (size_t) numOfDays(0)+1);
+  longEMAs  = (double *)  realloc(longEMAs, (size_t) numOfDays(0)+1);
+  dates     = (char **)   reallocarray(dates, (size_t) numOfDays(0)+1, sizeof(char *));
+  inputs    = (double **) reallocarray(inputs, (size_t) numOfDays(0)+1, sizeof(double *));
+  if (!prices || !volumes || !shortEMAs || !longEMAs || !logEMAs || !dates || !inputs) {
+    perror("realloc for 2darrays failed\n");
+    exit(EXIT_FAILURE);
+  }
+  dates[numOfDays(0)] = NULL;
+  inputs[numOfDays(0)] = NULL;
+
+  // display inputs data
+  for (int i = 0; i < numOfDays(0); i++) {
+    for (int j = 0; j < NUMBER_OF_INPUTS; j++) {
+      printf("%f      ", inputs[i][j]);
+    }
+    printf("\n");
+  }
+
+  printf("NUMNOFDAYS: %i", numOfDays(0));
   // free all memory
+  free(prices);
   free(volumes);
-//  free(shortEMAs);
-//  free(longEMAs);
-//  free(logEMAs);
+  free(shortEMAs);
+  free(longEMAs);
+  free(logEMAs);
   free_2darray(dates);
 
   return 0;
 }
 
 
-void parse_csv(char **dates, double *volumes, double *prices) {
+int parse_csv(char **dates, double *volumes, double *prices) {
   FILE *file = fopen("neural_net/AAPL2.csv", "r");
   if (!file) {
     perror("fopen failure");
@@ -58,7 +89,8 @@ void parse_csv(char **dates, double *volumes, double *prices) {
   char *line = (char *) malloc(101 * sizeof(char)); // store each line
   fgets(line, 100, file); // line stores first line
   printf("header: %s", line);
-  for (int i = 0; fgets(line, 100, file); i++) {
+  int i = 0;
+  for (; fgets(line, 100, file); i++) {
     // for each line in csv file
     strncpy(dates[i], strtok(line, ","), DATE_SIZE);
     for (int j = 0; j < 4; j++) strtok(NULL, ",");
@@ -68,6 +100,8 @@ void parse_csv(char **dates, double *volumes, double *prices) {
   }
   free(line);
   fclose(file);
+  numOfDays(i);
+  return i;
 }
 
 void create_one_input_entry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
@@ -101,7 +135,7 @@ void free_2darray(char **array) {
 }
 
 double log_return(int index, double *prices) {
-  if (index > 0 && index < NUMBER_OF_DAYS) {
+  if (index > 0 && index < MAX_NUMBER_OF_DAYS) {
     double ret = prices[index] / prices[index - 1];
     return log(ret);
   } else {
@@ -111,7 +145,7 @@ double log_return(int index, double *prices) {
 }
 
 double rsi(int index, double *prices) {
-  if (index > RSI_PERIOD && index < NUMBER_OF_DAYS) {
+  if (index > RSI_PERIOD && index < MAX_NUMBER_OF_DAYS) {
     double sumGain = 0;
     double sumLoss = 0;
     for (int i = index - RSI_PERIOD; i < index; i++)
@@ -135,7 +169,7 @@ double rsi(int index, double *prices) {
 }
 
 void calculate_log_return_ema(int index, double *prices, double *EMAs, int timePeriod) {
-  if (index > 0 && index < NUMBER_OF_DAYS) {
+  if (index > 0 && index < MAX_NUMBER_OF_DAYS) {
     double k = 2.0f / (timePeriod + 1);
     EMAs[index] = log_return(index, prices) * k + EMAs[index - 1] * (1 - k);
   } else {
@@ -145,7 +179,7 @@ void calculate_log_return_ema(int index, double *prices, double *EMAs, int timeP
 }
 
 void calculate_ema(int index, double *prices, double *EMAs, int timePeriod) {
-  if (index > 0 && index < NUMBER_OF_DAYS) {
+  if (index > 0 && index < MAX_NUMBER_OF_DAYS) {
     double k = 2.0f / (timePeriod + 1);
     EMAs[index] = prices[index] * k + EMAs[index - 1] * (1 - k);
   } else {
@@ -155,7 +189,7 @@ void calculate_ema(int index, double *prices, double *EMAs, int timePeriod) {
 }
 
 double macd(int index, double *shortEMAs, double *longEMAs) {
-  if (index >= 0 && index < NUMBER_OF_DAYS) {
+  if (index >= 0 && index < MAX_NUMBER_OF_DAYS) {
     return shortEMAs[index] - longEMAs[index];
   } else {
     printf("Out of bounds of array in macd function\n");
@@ -165,7 +199,7 @@ double macd(int index, double *shortEMAs, double *longEMAs) {
 
 double roc(int index, double *prices) {
   // ( (close - close n periods ago) / close n periods ago )  * 100
-  if (index >= ROC_PERIODS && index < NUMBER_OF_DAYS) {
+  if (index >= ROC_PERIODS && index < MAX_NUMBER_OF_DAYS) {
     double ret = ((prices[index] - prices[index - ROC_PERIODS]) / prices[index - ROC_PERIODS]) * 100;
     return ret;
   } else {
