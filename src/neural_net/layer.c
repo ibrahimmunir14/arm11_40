@@ -102,7 +102,7 @@ void layer_compute_outputs(layer_t const *layer) {
     }
 
     sum += layer->biases[j];
-  
+
     layer->outputs[j] = sigmoid(sum);
   }
 }

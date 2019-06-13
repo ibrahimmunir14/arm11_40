@@ -4,12 +4,8 @@
 
 \begin{document}
 
-\title{Our Extension....}
-<<<<<<< HEAD
-\author{TODO}
-=======
+\title{Using neural networks to predict stocks}
 \author{Group 40 - Amelia Khavari, Ibrahim Munir-Zubair, Luke Texon, Umer Hasan}
->>>>>>> ec4a3e2925c8c96dca1e8c9f662353c00f67d60d
 
 \maketitle
 
@@ -56,25 +52,102 @@ This occurred when we needed group input on parts of the implementation.
 
 \section{Extension}
 \subsection{Description}
-[extension description, example of use]
+[and example of use]
+Our extension extracts stock data and trains a neural network on that data.
+The neural network can then predict 
 
-\subsection{Design and Implementation}
+
+\subsection{Design}
 [high-level details of the design]
+
+-use web scraper to extract data from stock website into csv file
+
+The program processes the CSV file to extract the required data and sort it into an appropriate C array.
+The array is passed to the neural network program.
+The data is split into 80\% training data and 20\% testing data.
+The training data is 
+
+The network has 1 hidden layer 
+The input layer has 6 inputs
+
+The weights are initialized randomly
+
+After the neural network has been initialized, the 
+
+-use neural network program to interpret data (create neural network using backpropagation)
+
 
 \subsection{Challenges}
 [discussion of any problems/challenges that had to be overcome during extenson implementation]
+The main challenge was that the group as a whole had little experience in the use and implementation of neural networks. 
+Therefore, we used this as a learning experience and an introduction to neural networks. 
+Much of the time implementing the extension involved understanding how they work.
+
+We had to adapt the neural network implementation as it originally only accommodated for values between -1 and 1.
+To allow for any scalar value to be used, the inputs have to be normalised to values between -1 and 1 
+and the resulting output must be denormalised using an inverse process to the normalisaion.
+
+We were unsure on what hyperparamters to use without preliminary calculations.
+This included the learning rate and the number of epochs. 
+These values could drastically change the result of training; too few epochs could cause underfitting 
+but too few epochs could cause underfitting.
+
+Another challenge was in the web scraping. 
+Originally, we attempted to write a web scraper in C, 
+however C is a hardware-level language that is not designed for using web requests and 
+accessing websites. Consequently, we implemented the web scraper in Python as
+Python is suited for web access and it was
+
+
+On several occasions, we encountered memory errors that hindered our progress. 
+These normally occurred due to incorrect array access and was occasionally due to the excessive allocation of heap allocation.
+To  
+
 
 \subsection{Testing}
 [how the implementation was tested, discussion of how effective the testing was]
+-test by comparing prediction with input data
+-data is split into training and testing data
+-training data is to train the neural network so that it makes the correct predictions
+
 
 \section{Group Reflection}
-[how well did the group programme? discussion of how effective the communication and splitting work between the group was, things to be done differently or the same in future]
+how well did the group programme? 
+discussion of how effective the communication and splitting work between the group was
+things to be done the same/differently in future
 
-\section{Individual Reflection}
+effective communication - using discord so that even when we didn't meet up we could help each other with debugging using screen sharing
+
+We communicated efficiently through the use of the VoIP application Discord. 
+Discord allows for text messaging, voice calls and, most notably, screen sharing.
+Screen sharing allowed us to do pair programming while being in different locations.
+
+During discussions, we would 
+We would organise regular meetings and coding sessions
+
+
+We thoroughly planned the implementation of emulator and assembler; we prepared header files containing function signatures
+for required functions that 
+ required implementation. This way, we could assume functions were correct and could programme concurrently.
+This increased group productivity and 
+On the other hand, this only helped to an extent. Many function signatures needed later alterations 
+as the implementation may require different data and these changes needed to be propagated 
+across the different functions and modules that called it.
+
+
+-more planning on headers/files
+-regular meetings, very good, keep same
+
+
+
+\section{Individual Reflections}
 [at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
 \subsection{Amelia's Reflection}
+
 \subsection{Ibrahim's Reflection}
+
 \subsection{Luke's Reflection}
+
 \subsection{Umer's Reflection}
 
 \end{document}
