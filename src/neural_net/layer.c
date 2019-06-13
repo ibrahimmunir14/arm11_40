@@ -38,7 +38,7 @@ bool layer_init(layer_t *layer, int num_outputs, layer_t *prev) {
   if ((layer->outputs = calloc(num_outputs, sizeof(double))) == NULL
     || (layer->biases = calloc(num_outputs, sizeof(double))) == NULL
     || (layer->deltas = calloc(num_outputs, sizeof(double))) == NULL
-    || (layer->weights = calloc(num_outputs, sizeof(double *))) == NULL) {
+    || (layer->weights = calloc(layer->num_inputs, sizeof(double *))) == NULL) {
     return true;
   }
 

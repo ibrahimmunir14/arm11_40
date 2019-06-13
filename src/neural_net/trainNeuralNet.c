@@ -45,7 +45,7 @@ int main() {
   printf("\nTraining the network...\n");
   for (int i = 0; i < 25000; ++i) {
     /* This is an epoch, running through the entire data. */
-    for (int j = 0; j < 4; ++j) {
+    for (int j = 0; j < testingData->numOfEntries; ++j) {
       /* Training at batch size 1, ie updating weights after every data point. */
       train_neural_net(neural_net, 1.0, testingData->inputs[j], testingData->expectedOutputs + j);
     }
@@ -61,13 +61,17 @@ int main() {
   for (int i = 0; i < layer_outputs[1]; ++i)
     printf("  outputs[%i]: %f\n", i, neural_net->input_layer->next->outputs[i]);
 
-  /* Let's see the results. */
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < testingData->numOfEntries; ++i) {
     forward_run(neural_net, testingData->inputs[i]);
-    printf("  [%1.f, %1.f] -> %f\n", testingData->inputs[i][0], testingData->inputs[i][1], neural_net->output_layer->outputs[0]);
+    printf("  [%f, %f, %f, %f, %f, %f] -> %f\n", testingData->inputs[i][0],
+        testingData->inputs[i][1],
+        testingData->inputs[i][2],
+        testingData->inputs[i][3],
+        testingData->inputs[i][4],
+        testingData->inputs[i][5],
+        neural_net->output_layer->outputs[0]);
   }
 
-  /* Time to clean up. */
   free_neural_net(neural_net);
 
   return EXIT_SUCCESS;
