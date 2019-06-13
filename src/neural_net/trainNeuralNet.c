@@ -5,6 +5,8 @@
 #define LAYERS 7
 
 int main() {
+  input_creator();
+  return 0;
   // initializes random number generator
   srand(42);
 

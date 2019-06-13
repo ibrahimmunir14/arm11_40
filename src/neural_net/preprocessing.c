@@ -38,7 +38,7 @@ int input_creator(void) {
 }
 
 void parse_csv(char **dates, double *volumes, double *prices) {
-  FILE *file = fopen("../../AAPL2.csv", "r");
+  FILE *file = fopen("neural_net/AAPL2.csv", "r");
   if (!file) {
     perror("fopen failure");
     exit(EXIT_FAILURE);
@@ -47,8 +47,10 @@ void parse_csv(char **dates, double *volumes, double *prices) {
   size_t len = 0;
   ssize_t nread;
   int i = 0;
+  nread = getline(&line, &len, file);
+  printf("Reading the header: %s", line);
   while ((nread = getline(&line, &len, file)) != -1) {
-    printf("%s Characters Read: %d\n", line, (int) nread);
+//    printf("%s Characters Read: %d\n", line, (int) nread);
     dates[i] = strtok_r(line, ",", &line);
     int drop_columns = 4;
     for (int j = 0; j < drop_columns; j ++) {
@@ -58,6 +60,7 @@ void parse_csv(char **dates, double *volumes, double *prices) {
     char *volume = strtok_r(line, ",", &line);
     prices[i] = strtof(adj_close, &adj_close);
     volumes[i] = strtof(volume, &volume);
+    printf("i %d, date %s, price %f, volume %f \n", i, dates[i], prices[i], volumes[i]);
     i ++;
   }
   fclose(file);

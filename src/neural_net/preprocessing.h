@@ -10,7 +10,7 @@
 #define NUMBER_OF_DOUBLES (6)
 #define NUMBER_OF_INPUTS (6)
 #define LINE_SIZE (80)
-#define DATE_SIZE (10)
+#define DATE_SIZE (12)
 #define ROC_PERIODS (12)
 #define SHORT_EMA_PERIOD (12)
 #define LONG_EMA_PERIOD (26)
