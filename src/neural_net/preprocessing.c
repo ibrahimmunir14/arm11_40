@@ -2,18 +2,14 @@
 #include <assert.h>
 #include <malloc.h>
 
-// TODO parse_csv
-// TODO PUT THESE INTO OTHER FILES
-// TODO allocate inputs and prices elsewhere
-
 int numOfDays(int x) {
   static int numOfDays = MAX_NUMBER_OF_DAYS;
   if (x != 0) numOfDays = x;
   return numOfDays;
 }
 
-int input_creator(void) {
-  double **inputs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
+int input_creator(double **inputs) {
+//  double **inputs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
   double *prices = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
   char **dates = calloc(MAX_NUMBER_OF_DAYS, sizeof(char*));
   double *volumes = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
@@ -29,7 +25,7 @@ int input_creator(void) {
 
   for (int i = 0; i < MAX_NUMBER_OF_DAYS; i ++) {
     dates[i] = malloc(DATE_SIZE * sizeof(char));
-    inputs[i] = calloc(NUMBER_OF_INPUTS, sizeof(double));
+    inputs[i] = calloc(NUMBER_OF_DOUBLES, sizeof(double));
     if (!inputs[i] || !dates[i]) {
       perror("calloc/malloc for inner arrays failed\n");
       exit(EXIT_FAILURE);
@@ -61,7 +57,7 @@ int input_creator(void) {
 
   // display inputs data
   for (int i = 0; i < numOfDays(0); i++) {
-    for (int j = 0; j < NUMBER_OF_INPUTS; j++) {
+    for (int j = 0; j < NUMBER_OF_DOUBLES; j++) {
       printf("%f      ", inputs[i][j]);
     }
     printf("\n");
@@ -76,7 +72,7 @@ int input_creator(void) {
   free(logEMAs);
   free_2darray(dates);
 
-  return 0;
+  return numOfDays(0);
 }
 
 
@@ -113,17 +109,19 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
    * 4. RSI
    * 5. MACD
    * 6. ROC
-   *
+   * 7. expected output price of that day
    * */
   calculate_log_return_ema(index, prices, logEMAs, SHORT_EMA_PERIOD);
   calculate_ema(index, prices, shortEMAs, SHORT_EMA_PERIOD);
   calculate_ema(index, prices, longEMAs, LONG_EMA_PERIOD);
+  volumes = normalise(volumes, getMax(volumes, numOfDays(0)) - getMin(volumes, numOfDays(0)), getAvg(volumes, numOfDays(0)), numOfDays(0));
   inputs[index][0] = log_return(index, prices);
   inputs[index][1] = volumes[index];
   inputs[index][2] = logEMAs[index];
   inputs[index][3] = rsi(index, prices);
   inputs[index][4] = macd(index, shortEMAs, longEMAs);
   inputs[index][5] = roc(index, prices);
+  inputs[index][6] = prices[index];
 }
 
 void free_2darray(char **array) {

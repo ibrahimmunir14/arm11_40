@@ -27,4 +27,5 @@ double getMax(double *values, int numValues);
 double *normalise(double *values, double range, double avg, double num_values);
 double getAvg(double *values, int numVals);
 double inverseNormalise(double value, double range, double avg);
+dataMapping_t *makeData(void);
 #endif //C_PROJECT_LOADER_H

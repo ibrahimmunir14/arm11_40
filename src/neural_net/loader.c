@@ -1,6 +1,9 @@
 #include "loader.h"
+#include "preprocessing.h"
 #include <math.h>
 #include <assert.h>
+
+// TODO FREE INPUT ARRAY
 
 // creates fake data for testing
 double **makeFakeDataArray(void) {
@@ -140,4 +143,10 @@ void printMappings(dataMapping_t *dataMapping, int numOfEntries) {
 dataMapping_t *makeFakeData(void) {
   double **dataArray = makeFakeDataArray();
   return process(dataArray, NUM_LINES);
+}
+
+dataMapping_t *makeData(void) {
+    double **dataArray = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
+    int num_lines = input_creator(dataArray);
+    return process(dataArray, num_lines);
 }

@@ -5,11 +5,12 @@
 // TODO Normalize inputs and denormalize outputs
 
 int main() {
+    printf("\n\n");
     // initializes random number generator
     srand(42);
 
     // initialize inputs and targets;
-    dataMapping_t *testingData = makeFakeData();
+    dataMapping_t *testingData = makeData();
 
     int numOfHiddenNeurons = (NUM_INPUTS + NUM_OUTPUTS) / 2;
     int layer_outputs[] = {NUM_INPUTS, numOfHiddenNeurons, NUM_OUTPUTS};
@@ -57,25 +58,25 @@ int main() {
                inverseNormalise(neural_net->output_layer->outputs[0], testingData[i].range, testingData[i].avg));
     }
 
-    double *test_inputs = calloc(NUM_INPUTS, sizeof(double));
-    test_inputs[0] = 20;
-    test_inputs[1] = 30;
-    test_inputs[2] = 40;
-    test_inputs[3] = 50;
-    test_inputs[4] = 60;
-    test_inputs[5] = 70;
-    test_inputs[6] = 0;
-    dataMapping_t *test_data = process(&test_inputs, 1);
-    forward_run(neural_net, test_inputs);
-
-    printf("  [%f, %f, %f, %f, %f, %f]. Actual: %f\n",
-           test_inputs[0],
-           test_inputs[1],
-           test_inputs[2],
-           test_inputs[3],
-           test_inputs[4],
-           test_inputs[5],
-           inverseNormalise(neural_net->output_layer->outputs[0], test_data->range, test_data->avg));
+//    double *test_inputs = calloc(NUM_INPUTS, sizeof(double));
+//    test_inputs[0] = 20;
+//    test_inputs[1] = 30;
+//    test_inputs[2] = 40;
+//    test_inputs[3] = 50;
+//    test_inputs[4] = 60;
+//    test_inputs[5] = 70;
+//    test_inputs[6] = 0;
+//    dataMapping_t *test_data = process(&test_inputs, 1);
+//    forward_run(neural_net, test_inputs);
+//
+//    printf("  [%f, %f, %f, %f, %f, %f]. Actual: %f\n",
+//           test_inputs[0],
+//           test_inputs[1],
+//           test_inputs[2],
+//           test_inputs[3],
+//           test_inputs[4],
+//           test_inputs[5],
+//           inverseNormalise(neural_net->output_layer->outputs[0], test_data->range, test_data->avg));
 
     free_neural_net(neural_net);
 
