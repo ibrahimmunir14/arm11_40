@@ -1,4 +1,3 @@
-
 #include "loader.h"
 
 // creates fake data for testing
