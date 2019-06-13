@@ -15,8 +15,23 @@ double **makeFakeDataArray(void) {
             exit(EXIT_FAILURE);
         }
     }
-    data[0] = {0, 1, 2, 3, 4, 5, 4};
-    data[1] = {3, 2, 1, 35, 31, 21, 0};
+
+    data[0][0] = 0;
+    data[0][1] = 1;
+    data[0][2] = 2;
+    data[0][3] = 3;
+    data[0][4] = 4;
+    data[0][5] = 5;
+    data[0][6] = 4;
+
+    data[1][0] = 3;
+    data[1][1] = 2;
+    data[1][2] = 1;
+    data[1][3] = 35;
+    data[1][4] = 31;
+    data[1][5] = 21;
+    data[1][6] = 0;
+
     return data;
 }
 

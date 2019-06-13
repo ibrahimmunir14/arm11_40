@@ -107,7 +107,10 @@ void layer_update(layer_t const *layer, double l_rate)
 {
   for (int j = 0; j < layer->num_outputs; j++) {
     for (int i = 0; i < layer->num_inputs; i++) {
-      layer->weights[i][j] += l_rate * layer->prev->outputs[i] * layer->deltas[j];
+      double out = layer->prev->outputs[i];
+      double delta = layer->deltas[j];
+      double currentWeight = layer->weights[i][j];
+      layer->weights[i][j] = l_rate * out * delta + currentWeight;
     }
 
     layer->biases[j] += l_rate * layer->deltas[j];
