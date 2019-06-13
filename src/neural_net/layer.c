@@ -72,6 +72,23 @@ void layer_free(layer_t *layer) {
   free(layer);
 }
 
+void layer_compute_final_output(layer_t const *layer) {
+  assert(layer != NULL);
+  assert(layer->prev != NULL);
+
+  for (int j = 0; j < layer->num_outputs; j++) {
+    double sum = 0;
+
+    for (int i = 0; i < layer->num_inputs; i++) {
+      sum += layer->weights[i][j] * layer->prev->outputs[i];
+    }
+
+    sum += layer->biases[j];
+
+    layer->outputs[j] = sum;
+  }
+}
+
 // computes the outputs of the current layer
 void layer_compute_outputs(layer_t const *layer) {
   assert(layer != NULL);
@@ -85,7 +102,7 @@ void layer_compute_outputs(layer_t const *layer) {
     }
 
     sum += layer->biases[j];
-
+  
     layer->outputs[j] = sigmoid(sum);
   }
 }
@@ -103,14 +120,10 @@ void layer_compute_deltas(layer_t const *layer) {
   }
 }
 
-void layer_update(layer_t const *layer, double l_rate)
-{
+void layer_update(layer_t const *layer, double l_rate) {
   for (int j = 0; j < layer->num_outputs; j++) {
     for (int i = 0; i < layer->num_inputs; i++) {
-      double out = layer->prev->outputs[i];
-      double delta = layer->deltas[j];
-      double currentWeight = layer->weights[i][j];
-      layer->weights[i][j] = l_rate * out * delta + currentWeight;
+      layer->weights[i][j] = l_rate * layer->prev->outputs[i] * layer->deltas[j] + layer->weights[i][j];
     }
 
     layer->biases[j] += l_rate * layer->deltas[j];
