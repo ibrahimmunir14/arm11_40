@@ -4,8 +4,8 @@
 #include <math.h>
 
 // TODO parse_csv
-// TODO free_array
 // TODO PUT THESE INTO OTHER FILES
+// TODO allocate inputs and prices elsewhere
 
 #define NUMBER_OF_DAYS (2000)
 #define NUMBER_OF_DOUBLES (6)
@@ -17,7 +17,8 @@
 #define LONG_EMA_PERIOD (26)
 #define RSI_PERIOD (14)
 
-void free_array(char *array);
+void free_array(double *array);
+void free_2darray(char **array);
 void parse_csv(char **dates, double *volumes, double *prices);
 double log_return(int index, double *prices);
 double rsi(int index, double *prices);
@@ -30,27 +31,22 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
 
 
 int input_creator(void) {
-  // allocate date array
-  // allocate double array
-  // allocate expected price array
-  // allocate neural network inputs array
-  // allocate EMA arrays
-  char **dates = calloc(NUMBER_OF_DAYS, sizeof(char *));
-  double **doubles = calloc(NUMBER_OF_DAYS, sizeof(double *));
-  double *prices = calloc(NUMBER_OF_DAYS, sizeof(double));
-  double *volumes = calloc(NUMBER_OF_DAYS, sizeof(double));
   double **inputs = calloc(NUMBER_OF_DAYS, sizeof(double *));
+  double *prices = calloc(NUMBER_OF_DAYS, sizeof(double));
+
+
+  char **dates = calloc(NUMBER_OF_DAYS, sizeof(char *));
+  double *volumes = calloc(NUMBER_OF_DAYS, sizeof(double));
   double *shortEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
   double *longEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
   double *logEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
   for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
     dates[i] = calloc(DATE_SIZE, sizeof(char));
-    doubles[i] = calloc(NUMBER_OF_DOUBLES, sizeof(double));
-    inputs[i] = calloc(NUMBER_OF_INPUTS, sizeof(double));
+//    inputs[i] = calloc(NUMBER_OF_INPUTS, sizeof(double));
   }
 
   // call parse_csv with pointer to all arrays
-  parse_csv(dates, doubles, prices);
+  parse_csv(dates, volumes, prices);
 
   // create 2d input array
   for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
@@ -58,13 +54,39 @@ int input_creator(void) {
   }
 
   // free all memory
-
+  free(volumes);
+  free(shortEMAs);
+  free(longEMAs);
+  free(logEMAs);
+  free_2darray(dates);
 
   return 0;
 }
 
 void parse_csv(char **dates, double *volumes, double *prices) {
-
+  FILE *file = fopen("../../AAPL2.csv", "r");
+  if (!file) {
+    perror("fopen failure");
+    exit(EXIT_FAILURE);
+  }
+  char *line = NULL;
+  size_t len = 0;
+  ssize_t nread;
+  int i = 0;
+  while ((nread = getline(&line, &len, file)) != -1) {
+    printf("%s Characters Read: %d\n", line, (int) nread);
+    dates[i] = strtok_r(line, ",", &line);
+    int drop_columns = 4;
+    for (int j = 0; j < drop_columns; j ++) {
+      strtok_r(line, ",", &line);
+    }
+    char *adj_close = strtok_r(line, ",", &line);
+    char *volume = strtok_r(line, ",", &line);
+    prices[i] = strtof(adj_close, &adj_close);
+    volumes[i] = strtof(volume, &volume);
+    i ++;
+  }
+  fclose(file);
 }
 
 void create_one_input_entry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
@@ -87,6 +109,14 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
   inputs[index][3] = rsi(index, prices);
   inputs[index][4] = macd(index, shortEMAs, longEMAs);
   inputs[index][5] = roc(index, prices);
+}
+
+void free_2darray(char **array) {
+  int i = 0;
+  while (array[i]) {
+    free(array[i]);
+  }
+  free(array);
 }
 
 double log_return(int index, double *prices) {
