@@ -5,57 +5,79 @@
 // TODO Normalize inputs and denormalize outputs
 
 int main() {
-  // initializes random number generator
-  srand(42);
+    // initializes random number generator
+    srand(42);
 
-  // initialize inputs and targets;
-  dataMapping_t *testingData = makeFakeData();
+    // initialize inputs and targets;
+    dataMapping_t *testingData = makeFakeData();
 
-  int numOfHiddenNeurons = (testingData->numOfInputs + testingData->numOfOutputs) / 2;
-  int layer_outputs[] = {testingData->numOfInputs, numOfHiddenNeurons, 1};
+    int numOfHiddenNeurons = (NUM_INPUTS + NUM_OUTPUTS) / 2;
+    int layer_outputs[] = {NUM_INPUTS, numOfHiddenNeurons, NUM_OUTPUTS};
 
-  neural_net_t *neural_net = create_neural_net(3, layer_outputs);
-  if (!neural_net) {
-    printf("Error: Couldn't create the neural network.\n");
-    return EXIT_FAILURE;
-  }
-
-  printf("Current random outputs of the network:\n");
-  for (int i = 0; i < testingData->numOfEntries; ++i) {
-    forward_run(neural_net, testingData->inputs[i]);
-    printf("  [%f, %f, %f, %f, %f, %f]. Expected: %f,  Actual: %f\n", testingData->inputs[i][0],
-           testingData->inputs[i][1],
-           testingData->inputs[i][2],
-           testingData->inputs[i][3],
-           testingData->inputs[i][4],
-           testingData->inputs[i][5],
-           testingData->expectedOutputs[i],
-           neural_net->output_layer->outputs[0]);
-  }
-
-  printf("\nTraining the network...\n");
-  for (int i = 0; i < 25000; ++i) {
-    /* This is an epoch, running through the entire data. */
-    for (int j = 0; j < testingData->numOfEntries; ++j) {
-      /* Training at batch size 1, ie updating weights after every data point. */
-      train_neural_net(neural_net, 1.0, testingData->inputs[j], testingData->expectedOutputs + j);
+    neural_net_t *neural_net = create_neural_net(3, layer_outputs);
+    if (!neural_net) {
+        printf("Error: Couldn't create the neural network.\n");
+        return EXIT_FAILURE;
     }
-  }
 
-  printf("Final outputs of the network:\n");
-  for (int i = 0; i < testingData->numOfEntries; ++i) {
-    forward_run(neural_net, testingData->inputs[i]);
-    printf("  [%f, %f, %f, %f, %f, %f]. Expected: %f,  Actual: %f\n", testingData->inputs[i][0],
-        testingData->inputs[i][1],
-        testingData->inputs[i][2],
-        testingData->inputs[i][3],
-        testingData->inputs[i][4],
-        testingData->inputs[i][5],
-        testingData->expectedOutputs[i],
-        neural_net->output_layer->outputs[0]);
-  }
+    printf("Current random outputs of the network:\n");
+    for (int i = 0; i < testingData[0].numEntries; ++i) {
+        forward_run(neural_net, testingData[i].inputs);
+        printf("  [%f, %f, %f, %f, %f, %f]. Expected: %f,  Actual: %f\n",
+               testingData[i].inputs[0],
+               testingData[i].inputs[1],
+               testingData[i].inputs[2],
+               testingData[i].inputs[3],
+               testingData[i].inputs[4],
+               testingData[i].inputs[5],
+               testingData[i].expectedOutput,
+               neural_net->output_layer->outputs[0]);
+    }
 
-  free_neural_net(neural_net);
+    printf("\nTraining the network...\n");
+    for (int i = 0; i < 25000; ++i) {
+        /* This is an epoch, running through the entire data. */
+        for (int j = 0; j < testingData[0].numEntries; ++j) {
+            /* Training at batch size 1, ie updating weights after every data point. */
+            train_neural_net(neural_net, 1.0, testingData[j].inputs, &testingData[j].expectedOutput);
+        }
+    }
 
-  return EXIT_SUCCESS;
+    printf("Final outputs of the network:\n");
+    for (int i = 0; i < testingData[0].numEntries; ++i) {
+        forward_run(neural_net, testingData[i].inputs);
+
+        printf("  [%f, %f, %f, %f, %f, %f]. Expected: %f,  Actual: %f\n", testingData[i].inputs[0],
+               testingData[i].inputs[1],
+               testingData[i].inputs[2],
+               testingData[i].inputs[3],
+               testingData[i].inputs[4],
+               testingData[i].inputs[5],
+               testingData[i].expectedOutput,
+               inverseNormalise(neural_net->output_layer->outputs[0], testingData[i].range, testingData[i].avg));
+    }
+
+    double *test_inputs = calloc(NUM_INPUTS, sizeof(double));
+    test_inputs[0] = 20;
+    test_inputs[1] = 30;
+    test_inputs[2] = 40;
+    test_inputs[3] = 50;
+    test_inputs[4] = 60;
+    test_inputs[5] = 70;
+    test_inputs[6] = 0;
+    dataMapping_t *test_data = process(&test_inputs, 1);
+    forward_run(neural_net, test_inputs);
+
+    printf("  [%f, %f, %f, %f, %f, %f]. Actual: %f\n",
+           test_inputs[0],
+           test_inputs[1],
+           test_inputs[2],
+           test_inputs[3],
+           test_inputs[4],
+           test_inputs[5],
+           inverseNormalise(neural_net->output_layer->outputs[0], test_data->range, test_data->avg));
+
+    free_neural_net(neural_net);
+
+    return EXIT_SUCCESS;
 }
