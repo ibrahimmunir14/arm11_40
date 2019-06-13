@@ -5,21 +5,22 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include "loader.h"
 
-#define NUMBER_OF_DAYS (2000)
-#define NUMBER_OF_DOUBLES (6)
+#define MAX_NUMBER_OF_DAYS (2000)
+#define NUMBER_OF_DOUBLES (7)
 #define NUMBER_OF_INPUTS (6)
 #define LINE_SIZE (80)
-#define DATE_SIZE (10)
+#define DATE_SIZE (12)
 #define ROC_PERIODS (12)
 #define SHORT_EMA_PERIOD (12)
 #define LONG_EMA_PERIOD (26)
 #define RSI_PERIOD (14)
 
-int input_creator(void);
+int input_creator(double **inputs);
 void free_array(double *array);
 void free_2darray(char **array);
-void parse_csv(char **dates, double *volumes, double *prices);
+int parse_csv(char **dates, double *volumes, double *prices);
 double log_return(int index, double *prices);
 double rsi(int index, double *prices);
 double macd(int index, double *shortEMAs, double *longEMAs);
