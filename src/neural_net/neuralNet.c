@@ -59,12 +59,12 @@ void forward_run(neural_net_t const *neural_net, double const *inputs) {
 
   layer_t *currentLayer = neural_net->input_layer->next;
 
-  while (currentLayer->next != NULL) {
+  while (currentLayer!= NULL) {
     layer_compute_outputs(currentLayer);
     currentLayer = currentLayer->next;
   }
 
-  layer_compute_final_output(currentLayer);
+  //layer_compute_final_output(currentLayer);
 
 }
 
