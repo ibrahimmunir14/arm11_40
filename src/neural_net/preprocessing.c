@@ -1,4 +1,5 @@
 #include "preprocessing.h"
+#include <assert.h>
 
 // TODO parse_csv
 // TODO PUT THESE INTO OTHER FILES
@@ -6,8 +7,8 @@
 
 int input_creator(void) {
   double **inputs = calloc(NUMBER_OF_DAYS, sizeof(double*));
-  double *prices = calloc(NUMBER_OF_DAYS, sizeof(double));
 
+  double *prices = calloc(NUMBER_OF_DAYS, sizeof(double));
   char **dates = calloc(NUMBER_OF_DAYS, sizeof(char*));
   double *volumes = calloc(NUMBER_OF_DAYS, sizeof(double));
 //  double *shortEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
@@ -19,11 +20,12 @@ int input_creator(void) {
     perror("Calloc for arrays failed\n");
     exit(EXIT_FAILURE);
   }
+
   for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
-    dates[i] = calloc(DATE_SIZE, sizeof(char));
+    dates[i] = malloc(DATE_SIZE * sizeof(char));
     inputs[i] = calloc(NUMBER_OF_INPUTS, sizeof(double));
     if (!inputs[i] || !dates[i]) {
-      perror("Calloc for inner arrays failed\n");
+      perror("calloc/malloc for inner arrays failed\n");
       exit(EXIT_FAILURE);
     }
   }
@@ -46,38 +48,25 @@ int input_creator(void) {
   return 0;
 }
 
+
 void parse_csv(char **dates, double *volumes, double *prices) {
   FILE *file = fopen("neural_net/AAPL2.csv", "r");
   if (!file) {
     perror("fopen failure");
     exit(EXIT_FAILURE);
   }
-  char *line = NULL;
-  size_t len = 0;
-  ssize_t nread;
-  int i = 0;
-  nread = getline(&line, &len, file);
-  printf("Reading the header: %s", line);
-  while ((nread = getline(&line, &len, file)) != -1) {
-    printf("i %d %s Characters Read: %d\n", i, line, (int) nread);
-
-    char *l = line;
-
-    dates[i] = strtok_r(line, ",", &line);
-    int drop_columns = 4;
-    for (int j = 0; j < drop_columns; j ++) {
-      strtok_r(line, ",", &line);
-    }
-    char *adj_close = strtok_r(line, ",", &line);
-    char *volume = strtok_r(line, ",", &line);
-    prices[i] = strtof(adj_close, &adj_close);
-    volumes[i] = strtof(volume, &volume);
-    printf("i %d, date %s, price %f, volume %f \n\n", i, dates[i], prices[i], volumes[i]);
-    fflush(stdout);
-    i ++;
-
-    line = l;
+  char *line = (char *) malloc(101 * sizeof(char)); // store each line
+  fgets(line, 100, file); // line stores first line
+  printf("header: %s", line);
+  for (int i = 0; fgets(line, 100, file); i++) {
+    // for each line in csv file
+    strncpy(dates[i], strtok(line, ","), DATE_SIZE);
+    for (int j = 0; j < 4; j++) strtok(NULL, ",");
+    prices[i] = strtof(strtok(NULL, ","), NULL);
+    volumes[i] = strtof(strtok(NULL, ","), NULL);
+    printf("date %s, price %f, volume %f\n", dates[i], prices[i], volumes[i]);
   }
+  free(line);
   fclose(file);
 }
 
@@ -104,8 +93,8 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
 }
 
 void free_2darray(char **array) {
-  int i = 0;
-  while (array[i]) {
+  assert(array);
+  for (int i = 0; array[i]; i++) {
     free(array[i]);
   }
   free(array);
