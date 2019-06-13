@@ -5,18 +5,27 @@
 // TODO allocate inputs and prices elsewhere
 
 int input_creator(void) {
-  double **inputs = calloc(NUMBER_OF_DAYS, sizeof(double *));
+  double **inputs = calloc(NUMBER_OF_DAYS, sizeof(double*));
   double *prices = calloc(NUMBER_OF_DAYS, sizeof(double));
 
-
-  char **dates = calloc(NUMBER_OF_DAYS, sizeof(char *));
+  char **dates = calloc(NUMBER_OF_DAYS, sizeof(char*));
   double *volumes = calloc(NUMBER_OF_DAYS, sizeof(double));
-  double *shortEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
-  double *longEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
-  double *logEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
+//  double *shortEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
+//  double *longEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
+//  double *logEMAs = calloc(NUMBER_OF_DAYS, sizeof(double));
+  if (!inputs || !prices || !volumes || !dates
+  //|| !shortEMAs || !longEMAs || !logEMAs
+  ) {
+    perror("Calloc for arrays failed\n");
+    exit(EXIT_FAILURE);
+  }
   for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
     dates[i] = calloc(DATE_SIZE, sizeof(char));
     inputs[i] = calloc(NUMBER_OF_INPUTS, sizeof(double));
+    if (!inputs[i] || !dates[i]) {
+      perror("Calloc for inner arrays failed\n");
+      exit(EXIT_FAILURE);
+    }
   }
 
   // call parse_csv with pointer to all arrays
@@ -24,14 +33,14 @@ int input_creator(void) {
 
   // create 2d input array
   for (int i = 0; i < NUMBER_OF_DAYS; i ++) {
-    create_one_input_entry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
+//    create_one_input_entry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
   }
 
   // free all memory
   free(volumes);
-  free(shortEMAs);
-  free(longEMAs);
-  free(logEMAs);
+//  free(shortEMAs);
+//  free(longEMAs);
+//  free(logEMAs);
   free_2darray(dates);
 
   return 0;
@@ -50,7 +59,10 @@ void parse_csv(char **dates, double *volumes, double *prices) {
   nread = getline(&line, &len, file);
   printf("Reading the header: %s", line);
   while ((nread = getline(&line, &len, file)) != -1) {
-//    printf("%s Characters Read: %d\n", line, (int) nread);
+    printf("i %d %s Characters Read: %d\n", i, line, (int) nread);
+
+    char *l = line;
+
     dates[i] = strtok_r(line, ",", &line);
     int drop_columns = 4;
     for (int j = 0; j < drop_columns; j ++) {
@@ -60,8 +72,11 @@ void parse_csv(char **dates, double *volumes, double *prices) {
     char *volume = strtok_r(line, ",", &line);
     prices[i] = strtof(adj_close, &adj_close);
     volumes[i] = strtof(volume, &volume);
-    printf("i %d, date %s, price %f, volume %f \n", i, dates[i], prices[i], volumes[i]);
+    printf("i %d, date %s, price %f, volume %f \n\n", i, dates[i], prices[i], volumes[i]);
+    fflush(stdout);
     i ++;
+
+    line = l;
   }
   fclose(file);
 }
