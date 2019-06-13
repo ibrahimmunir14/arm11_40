@@ -59,10 +59,13 @@ void forward_run(neural_net_t const *neural_net, double const *inputs) {
 
   layer_t *currentLayer = neural_net->input_layer->next;
 
-  while (currentLayer != NULL) {
+  while (currentLayer->next != NULL) {
     layer_compute_outputs(currentLayer);
     currentLayer = currentLayer->next;
   }
+
+  layer_compute_final_output(currentLayer);
+
 }
 
 /* Trains the neuralNet with single backprop update. */
