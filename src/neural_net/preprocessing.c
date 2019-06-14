@@ -72,7 +72,6 @@ int inputCreator(double **inputs) {
   return numOfDays(0);
 }
 
-
 int parseCSV(char **dates, double *volumes, double *prices) {
   FILE *file = fopen("neural_net/data/KO.csv", "r");
   if (!file) {
@@ -100,6 +99,19 @@ int parseCSV(char **dates, double *volumes, double *prices) {
   fclose(file);
   numOfDays(i);
   return i;
+}
+
+// function for creating and writing into csv file
+void writeToCSV(char **dates, double *prices, int num_data) {
+  FILE *fp;
+
+  //create csv file
+  fp = fopen("csvfile.csv","w+");
+
+  for(int i = 0; i < num_data; i++) {
+    fprintf(fp, "%s,%f\n", dates[i], prices[i]);
+  }
+  fclose(fp);
 }
 
 void createOneInputEntry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
