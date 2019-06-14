@@ -42,7 +42,7 @@ double **makeFakeDataArray(void) {
 // outputs: range [0-100] [100-200] [200-300]
 
 // processes array of data into array of structs of data_mapping_t
-dataMapping_t  *process(double **dataArrays, int numOfEntries) {
+dataMapping_t *process(double **dataArrays, int numOfEntries) {
 
   // array of data mappings
     dataMapping_t *dataMappings = calloc(numOfEntries, sizeof(dataMapping_t));
@@ -63,6 +63,19 @@ dataMapping_t  *process(double **dataArrays, int numOfEntries) {
       dataMappings[i].inputsNormalised = normalise(dataMappings[i].inputs, dataMappings[i].min, dataMappings[i].max, NUM_INPUTS);
     }
     return dataMappings;
+}
+
+void freeDataMapping(dataMapping_t mapping) {
+  free(mapping.inputs);
+  free(mapping.inputsNormalised);
+}
+
+void freeDataMappings(dataMapping_t *mappings, int numMappings) {
+  for (int i = 0; i < numMappings; i++) {
+    freeDataMapping(mappings[i]);
+  }
+
+  free(mappings);
 }
 
 double denormalise(double value, double min, double max) {

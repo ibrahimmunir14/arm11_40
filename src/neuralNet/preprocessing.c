@@ -76,7 +76,7 @@ int input_creator(double **inputs) {
 
 
 int parse_csv(char **dates, double *volumes, double *prices) {
-  FILE *file = fopen("neural_net/data/KO.csv", "r");
+  FILE *file = fopen("neuralNet/data/KO.csv", "r");
   if (!file) {
     perror("fopen failure");
     exit(EXIT_FAILURE);

@@ -31,4 +31,6 @@ double getMax(double *values, int numValues);
 double *normalise(double *values, double min, double max, int num_values);
 double getAvg(double *values, int numVals);
 double denormalise(double value, double min, double max);
+void freeDataMapping(dataMapping_t mapping);
+void freeDataMappings(dataMapping_t *mappings, int numMappings);
 #endif //C_PROJECT_LOADER_H

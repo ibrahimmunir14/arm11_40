@@ -1,6 +1,6 @@
 #include "neuralNet.h"
-#include "neural_net/loader.h"
-#include "neural_net/preprocessing.h"
+#include "neuralNet/loader.h"
+#include "neuralNet/preprocessing.h"
 
 #define LEARNING_RATE 1
 #define EPOCHS 500
@@ -28,8 +28,8 @@ int main() {
   int numOfHiddenNeurons = (NUM_INPUTS + NUM_OUTPUTS) / 2;
   int layer_outputs[] = {NUM_INPUTS, numOfHiddenNeurons, numOfHiddenNeurons,  NUM_OUTPUTS};
 
-  neural_net_t *neural_net = create_neural_net(LAYERS, layer_outputs);
-  if (!neural_net) {
+  neuralNet_t *neuralNet = createNeuralNet(LAYERS, layer_outputs);
+  if (!neuralNet) {
     printf("Error: Couldn't create the neural network.\n");
     return EXIT_FAILURE;
   }
@@ -37,7 +37,10 @@ int main() {
   // training the neural network
   for (int epoch = 0; epoch < EPOCHS; epoch++) {
     for (int i = 0; i < numTraining; i++) {
-      train_neural_net(neural_net, LEARNING_RATE, trainingData[i].inputsNormalised, &trainingData[i].expectedOutputNormalised);
+      trainNeuralNet(neuralNet,
+                     LEARNING_RATE,
+                     trainingData[i].inputsNormalised,
+                     &trainingData[i].expectedOutputNormalised);
     }
 
     // testing the neural network
@@ -47,8 +50,8 @@ int main() {
     double numAccurate = 0;
 
     for (int testNum = 0; testNum < numTesting; testNum++) {
-      forward_run(neural_net, testingData[testNum].inputsNormalised);
-      double predictedPrice = denormalise(getOutput(neural_net), STOCK_MIN, STOCK_MAX);
+      computeOutputs(neuralNet, testingData[testNum].inputsNormalised);
+      double predictedPrice = denormalise(getOutput(neuralNet), STOCK_MIN, STOCK_MAX);
 
       differencesSum += (testingData[testNum].expectedOutput - predictedPrice) * (testingData[testNum].expectedOutput - predictedPrice);
 
@@ -57,14 +60,16 @@ int main() {
         numAccurate++;
       }
 
-      printf("Test %d: Actual Price: %f,  Predicted Price: %f,  Percent Diff: %f\n",
-             testNum, testingData[testNum].expectedOutput, predictedPrice, percentDiff);
+//      printf("Test %d: Actual Price: %f,  Predicted Price: %f,  Percent Diff: %f\n",
+//             testNum, testingData[testNum].expectedOutput, predictedPrice, percentDiff);
     }
 
-    printf("Percentage of tests <10 percent difference: %f\n", numAccurate / numTesting);
+    printf("Percentage of tests <3 percent difference: %f\n", numAccurate / numTesting);
     printf("Mean Squared Error (the smaller, the better): %f\n", differencesSum / numTesting);
   }
 
-  free_neural_net(neural_net);
+  freeNeuralNet(neuralNet);
+  freeDataMappings(allData, numTotal);
+  //free(dataArray);
   return EXIT_SUCCESS;
 }
