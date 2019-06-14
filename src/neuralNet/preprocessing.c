@@ -132,10 +132,7 @@ void createOneInputEntry(int index, double **inputs, double *prices, double *vol
   calculateLogReturnEMA(oldIndex, prices, logEMAs, SHORT_EMA_PERIOD);
   calculateEMA(oldIndex, prices, shortEMAs, SHORT_EMA_PERIOD);
   calculateEMA(oldIndex, prices, longEMAs, LONG_EMA_PERIOD);
-  volumes = calloc(numOfDays(0), sizeof(double));
-  volumes = normaliseValues(volumes, volumes
-                            getMax(volumes, numOfDays(0)) - getMin(volumes, numOfDays(0)),
-                            getAvg(volumes, numOfDays(0)), numOfDays(0));
+  normaliseValues(volumes, volumes, getMin(volumes, numOfDays(0)), getMax(volumes, numOfDays(0)), numOfDays(0));
   inputs[index][0] = logReturn(oldIndex, prices);
   inputs[index][1] = volumes[oldIndex];
   inputs[index][2] = logEMAs[oldIndex];
