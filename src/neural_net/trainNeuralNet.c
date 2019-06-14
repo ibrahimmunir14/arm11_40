@@ -3,11 +3,11 @@
 #include "neural_net/preprocessing.h"
 
 #define LEARNING_RATE 1
-#define EPOCHS 50
+#define EPOCHS 500
 #define LAYERS 4
 #define FRONT_PADDING 30
 #define END_PADDING 30
-#define TRAINING_PERCENT 0.8
+#define TRAINING_PERCENT 0.7
 
 // TODO: FREE EVERYTHING
 // TODO: SORT SOURCE AND HEADER FILES INTO DIRECTORIES
@@ -53,7 +53,7 @@ int main() {
       differencesSum += (testingData[testNum].expectedOutput - predictedPrice) * (testingData[testNum].expectedOutput - predictedPrice);
 
       double percentDiff = fabs(testingData[testNum].expectedOutput - predictedPrice) / testingData[testNum].expectedOutput;
-      if (percentDiff < 0.1) {
+      if (percentDiff < 0.02) {
         numAccurate++;
       }
 
