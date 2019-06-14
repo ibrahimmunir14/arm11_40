@@ -21,6 +21,7 @@
 int inputCreator(double **inputs);
 void free2dArray(char **array);
 int parseCSV(char **dates, double *volumes, double *prices);
+void writeToCSV(char **dates, double *prices, int num_data);
 double logReturn(int index, double *prices);
 double rsi(int index, double *prices);
 double macd(int index, double *shortEMAs, double *longEMAs);

@@ -44,6 +44,4 @@ void layer_compute_deltas(layer_t const *layer);
 /* Updates weights and biases according to the delta errors given learning rate. */
 void layer_update(layer_t const *layer, double l_rate);
 
-void layer_compute_final_output(layer_t const *layer);
-
 #endif

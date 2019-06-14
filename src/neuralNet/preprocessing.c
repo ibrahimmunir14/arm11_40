@@ -72,8 +72,6 @@ int inputCreator(double **inputs) {
   return numOfDays(0);
 }
 
-
-
 int parseCSV(char **dates, double *volumes, double *prices) {
   FILE *file = fopen("neuralNet/data/KO.csv", "r");
   if (!file) {
@@ -103,6 +101,19 @@ int parseCSV(char **dates, double *volumes, double *prices) {
   return i;
 }
 
+// function for creating and writing into csv file
+void writeToCSV(char **dates, double *prices, int num_data) {
+  FILE *fp;
+
+  //create csv file
+  fp = fopen("csvfile.csv","w+");
+
+  for(int i = 0; i < num_data; i++) {
+    fprintf(fp, "%s,%f\n", dates[i], prices[i]);
+  }
+  fclose(fp);
+}
+
 void createOneInputEntry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
                          double *longEMAs, double *logEMAs) {
   /* 6 values in array are:
@@ -116,7 +127,7 @@ void createOneInputEntry(int index, double **inputs, double *prices, double *vol
    * */
 
   // the old index is so that we don't use data from the current day to predict the current day's price.
-  // this would be ve>>>>>>> 5a9d7c46bd92f4da0a3d48c8315c86f952b45ecf:src/neural_net/preprocessing.cry counter intuitive!
+  // this would be very counter intuitive!
   int oldIndex = index - 1;
   calculateLogReturnEMA(oldIndex, prices, logEMAs, SHORT_EMA_PERIOD);
   calculateEMA(oldIndex, prices, shortEMAs, SHORT_EMA_PERIOD);

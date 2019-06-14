@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <assert.h>
 
 #define NUM_INPUTS 6
 #define NUM_OUTPUTS 1
@@ -22,10 +24,8 @@ typedef struct dataMapping {
   double expectedOutputNormalised;
 } dataMapping_t;
 
-double **makeFakeDataArray(void);
+
 dataMapping_t *process(double **dataArrays, int numOfEntries);
-void printMappings(dataMapping_t *dataMapping, int numOfEntries);
-dataMapping_t *makeFakeData(void);
 double getMin(double *values, int numValues);
 double getMax(double *values, int numValues);
 double normalise(double value, double min, double max);
