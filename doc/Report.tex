@@ -12,43 +12,28 @@
 \maketitle
 
 \section{Assembler}
-We approached the assembler in a similar way to emulator where we split the 
-assemble module into smaller submodules: the main module where the assembly is done, 
+We approached the assembler in a similar way to emulator, where we split the 
+entire module into smaller submodules. In this case, the main module where the assembly is done, 
 a module for parsing operands, a module with miscellaneous utility functions, 
 a mnemonic parser for changing strings into enums and 
-a hash map module for the symbol table. Required functions were declared  within header files 
+a hash map module for the symbol table. Required functions were declared within header files 
 before implementation, albeit many declarations needed later revision.
 
 We also made use of, and updated, several modules that we had previously used in emulator: 
 the binary operations module, as we were still working with binary strings, 
 and the binary file I/O module, for writing to binary files.     
 
-We opted for a two-pass implementation of assembly to avoid any memory complications. The design was easier to implement, more modular and robust. Furthermore, there was no clear advantage to having one pass assembly. 
-The program initially produces the symbol table from the assembly code and counts the number of lines.
-Not only must the converted instructions be written to the binary file, but the contents of the reserve memory
-must also be written to the file. To avoid the continual reallocation of memory or the use of a linked list, 
-a static amount of memory is allocated for reserve memory. 
-Each instruction requires at most one reserve memory location, so at most the number of 
-reserve memory locations used is equal to the number of instructions; therefore, we allocated the 
-same amount of memory to the reserve memory as we did the instructions.
+We opted for a two-pass implementation of assembly to avoid any memory complications. The design was easier to implement, more modular and robust. Furthermore, there was no significant advantage to having one pass assembly. 
+The program reads through the input file once, building up the symbol table and storing the assembly instruction lines in an array. The output binary file produced contains not only the converted instructions, but the contents of the reserve memory too. To avoid the continual reallocation of memory or the use of a linked list, an fixed size array is allocated for reserve memory during assembly. Each instruction requires at most one reserve memory location, so the maximum number of reserve memory locations required is equal to the number of instructions; therefore, we allocated the same amount of memory to the reserve memory as we did the instructions.
 
-After initializing any data structures to be used, the program converts each assembly 
-code line into binary and adds them to an array of instructions. 
-To do this, it uses regular expressions to find the type of each instruction and
-it delegates assembly to the appropriate helper function accordingly.
-There are helper functions for each type of instruction. The single data transfer helper function 
-must be passed the next reserve memory location 
-so that the program is able to store any immediate values that are too large for a mov instruction.
+After initializing any data structures to be used, the second pass then consists of iterating through the assembly instruction lines in a sequential manner, and using an encoding function to assemble each instruction and store it in an instructions array. To do this, it uses regular expressions to find the type of each instruction, then uses tokenisation to parse the instruction to retrieve the required register numbers and flags, and then delegates assembly to the appropriate helper function accordingly. 
+The helper functions responsible for producing the binary instructions each return the instruction in the form of a WORD, a user-defined type representing a 32-bit word as in ARM. The single data transfer helper function is additionally passed the address of the instruction as well as next reserve memory location so that the program is able to store any immediate values that are too large for a mov instruction.
+The branch helper function is also passed the address of the instruction as well as the symbol table, so it can calculate the branch offset.
+There are three helper functions called from the assembly function for data processing: for move operations, logical test operations and general data processing operations. Both of these call a third helper function with appropriate parameters, which completes the conversion into machine code.
 
-There are three specific helper functions for assembling data processing instructions,
-one for each different instruction format.
-Each of them call and pass specific values to a general helper function that handles 
-the conversion to machine code. 
-After assembly, the machine code instructions and reserve memory are written to the binary file specified.
+All functions in the program have been carefully designed so they are self contained, taking in their required parameters as either pointers or values, dereferencing pointers as appropriate and returning their result values.
 
-Each member was assigned to implement either a helper function or an entire module, depending on the difficulty.
-In some cases, we worked as a whole group to code or debug some aspects of the program.
-This occurred when we needed group input on parts of the implementation. For example, a lot of the design decisions were made as a group and implementation of more complicated functions was carried out in person so that everyone was in the loop. Towards the end the group held a lengthy debugging session over a weekend where several bugs from all sections of the program were sought and quashed. 
+Each member was assigned to implement either a number of helper functions or an entire module, depending on the difficulty. Group members helped each other debug and test code to ensure code style was up to scratch and to catch any logical mishaps in the algorithms used. Understanding the overall workings of all parts of the program was important in ensuring that each group members individual contribution complemented the existing code and avoided code duplication. In some cases, we worked as a whole group to code or debug some aspects of the program. The majority of the design decisions were made as a group, and implementation of more complicated functions was carried out in person so that everyone was in the loop. 
 
 \section{Extension}
 \subsection{Description}
@@ -66,28 +51,25 @@ The end result was to use a neural network to predict the next day's price using
 \end{figure}
 
 \subsection{Design}
-In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the preprocessing functiosn on the data to output a 2D-array containing the 6 neural network inputs and an array of prices. The train test data was split 70/30.
+In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the pre-processing functiosn on the data to output a 2D-array containing the 6 neural network inputs and an array of prices. The train test data was split 70/30.
 
-The inputs were specifically chosen as commonly used momentum based technical indicators which would aim to train the neural network on the direction the specific stock price would go towards. There were 6 inputs which were created using the functions in the preprocessing.c file. 
+The inputs were specifically chosen as commonly used momentum based technical indicators which would aim to train the neural network on the direction the specific stock price would go towards. There were 6 inputs which were created using the functions in the pre-processing.c file. 
 
 The first input was log of the return with the return being a specific day's price divided by the day before's price. The second input was volume of shares traded on the day. The third input was an exponential moving average (EMA) of the log return. An EMA takes into account a specific time period of days prior to the current day and calculates an average with exponentially more weight on the prices of the more recent days. The fourth input was the relative strength index (RSI) which indicates whether a specific asset is over-bought or over-sold and signifies which lifecycle the momentum is in. The fifth input was a moving average convergence divergence (MACD), this is calculated by subtracting a longer time period EMA from a shorter time period EMA. This signifies a specific trend that is taking over in the short term. This in turn signifies a momentum change. The last input was rate of change of the stock price. This is quite similar to the log of return and may not add as much value as the rest of the indicators. However, it was important to add another input directly linked to short term price changes to emphasise the importance of the short term trend in price.
 
 The weights are initialized randomly. As the neural network trains it learns by refining the link weights. This process is guided by the error, which is the difference between the desired and actual output. 
 
-The weights are used in 2 ways, firstly for propogating signals forwards from the input to the output layers. Secondly, to propogate the error backwards from the output back into the network. This process is used to train the network and is known as backpropogation. 
+The weights are used in 2 ways, firstly for propagating signals forwards from the input to the output layers. Secondly, to propagate the error backwards from the output back into the network. This process is used to train the network and is known as backpropogation. 
 
 The following files are contained in neuralNet in the src directory.
 
-
-\textbf{layer.c, layer.h} contains impelementation of a single neural network layer 
-
-\textbf{loader.c loader.h} contains utility functions for training and implementing neural network
-
-\textbf{neuralNet.c neuralNet.h} contains primary functions memory management of neural network
-
-\textbf{preprocessing.c preprocessing.h} contains functions for importing the data and preprocessing neural network inputs
-
-\textbf{trainNeuralNet.c} main file for training and running the program
+\begin{itemize}
+    \item \textbf{layer.c, layer.h} contains implementation of a single neural network layer 
+    \item \textbf{loader.c loader.h} contains utility functions for training and implementing neural network
+    \item \textbf{neuralNet.c neuralNet.h} contains primary functions memory management of neural network
+    \item \textbf{preprocessing.c preprocessing.h} contains functions for importing the data and pre-processing neural network inputs
+    \item \textbf{trainNeuralNet.c} main file for training and running the program
+\end{itemize}
 
 \subsection{Challenges}
 The main challenge was that the group as a whole had little experience in the use and implementation of neural networks. 
@@ -96,16 +78,18 @@ Much of the time implementing the extension involved understanding how they work
 
 We had to adapt the neural network implementation as it originally only accommodated for values between -1 and 1.
 To allow for any scalar value to be used, the inputs have to be normalised to values between -1 and 1 
-and the resulting output must be denormalised using an inverse process to the normalisaion.
+and the resulting output must be denormalised using an inverse process to the normalisation.
 
 We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate and the number of epochs. These values could drastically change the result of training; too few epochs could cause underfitting. 
 
+We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate, the number of epochs and the ratio of training to testing data. These values could drastically change the result of training; too few epochs could cause underfitting. 
+In the end, we opted for 500 epochs, a learning rate of 1 and a ratio of 70:30 for training to testing data.
 Another challenge was in the web scraping. Originally, we attempted to write a web scraper in C, however C is a hardware-level language that is not designed for using web requests and accessing websites. Consequently, we implemented the web scraper in Python.
 
-On several occasions, we encountered memory errors that hindered our progress. These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unecessary. 
+On several occasions, we encountered memory errors that hindered our progress. These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unnecessary. 
 
 \subsection{Testing}
-The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data preprocessing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the preprocessor was being written. These are included in the test file. 
+The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separate file for each section of the project. The data pre-processing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the pre-processor was being written. These are included in the test file. 
 
 The testing was not as effective as an extensive testing suite or library, however, it was sufficient given the time and scope of the project. Clearly, in future we would add more tests for each parameter inputted into the model.
 
@@ -131,11 +115,15 @@ as the implementation required different parameters and these changes needed to 
 across the different functions and modules that called it.
 
 \section{Individual Reflections}
-[at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
 \subsection{Amelia's Reflection}
+<<<<<<< HEAD
 I feel our group has worked together very well as a team. Our team leader made sure to split up the tasks evenly giving everyone the opportunity to contribute and learn. For our extension we considered several ideas, I was particularly keen on building an electric skateboard, however, due to financial constraints this was not feasible so instead, I put forward the idea of building a neural network inspired by one of the past papers. Previous experience in neural networks enabled me to take control during this part of the project. Another team member had significant experience with stock trading resulting in our final idea. This enabled us to work very well as a group delegating subtasks depending on everyone's strengths. I am also proud of the hashmap data type I implemented for the symbol table as part of the assembler. Working on it helped me understand the C language a lot more thoroughly. However, after developing the data type I realised it was unnecessary for this particular project because such few data needs to be stored so an array would be sufficient. Using git has been an obstacle for me due to handling merge conflicts but this has forced me to get to understand it a lot better.
+=======
+I feel our group has worked together very well as a team. Our team leader made sure to split up the tasks evenly giving everyone the opportunity to contribute and learn. For our extension we considered several ideas, I was particularly keen on building an electric skateboard, however due to financial constraints this was not feasible so instead I put forward the idea of building a neural network inspired by one of the past papers. Previous experience in neural networks enabled me to take control during this part of the project. Another team member had significant experience with stock trading resulting in our final idea. This enabled us to work very well as a group delegating sub-tasks depending on everyone's strengths. I am also proud of the hashmap data type I implemented for the symbol table as part of the assembler. Working on it helped me understand the C language a lot more thoroughly. However, after developing the data type I realised it was unnecessary for this particular project because such few data needs to be stored so an array would be sufficient. Using git has been an obstacle for me due to handling merge conflicts but this has forced me to get to understand it a lot better.
+>>>>>>> f2d3b35253568911062358a51b24808c57e150ec
 
 \subsection{Ibrahim's Reflection}
+[at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
 
 \subsection{Luke's Reflection}
 I think the group project went well and I had a suitable role in the group.
@@ -152,7 +140,7 @@ method that I would like to continue in future projects.
 Overall, I am pleased with how the project went.
 
 \subsection{Umer's Reflection}
-Due to originally forming the group, I became the de-facto manager of the project. In my personal opinion, the project went as well it could have given the scale of the task, the time given and the team size. Of course, with the first major programming project at Imperial there were bound to be never before seen challenges. However, I felt, for the most part, the team was motivated to deliver and worked well with others. As we progress through our degree, it is natural to become more proficient in management of online repositories and delegation of work within the team. One point especially to work on would be extensive design planning and considering which segments of the task each member would individually complete before combining these together. We attempted this during the assembler by first designing the header file of functions, nevertheless, there were extra functions that were added towards the end. There was also a lengthy discussion on the direction the team would take with the extension. The test in the last week also hindered this. In future a more rigid schedule would help. However, I fully stand by my statement that the experience was most likely the best I could have had in my first group project at Imperial. 
+Due to originally forming the group, I became the defacto manager of the project. In my personal opinion, the project went as well it could have given the scale of the task, the time given and the team size. Of course, with the first major programming project at Imperial there were bound to be never before seen challenges. However, I felt, for the most part, the team was motivated to deliver and worked well with others. As we progress through our degree, it is natural to become more proficient in management of online repositories and delegation of work within the team. One point especially to work on would be extensive design planning and considering which segments of the task each member would individually complete before combining these together. We attempted this during the assembler by first designing the header file of functions, nevertheless, there were extra functions that were added towards the end. There was also a lengthy discussion on the direction the team would take with the extension. The test in the last week also hindered this. In future a more rigid schedule would help. However, I fully stand by my statement that the experience was most likely the best I could have had in my first group project at Imperial. 
 
 \section{References}
 \begin{enumerate}
