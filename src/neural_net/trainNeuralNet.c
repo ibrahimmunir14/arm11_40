@@ -19,7 +19,7 @@ int main() {
   double **dataArray = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
   int numTotal = input_creator(dataArray);
 
-  int numTraining = (numTotal - FRONT_PADDING - END_PADDING) * TRAINING_PERCENT;
+  int numTraining = (int) ((numTotal - FRONT_PADDING - END_PADDING) * TRAINING_PERCENT);
   int numTesting = numTotal - numTraining - FRONT_PADDING - END_PADDING;
   dataMapping_t *allData = process(dataArray, numTotal);
   dataMapping_t *trainingData = allData + FRONT_PADDING;
@@ -57,8 +57,8 @@ int main() {
         numAccurate++;
       }
 
-//      printf("Test %d: Actual Price: %f,  Predicted Price: %f,  Percent Diff: %f\n",
-//             testNum, testingData[testNum].expectedOutput, predictedPrice, percentDiff);
+      printf("Test %d: Actual Price: %f,  Predicted Price: %f,  Percent Diff: %f\n",
+             testNum, testingData[testNum].expectedOutput, predictedPrice, percentDiff);
     }
 
     printf("Percentage of tests <10 percent difference: %f\n", numAccurate / numTesting);

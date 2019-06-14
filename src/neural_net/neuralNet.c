@@ -44,7 +44,6 @@ void free_neural_net(neural_net_t *neural_net) {
     layer_free(currentLayer);
     currentLayer = nextLayer;
   } while (currentLayer != NULL);
-
   free(neural_net);
 }
 
