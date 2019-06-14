@@ -11,7 +11,7 @@
 #define NUM_LINES 2
 
 #define STOCK_MIN 0
-#define STOCK_MAX 400
+#define STOCK_MAX 200
 
 typedef struct dataMapping {
   double max;

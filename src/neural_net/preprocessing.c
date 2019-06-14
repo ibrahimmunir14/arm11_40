@@ -137,7 +137,7 @@ double log_return(int index, double *prices) {
     double ret = prices[index] / prices[index - 1];
     return log(ret);
   } else {
-    printf("Out of bounds of array in roc function\n");
+    printf("Out of bounds of array or not enough data in roc function\n");
     return 0;
   }
 }
@@ -161,7 +161,7 @@ double rsi(int index, double *prices) {
     double relativeStrength = sumGain / sumLoss;
     return 100.0 - (100.0 / (1 + relativeStrength));
   } else {
-    printf("Out of bounds of array in rsi function\n");
+    printf("Out of bounds of array or not enough data in rsi function\n");
     return 0;
   }
 }
@@ -171,7 +171,7 @@ void calculate_log_return_ema(int index, double *prices, double *EMAs, int timeP
     double k = 2.0f / (timePeriod + 1);
     EMAs[index] = log_return(index, prices) * k + EMAs[index - 1] * (1 - k);
   } else {
-    printf("Out of bounds of array in calculate_log_return_ema_ema function\n");
+    printf("Out of bounds of array or not enough data in calculate_log_return_ema_ema function\n");
     EMAs[index] = 0;
   }
 }
@@ -181,7 +181,7 @@ void calculate_ema(int index, double *prices, double *EMAs, int timePeriod) {
     double k = 2.0f / (timePeriod + 1);
     EMAs[index] = prices[index] * k + EMAs[index - 1] * (1 - k);
   } else {
-    printf("Out of bounds of array in calculate_ema function\n");
+    printf("Out of bounds of array or not enough data in calculate_ema function\n");
     EMAs[index] = 0;
   }
 }
@@ -190,7 +190,7 @@ double macd(int index, double *shortEMAs, double *longEMAs) {
   if (index >= 0 && index < MAX_NUMBER_OF_DAYS) {
     return shortEMAs[index] - longEMAs[index];
   } else {
-    printf("Out of bounds of array in macd function\n");
+    printf("Out of bounds of array or not enough data in macd function\n");
     return 0;
   }
 }
@@ -201,7 +201,7 @@ double roc(int index, double *prices) {
     double ret = ((prices[index] - prices[index - ROC_PERIODS]) / prices[index - ROC_PERIODS]) * 100;
     return ret;
   } else {
-    printf("Out of bounds of array in roc function\n");
+    printf("Out of bounds of array or not enough data in roc function\n");
     return 0;
   }
 }
