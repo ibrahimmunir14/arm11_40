@@ -60,41 +60,47 @@ A backtest isn't sufficient to predict live stock prices but gives a good idea o
 
 The end result was to use a neural network to predict the next day's price using 6 inputs calculated from previous days prices and volumes. An example where it could be used would be to combine the model with several other models to create a comprehensive technical trading strategy. Since the financial markets are essentially a time-series problem at heart, the model would be applicable to other situations where some forecasting is required.
 
+\begin{figure}[h]
+\includegraphics[scale=0.8]{neural-network}
+\caption{Example diagram of a neural network$^1$}
+\end{figure}
+
 \subsection{Design}
-In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the preprocessing functions on the data to output a 2D-array where each subarray contains 
-the 6 neural network inputs and the next-day price. The data was split into training and testing data in the ratio 70:30.
+In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the preprocessing functiosn on the data to output a 2D-array containing the 6 neural network inputs and an array of prices. The train test data was split 70/30.
 
 The inputs were specifically chosen as commonly used momentum based technical indicators which would aim to train the neural network on the direction the specific stock price would go towards. There were 6 inputs which were created using the functions in the preprocessing.c file. 
 
-The first input was log of the return with the return being a specific day's price divided by the day before's price. The second input was volume of shares traded on the day. The third input was an exponential moving average (EMA) of the log return. An EMA takes into account a specific time period of days prior to the current day and calculates an average with exponentially more weight on the prices of the more recent days. The fourth input was the relative strength index (RSI) which indicates whether a specific asset is over-bought or over-sold and signifies which lifecycle the momentum is in. The fifth input was a moving average convergence divergence (MACD), this is calculated by subtracting a longer time period EMA from a shorter time period EMA. This signifies a specific trend that is taking over in the short term. This, in turn, signifies a momentum change. The last input was rate of change of the stock price. This is quite similar to the log of return and may not add as much value as the rest of the indicators. However, it was important to add another input directly linked to short term price changes to emphasise the importance of the short term trend in price.
+The first input was log of the return with the return being a specific day's price divided by the day before's price. The second input was volume of shares traded on the day. The third input was an exponential moving average (EMA) of the log return. An EMA takes into account a specific time period of days prior to the current day and calculates an average with exponentially more weight on the prices of the more recent days. The fourth input was the relative strength index (RSI) which indicates whether a specific asset is over-bought or over-sold and signifies which lifecycle the momentum is in. The fifth input was a moving average convergence divergence (MACD), this is calculated by subtracting a longer time period EMA from a shorter time period EMA. This signifies a specific trend that is taking over in the short term. This in turn signifies a momentum change. The last input was rate of change of the stock price. This is quite similar to the log of return and may not add as much value as the rest of the indicators. However, it was important to add another input directly linked to short term price changes to emphasise the importance of the short term trend in price.
 
-The weights are initialized randomly. As the neural network trains it learns by refining the weights between nodes. This process is guided by the error, which is the difference between the next-day price and neural network's estimated price. 
-To make this estimate, the inputs are put in the outputs of the input layer nodes and these outputs are propagated forward to the output layer.
-So that the neural network learns from the error (and is trained), the error is backpropagated from the output layer back down the network to change the weights, deltas and biases. 
-\newline
+The weights are initialized randomly. As the neural network trains it learns by refining the link weights. This process is guided by the error, which is the difference between the desired and actual output. 
 
-The following files are contained in neuralNet in the src/ directory.
-\begin{itemize}
-    \item \textbf{layer.c, layer.h} contains impelementation of a single neural network layer 
-    \item \textbf{loader.c loader.h} contains utility functions for training and implementing neural network
-    \item \textbf{neuralNet.c neuralNet.h} contains primary functions memory management of neural network
-    \item \textbf{preprocessing.c preprocessing.h} contains functions for importing the data and preprocessing neural network inputs
-    \item \textbf{trainNeuralNet.c} main file for training and running the program
-  \end{itemize}
+The weights are used in 2 ways, firstly for propogating signals forwards from the input to the output layers. Secondly, to propogate the error backwards from the output back into the network. This process is used to train the network and is known as backpropogation. 
+
+The following files are contained in neuralNet in the src directory.
+
+
+\textbf{layer.c, layer.h} contains impelementation of a single neural network layer 
+
+\textbf{loader.c loader.h} contains utility functions for training and implementing neural network
+
+\textbf{neuralNet.c neuralNet.h} contains primary functions memory management of neural network
+
+\textbf{preprocessing.c preprocessing.h} contains functions for importing the data and preprocessing neural network inputs
+
+\textbf{trainNeuralNet.c} main file for training and running the program
 
 \subsection{Challenges}
 The main challenge was that the group as a whole had little experience in the use and implementation of neural networks. 
 Therefore, we used this as a learning experience and an introduction to neural networks. 
 Much of the time implementing the extension involved understanding how they work.
 
-We had to adapt the neural network implementation as it originally only accommodated for values between 0 and 1.
-To allow for any scalar value to be used, the inputs have to be normalised to values in this range
-and the resulting output must be denormalised using an inverse process to the normalisation.
+We had to adapt the neural network implementation as it originally only accommodated for values between -1 and 1.
+To allow for any scalar value to be used, the inputs have to be normalised to values between -1 and 1 
+and the resulting output must be denormalised using an inverse process to the normalisaion.
 
-We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate, the number of epochs. These values could drastically change the result of training; too few epochs could cause underfitting. 
+We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate and the number of epochs. These values could drastically change the result of training; too few epochs could cause underfitting. 
 
 Another challenge was in the web scraping. Originally, we attempted to write a web scraper in C, however C is a hardware-level language that is not designed for using web requests and accessing websites. Consequently, we implemented the web scraper in Python.
-
 
 On several occasions, we encountered memory errors that hindered our progress. These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unecessary. 
 
@@ -102,6 +108,14 @@ On several occasions, we encountered memory errors that hindered our progress. T
 The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data preprocessing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the preprocessor was being written. These are included in the test file. 
 
 The testing was not as effective as an extensive testing suite or library, however, it was sufficient given the time and scope of the project. Clearly, in future we would add more tests for each parameter inputted into the model.
+
+One such result was an accuracy of 40\% for the network training on 3.5 years of Coca-Cola Company stock price data. The error margin was 3\% for the prediction, hence, it is better than random. Typically for a trade to be made a significant upside of greater than 3\% is needed (with trading costs themselves being around 1\% or 2\%). This means our error was not significant. The accuracy suggests the model could be combined with other methods of technical and fundamental analysis to create an overall strategy. 
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{accuracy}
+\caption{Screenshot of accuracy}
+\end{figure}
 
 \section{Group Reflection}
 We communicated efficiently through the use of the VoIP application Discord. 
@@ -117,12 +131,16 @@ as the implementation required different parameters and these changes needed to 
 across the different functions and modules that called it.
 
 \section{Individual Reflections}
+[at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
 \subsection{Amelia's Reflection}
-I feel our group has worked together very well as a team. Our team leader made sure to split up the tasks evenly giving everyone the opportunity to contribute and learn. For our extension we considered several ideas, I was particularly keen on building an electric skateboard, however due to financial constraints this was not feasible so instead I put forward the idea of building a neural network inspired by one of the past papers. Previous experience in neural networks enabled me to take control during this part of the project. Another team member had significant experience with stock trading resulting in our final idea. This enabled us to work very well as a group delegating subtasks depending on everyone's strengths. I am also proud of the hashmap data type I implemented for the symbol table as part of the assembler. Working on it helped me understand the C language a lot more thoroughly. However, after developing the data type I realised it was unnecessary for this particular project because such few data needs to be stored so an array would be sufficient. Using git has been an obstacle for me due to handling merge conflicts but this has forced me to get to understand it a lot better.
-
+I feel our group has worked together very well as a team. Our team leader, Umer, made sure to split up the tasks evenly according to each team member's strengths giving everyone the opportunity to contribute and learn. Subtasks were delegated 
+Previous experience in neural networks enabled me to take control during parts of our extension. I 
+- great leader -> tasks split well, each had opportunity to take control of subtasks and lead those areas
+- good communication -> had regular meetings in person and online via Discord (an online chat platform)
+- efficient time management
+- positivity
 
 \subsection{Ibrahim's Reflection}
-[at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
 
 \subsection{Luke's Reflection}
 I think the group project went well and I had a suitable role in the group.
@@ -141,5 +159,9 @@ Overall, I am pleased with how the project went.
 \subsection{Umer's Reflection}
 Due to originally forming the group, I became the de-facto manager of the project. In my personal opinion, the project could not have gone any better given the scale of the task, the time given and the team size. Of course, with the first major programming project at Imperial there were bound to be never before seen challenges. However, I felt, for the most part, the team was motivated to deliver and worked well with others. As we progress through our degree, it is natural to become more proficient in management of online repositories and delegation of work within the team. One point especially to work on would be extensive design planning and considering which segments of the task each member would individually complete before combining these together. We attempted this during the assembler by first designing the header file of functions, nevertheless, there were extra functions that were added towards the end. There was also a lengthy discussion on the direction the team would take with the extension. The test in the last week also hindered this. In future a more rigid schedule would help. However, I fully stand by my statement that the experience was most likely the best I could have had in my first group project at Imperial. 
 
+\section{References}
+\begin{enumerate}
+	\item http://www.texample.net/tikz/examples/neural-network/
+\end{enumerate}
 
 \end{document}
