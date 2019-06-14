@@ -19,4 +19,5 @@ void forward_run(neural_net_t const *neural_net, double const *inputs);
 /* Trains the neuralNet with single backprop update. */
 void train_neural_net(const neural_net_t *neural_net, double learning_rate, double const *inputs, double const *targets);
 
+double getOutput(const neural_net_t *neural_net);
 #endif

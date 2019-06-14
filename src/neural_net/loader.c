@@ -43,64 +43,39 @@ double **makeFakeDataArray(void) {
 
 // processes array of data into array of structs of data_mapping_t
 dataMapping_t  *process(double **dataArrays, int numOfEntries) {
+
+  // array of data mappings
     dataMapping_t *dataMappings = calloc(numOfEntries, sizeof(dataMapping_t));
 
     for (int i = 0; i < numOfEntries; i++) {
-        double *inputPre = calloc(NUM_INPUTS, sizeof(double));
-        double expectedOutput = dataArrays[i][NUM_INPUTS];
-        for (int j = 0; j < NUM_INPUTS; j++) {
-            inputPre[j] = dataArrays[i][j];
-        }
-        dataMappings[i].numEntries = numOfEntries;
+      dataMappings[i].expectedOutput = dataArrays[i][NUM_INPUTS];
 
-        dataMappings[i].avg = (getAvg(inputPre, NUM_INPUTS + NUM_OUTPUTS));
-        dataMappings[i].range = getMax(inputPre, NUM_INPUTS) - getMin(inputPre, NUM_INPUTS);
+      dataMappings[i].inputs = calloc(NUM_INPUTS, sizeof(double));
 
+      for (int j = 0; j < NUM_INPUTS; j++) {
+        dataMappings[i].inputs[j] = dataArrays[i][j];
+      }
 
-        double *normalised = normalise(inputPre, dataMappings[i].range, dataMappings[i].avg, NUM_INPUTS);
+      dataMappings[i].min = getMin(dataMappings[i].inputs, NUM_INPUTS);
+      dataMappings[i].max = getMax(dataMappings[i].inputs, NUM_INPUTS);
 
-        dataMappings[i].inputs = normalised;
-        dataMappings[i].expectedOutput = (expectedOutput - dataMappings[i].avg) / dataMappings[i].range;
+      dataMappings[i].expectedOutputNormalised = *normalise(&dataMappings[i].expectedOutput, STOCK_MIN, STOCK_MAX, NUM_OUTPUTS);
+      dataMappings[i].inputsNormalised = normalise(dataMappings[i].inputs, dataMappings[i].min, dataMappings[i].max, NUM_INPUTS);
     }
     return dataMappings;
 }
 
-double inverseNormalise(double value, double range, double avg) {
-    return (value * range) + avg;
+double denormalise(double value, double min, double max) {
+    return (value * (max - min)) + min;
 }
 
-double *normalise(double *values, double range, double avg, double num_values) {
+double *normalise(double *values, double min, double max, int num_values) {
     double *normalised = calloc(num_values, sizeof(double));
     for (int i = 0; i < num_values; i++) {
-        normalised[i] = (values[i] - avg) / range;
+        normalised[i] = (values[i] - min) / (max - min);
     }
     return normalised;
 }
-
-//int main(void) {
-//    dataMapping_t *test = makeFakeData();
-//
-//    for (int i = 0; i < test->numEntries; i++) {
-//        printf("normalised inputs:\n");
-//        for (int j = 0; j < NUM_INPUTS; j++) {
-//            printf("input[%d][%d]: %f\n", i, j, test[i].inputs[j]);
-//        }
-//    }
-//    double i = inverseNormalise(test[1].inputs[0], test[1].range, test[1].avg);
-//    double i2 = inverseNormalise(test[1].inputs[1], test[1].range, test[1].avg);
-//    double i3 = inverseNormalise(test[1].inputs[2], test[1].range, test[1].avg);
-//    double i4 = inverseNormalise(test[1].inputs[3], test[1].range, test[1].avg);
-//    double i5 = inverseNormalise(test[1].inputs[4], test[1].range, test[1].avg);
-//
-//    printf("inverse normalised:\n");
-//    printf("%f\n", i);
-//    printf("%f\n", i2);
-//    printf("%f\n", i3);
-//    printf("%f\n", i4);
-//    printf("%f\n", i5);
-//
-//
-//}
 
 double getAvg(double *values, int numVals) {
     assert(values != NULL);
@@ -143,10 +118,4 @@ void printMappings(dataMapping_t *dataMapping, int numOfEntries) {
 dataMapping_t *makeFakeData(void) {
   double **dataArray = makeFakeDataArray();
   return process(dataArray, NUM_LINES);
-}
-
-dataMapping_t *makeData(void) {
-    double **dataArray = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
-    int num_lines = input_creator(dataArray);
-    return process(dataArray, num_lines);
 }
