@@ -123,7 +123,7 @@ char** importAssemblyInstructions(char *fileName, int *numLines, node_t **map) {
     }
   }
   fclose(file);
-  *numLines = instrNum - 1;
+  *numLines = (tempContents[instrNum-1][0] == '\0') ? instrNum - 1 : instrNum;
 
   char **assemblyInstructions = (char **) calloc(*numLines, sizeof(char*));
   for (int i = 0; i < *numLines; i++) {
