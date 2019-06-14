@@ -2,83 +2,69 @@
 #include "neural_net/loader.h"
 #include "neural_net/preprocessing.h"
 
-// TODO Normalize inputs and denormalize outputs
+#define LEARNING_RATE 1
+#define EPOCHS 50
+#define LAYERS 4
+#define FRONT_PADDING 30
+#define END_PADDING 30
+#define TRAINING_PERCENT 0.8
+
+// TODO: FREE EVERYTHING
+// TODO: SORT SOURCE AND HEADER FILES INTO DIRECTORIES
 
 int main() {
-    printf("\n\n");
-    // initializes random number generator
-    srand(42);
+  srand(20);
 
-    // initialize inputs and targets;
-    dataMapping_t *testingData = makeData();
+  // initialize inputs and targets;
+  double **dataArray = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
+  int numTotal = input_creator(dataArray);
 
-    int numOfHiddenNeurons = (NUM_INPUTS + NUM_OUTPUTS) / 2;
-    int layer_outputs[] = {NUM_INPUTS, numOfHiddenNeurons, NUM_OUTPUTS};
+  int numTraining = (numTotal - FRONT_PADDING - END_PADDING) * TRAINING_PERCENT;
+  int numTesting = numTotal - numTraining - FRONT_PADDING - END_PADDING;
+  dataMapping_t *allData = process(dataArray, numTotal);
+  dataMapping_t *trainingData = allData + FRONT_PADDING;
+  dataMapping_t *testingData = &trainingData[numTraining];
 
-    neural_net_t *neural_net = create_neural_net(3, layer_outputs);
-    if (!neural_net) {
-        printf("Error: Couldn't create the neural network.\n");
-        return EXIT_FAILURE;
+  int numOfHiddenNeurons = (NUM_INPUTS + NUM_OUTPUTS) / 2;
+  int layer_outputs[] = {NUM_INPUTS, numOfHiddenNeurons, numOfHiddenNeurons,  NUM_OUTPUTS};
+
+  neural_net_t *neural_net = create_neural_net(LAYERS, layer_outputs);
+  if (!neural_net) {
+    printf("Error: Couldn't create the neural network.\n");
+    return EXIT_FAILURE;
+  }
+
+  // training the neural network
+  for (int epoch = 0; epoch < EPOCHS; epoch++) {
+    for (int i = 0; i < numTraining; i++) {
+      train_neural_net(neural_net, LEARNING_RATE, trainingData[i].inputsNormalised, &trainingData[i].expectedOutputNormalised);
     }
 
-    printf("Current random outputs of the network:\n");
-    for (int i = 0; i < testingData[0].numEntries; ++i) {
-        forward_run(neural_net, testingData[i].inputs);
-        printf("  [%f, %f, %f, %f, %f, %f]. Expected: %f,  Actual: %f\n",
-               testingData[i].inputs[0],
-               testingData[i].inputs[1],
-               testingData[i].inputs[2],
-               testingData[i].inputs[3],
-               testingData[i].inputs[4],
-               testingData[i].inputs[5],
-               testingData[i].expectedOutput,
-               neural_net->output_layer->outputs[0]);
+    // testing the neural network
+    printf("\nTESTING EPOCH %d: \n", epoch + 1);
+
+    double differencesSum = 0;
+    double numAccurate = 0;
+
+    for (int testNum = 0; testNum < numTesting; testNum++) {
+      forward_run(neural_net, testingData[testNum].inputsNormalised);
+      double predictedPrice = denormalise(getOutput(neural_net), STOCK_MIN, STOCK_MAX);
+
+      differencesSum += (testingData[testNum].expectedOutput - predictedPrice) * (testingData[testNum].expectedOutput - predictedPrice);
+
+      double percentDiff = fabs(testingData[testNum].expectedOutput - predictedPrice) / testingData[testNum].expectedOutput;
+      if (percentDiff < 0.1) {
+        numAccurate++;
+      }
+
+//      printf("Test %d: Actual Price: %f,  Predicted Price: %f,  Percent Diff: %f\n",
+//             testNum, testingData[testNum].expectedOutput, predictedPrice, percentDiff);
     }
 
-    printf("\nTraining the network...\n");
-    for (int i = 0; i < 25000; ++i) {
-        /* This is an epoch, running through the entire data. */
-        for (int j = 0; j < testingData[0].numEntries; ++j) {
-            /* Training at batch size 1, ie updating weights after every data point. */
-            train_neural_net(neural_net, 1.0, testingData[j].inputs, &testingData[j].expectedOutput);
-        }
-    }
+    printf("Percentage of tests <10 percent difference: %f\n", numAccurate / numTesting);
+    printf("Mean Squared Error (the smaller, the better): %f\n", differencesSum / numTesting);
+  }
 
-    printf("Final outputs of the network:\n");
-    for (int i = 0; i < testingData[0].numEntries; ++i) {
-        forward_run(neural_net, testingData[i].inputs);
-
-        printf("  [%f, %f, %f, %f, %f, %f]. Expected: %f,  Actual: %f\n", testingData[i].inputs[0],
-               testingData[i].inputs[1],
-               testingData[i].inputs[2],
-               testingData[i].inputs[3],
-               testingData[i].inputs[4],
-               testingData[i].inputs[5],
-               testingData[i].expectedOutput,
-               inverseNormalise(neural_net->output_layer->outputs[0], testingData[i].range, testingData[i].avg));
-    }
-
-//    double *test_inputs = calloc(NUM_INPUTS, sizeof(double));
-//    test_inputs[0] = 20;
-//    test_inputs[1] = 30;
-//    test_inputs[2] = 40;
-//    test_inputs[3] = 50;
-//    test_inputs[4] = 60;
-//    test_inputs[5] = 70;
-//    test_inputs[6] = 0;
-//    dataMapping_t *test_data = process(&test_inputs, 1);
-//    forward_run(neural_net, test_inputs);
-//
-//    printf("  [%f, %f, %f, %f, %f, %f]. Actual: %f\n",
-//           test_inputs[0],
-//           test_inputs[1],
-//           test_inputs[2],
-//           test_inputs[3],
-//           test_inputs[4],
-//           test_inputs[5],
-//           inverseNormalise(neural_net->output_layer->outputs[0], test_data->range, test_data->avg));
-
-    free_neural_net(neural_net);
-
-    return EXIT_SUCCESS;
+  free_neural_net(neural_net);
+  return EXIT_SUCCESS;
 }

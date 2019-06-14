@@ -10,12 +10,16 @@
 
 #define NUM_LINES 2
 
+#define STOCK_MIN 0
+#define STOCK_MAX 400
+
 typedef struct dataMapping {
-  int numEntries;
-  double avg;
-  double range;
+  double max;
+  double min;
   double *inputs;
+  double *inputsNormalised;
   double expectedOutput;
+  double expectedOutputNormalised;
 } dataMapping_t;
 
 double **makeFakeDataArray(void);
@@ -24,8 +28,7 @@ void printMappings(dataMapping_t *dataMapping, int numOfEntries);
 dataMapping_t *makeFakeData(void);
 double getMin(double *values, int numValues);
 double getMax(double *values, int numValues);
-double *normalise(double *values, double range, double avg, double num_values);
+double *normalise(double *values, double min, double max, int num_values);
 double getAvg(double *values, int numVals);
-double inverseNormalise(double value, double range, double avg);
-dataMapping_t *makeData(void);
+double denormalise(double value, double min, double max);
 #endif //C_PROJECT_LOADER_H

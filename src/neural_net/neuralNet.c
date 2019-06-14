@@ -59,12 +59,10 @@ void forward_run(neural_net_t const *neural_net, double const *inputs) {
 
   layer_t *currentLayer = neural_net->input_layer->next;
 
-  while (currentLayer!= NULL) {
+  while (currentLayer != NULL) {
     layer_compute_outputs(currentLayer);
     currentLayer = currentLayer->next;
   }
-
-  //layer_compute_final_output(currentLayer);
 
 }
 
@@ -92,4 +90,8 @@ void train_neural_net(neural_net_t const *neural_net, double learning_rate, doub
     layer_update(currentLayer, learning_rate);
     currentLayer = currentLayer->next;
   }
+}
+
+double getOutput(const neural_net_t *neural_net) {
+  return neural_net->output_layer->outputs[0];
 }
