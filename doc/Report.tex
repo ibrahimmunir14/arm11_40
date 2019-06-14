@@ -12,16 +12,12 @@
 \maketitle
 
 \section{Assembler}
-We approached the assembler in a similar way to the emulator, where we split the entire module into smaller sub-modules. In this case, the main module where the assembly is done, 
-a module for parsing operands, a module with miscellaneous utility functions, 
-a mnemonic parser for changing strings into enums and a hash map module for the symbol table. Required functions were declared within header files before implementation, albeit many declarations needed later revision.
+We approached the assembler in a similar way to the emulator, splitting the work into smaller submodules, namely the main module where the assembly is done, a module for parsing operands, miscellaneous utility functions, a mnemonic parser for changing strings into enums and a hash map module for the symbol table. Required functions were declared within header files before implementation, albeit many declarations needed later revision.
 
-We also made use of, and updated, several modules that we had previously used in the emulator: 
-the binary operations module, as we were still working with binary strings, 
-and the binary file I/O module, for writing to binary files.     
+We also made use of, and updated, the binary operations module from emulator, as we were still working with binary strings, and the binary file I/O module, for writing to binary files.     
 
-We opted for a two-pass implementation of assembly to avoid any memory complications. The design was easier to implement, more modular and robust. Furthermore, there was no significant advantage to having one pass assembly. 
-The program reads through the input file once, building up the symbol table and storing the assembly instruction lines in an array. The output binary file produced contains not only the converted instructions but the contents of the reserve memory too. To avoid the continual reallocation of memory or the use of a linked list, a fixed size array is allocated for reserve memory during assembly. Each instruction requires at most one reserve memory location, so the maximum number of reserve memory locations required is equal to the number of instructions; therefore, we allocated the same amount of memory to the reserve memory as we did the instructions.
+We opted for a two-pass implementation of assembly to avoid memory complications. The design was easier to implement and more modular. Furthermore, there was no significant advantage to a one pass assembly. 
+The program reads through the input file once, building up the symbol table and storing the assembly instruction lines in an array. The output binary file produced contains the converted instructions as well as contents of the reserve memory too. To avoid the continual reallocation of memory or the use of a linked list, a fixed size array is allocated for reserve memory during assembly. Each instruction requires at most one reserve memory location; therefore, we allocated the same amount of memory to the reserve memory as we did the instructions.
 
 After initializing any data structures to be used, the second pass then consists of iterating through the assembly instruction lines in a sequential manner and using an encoding function to assemble each instruction and store it in an instructions array. To do this, it uses regular expressions to find the type of each instruction, then uses tokenisation to parse the instruction to retrieve the required register numbers and flags, and then delegates assembly to the appropriate helper function accordingly. 
 The helper functions responsible for producing the binary instructions each return the instruction in the form of a WORD, a user-defined type representing a 32-bit word as in ARM. The single data transfer helper function is additionally passed the address of the instruction as well as next reserve memory location so that the program is able to store any immediate values that are too large for a mov instruction.
