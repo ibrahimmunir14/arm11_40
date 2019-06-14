@@ -63,10 +63,17 @@ INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\tfm\public\cm\cmbx12.t
 OUTPUT c:\Users\HP\Documents\arm11_40\doc\Report.pdf
 INPUT C:\Users\HP\AppData\Local\MiKTeX\2.9\pdftex\config\pdftex.map
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\tfm\public\cm\cmbx12.tfm
-INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\omscmr.fd
-INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\omscmr.fd
-INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\tfm\public\cm\cmsy10.tfm
+INPUT images\neural-network.png
+INPUT .\images\neural-network.png
+INPUT .\images\neural-network.png
+INPUT .\images\neural-network.png
+INPUT .\images\neural-network.png
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\tfm\public\cm\cmbx10.tfm
+INPUT images\accuracy.png
+INPUT .\images\accuracy.png
+INPUT .\images\accuracy.png
+INPUT .\images\accuracy.png
+INPUT .\images\accuracy.png
 INPUT c:\Users\HP\Documents\arm11_40\doc\Report.aux
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmbx10.pfb
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmbx10.pfb
@@ -78,5 +85,3 @@ INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmr12.pfb
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmr17.pfb
 INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmr17.pfb
-INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmsy10.pfb
-INPUT C:\Users\HP\AppData\Local\Programs\MiKTeX 2.9\fonts\type1\public\amsfonts\cm\cmsy10.pfb
