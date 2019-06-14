@@ -59,8 +59,10 @@ dataMapping_t *process(double **dataArrays, int numOfEntries) {
       dataMappings[i].min = getMin(dataMappings[i].inputs, NUM_INPUTS);
       dataMappings[i].max = getMax(dataMappings[i].inputs, NUM_INPUTS);
 
-      dataMappings[i].expectedOutputNormalised = *normalise(&dataMappings[i].expectedOutput, STOCK_MIN, STOCK_MAX, NUM_OUTPUTS);
-      dataMappings[i].inputsNormalised = normalise(dataMappings[i].inputs, dataMappings[i].min, dataMappings[i].max, NUM_INPUTS);
+
+      dataMappings[i].expectedOutputNormalised = normalise(dataMappings[i].expectedOutput, STOCK_MIN, STOCK_MAX);
+      dataMappings[i].inputsNormalised = calloc(NUM_INPUTS, sizeof(double));
+      normaliseValues(dataMappings[i].inputs, dataMappings[i].inputsNormalised, dataMappings[i].min, dataMappings[i].max, NUM_INPUTS);
     }
     return dataMappings;
 }
@@ -82,12 +84,14 @@ double denormalise(double value, double min, double max) {
     return (value * (max - min)) + min;
 }
 
-double *normalise(double *values, double min, double max, int num_values) {
-    double *normalised = calloc(num_values, sizeof(double));
+double normalise(double value, double min, double max) {
+  return (value - min) / (max - min);
+}
+
+void normaliseValues(double *originalValues, double *targetArray, double min, double max, int num_values) {
     for (int i = 0; i < num_values; i++) {
-        normalised[i] = (values[i] - min) / (max - min);
+      targetArray[i] = normalise(originalValues[i], min, max);
     }
-    return normalised;
 }
 
 double getAvg(double *values, int numVals) {
