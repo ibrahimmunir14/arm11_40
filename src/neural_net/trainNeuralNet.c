@@ -17,7 +17,7 @@ int main() {
 
   // initialize inputs and targets;
   double **dataArray = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
-  int numTotal = input_creator(dataArray);
+  int numTotal = inputCreator(dataArray);
 
   int numTraining = (int) ((numTotal - FRONT_PADDING - END_PADDING) * TRAINING_PERCENT);
   int numTesting = numTotal - numTraining - FRONT_PADDING - END_PADDING;

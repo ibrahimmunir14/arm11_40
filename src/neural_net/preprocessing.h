@@ -5,30 +5,29 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
+#include <malloc.h>
 #include "loader.h"
 
 #define MAX_NUMBER_OF_DAYS (2000)
+#define MAX_LINE_SIZE (100)
 #define NUMBER_OF_DOUBLES (7)
-#define NUMBER_OF_INPUTS (6)
-#define LINE_SIZE (80)
 #define DATE_SIZE (12)
 #define ROC_PERIODS (12)
 #define SHORT_EMA_PERIOD (12)
 #define LONG_EMA_PERIOD (26)
 #define RSI_PERIOD (14)
 
-int input_creator(double **inputs);
-void free_2darray(char **array);
-int parse_csv(char **dates, double *volumes, double *prices);
-double log_return(int index, double *prices);
+int inputCreator(double **inputs);
+void free2dArray(char **array);
+int parseCSV(char **dates, double *volumes, double *prices);
+double logReturn(int index, double *prices);
 double rsi(int index, double *prices);
 double macd(int index, double *shortEMAs, double *longEMAs);
 double roc(int index, double *prices);
-void calculate_ema(int index, double *prices, double *EMAs, int timePeriod);
-void calculate_log_return_ema(int index, double *prices, double *EMAs, int timePeriod);
-void create_one_input_entry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
-                            double *longEMAs, double *logEMAs);
-
-
+void calculateEMA(int index, double *prices, double *EMAs, int timePeriod);
+void calculateLogReturnEMA(int index, double *prices, double *EMAs, int timePeriod);
+void createOneInputEntry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
+                         double *longEMAs, double *logEMAs);
 
 #endif //ARM11_40_PREPROCESSING_H

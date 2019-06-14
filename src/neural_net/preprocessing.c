@@ -1,6 +1,4 @@
 #include "preprocessing.h"
-#include <assert.h>
-#include <malloc.h>
 
 int numOfDays(int x) {
   static int numOfDays = MAX_NUMBER_OF_DAYS;
@@ -8,7 +6,7 @@ int numOfDays(int x) {
   return numOfDays;
 }
 
-int input_creator(double **inputs) {
+int inputCreator(double **inputs) {
   double *prices = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
   char **dates = calloc(MAX_NUMBER_OF_DAYS, sizeof(char*));
   double *volumes = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
@@ -31,15 +29,15 @@ int input_creator(double **inputs) {
     }
   }
 
-  // call parse_csv with pointer to all arrays
-  parse_csv(dates, volumes, prices);
+  // call parseCSV with pointer to all arrays
+  parseCSV(dates, volumes, prices);
 
   // create 2d input array
   for (int i = 1; i < numOfDays(0); i ++) {
-    create_one_input_entry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
+    createOneInputEntry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
   }
 
-  // realloc arrays
+  // reallocate arrays to match the actual size
   logEMAs   = (double *)  realloc(logEMAs, (size_t) numOfDays(0)+1);
   prices    = (double *)  realloc(prices, (size_t) numOfDays(0)+1);
   volumes   = (double *)  realloc(volumes, (size_t) numOfDays(0)+1);
@@ -62,34 +60,39 @@ int input_creator(double **inputs) {
     printf("\n");
   }
 
-  printf("NUMNOFDAYS: %i", numOfDays(0));
+  printf("NUMNOFDAYS: %i\n", numOfDays(0));
   // free all memory
   free(prices);
   free(volumes);
   free(shortEMAs);
   free(longEMAs);
   free(logEMAs);
-  free_2darray(dates);
+  free2dArray(dates);
 
   return numOfDays(0);
 }
 
 
-int parse_csv(char **dates, double *volumes, double *prices) {
+int parseCSV(char **dates, double *volumes, double *prices) {
   FILE *file = fopen("neural_net/data/KO.csv", "r");
   if (!file) {
     perror("fopen failure");
     exit(EXIT_FAILURE);
   }
-  char *line = (char *) malloc(101 * sizeof(char)); // store each line
-  fgets(line, 100, file); // line stores first line
+  char *line = (char *) malloc(MAX_LINE_SIZE * sizeof(char)); // store each line
+  fgets(line, MAX_LINE_SIZE, file); // line stores first line
   printf("header: %s", line);
   int i = 0;
-  for (; fgets(line, 100, file); i++) {
+  for (; fgets(line, MAX_LINE_SIZE, file); i++) {
+    int dropColumns = 4;
     // for each line in csv file
+    // dates in first column
     strncpy(dates[i], strtok(line, ","), DATE_SIZE);
-    for (int j = 0; j < 4; j++) strtok(NULL, ",");
+    // drop 4 columns
+    for (int j = 0; j < dropColumns; j++) strtok(NULL, ",");
+    // prices in fifth column
     prices[i] = strtof(strtok(NULL, ","), NULL);
+    // volumes in sixth column
     volumes[i] = strtof(strtok(NULL, ","), NULL);
     printf("date %s, price %f, volume %f\n", dates[i], prices[i], volumes[i]);
   }
@@ -99,8 +102,8 @@ int parse_csv(char **dates, double *volumes, double *prices) {
   return i;
 }
 
-void create_one_input_entry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
-                            double *longEMAs, double *logEMAs) {
+void createOneInputEntry(int index, double **inputs, double *prices, double *volumes, double *shortEMAs,
+                         double *longEMAs, double *logEMAs) {
   /* 6 values in array are:
    * 1. log return
    * 2. volume
@@ -110,12 +113,15 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
    * 6. ROC
    * 7. expected output price of that day
    * */
+
+  // the old index is so that we don't use data from the current day to predict the current day's price.
+  // this would be very counter intuitive!
   int oldIndex = index - 1;
-  calculate_log_return_ema(oldIndex, prices, logEMAs, SHORT_EMA_PERIOD);
-  calculate_ema(oldIndex, prices, shortEMAs, SHORT_EMA_PERIOD);
-  calculate_ema(oldIndex, prices, longEMAs, LONG_EMA_PERIOD);
+  calculateLogReturnEMA(oldIndex, prices, logEMAs, SHORT_EMA_PERIOD);
+  calculateEMA(oldIndex, prices, shortEMAs, SHORT_EMA_PERIOD);
+  calculateEMA(oldIndex, prices, longEMAs, LONG_EMA_PERIOD);
   volumes = normalise(volumes, getMax(volumes, numOfDays(0)) - getMin(volumes, numOfDays(0)), getAvg(volumes, numOfDays(0)), numOfDays(0));
-  inputs[index][0] = log_return(oldIndex, prices);
+  inputs[index][0] = logReturn(oldIndex, prices);
   inputs[index][1] = volumes[oldIndex];
   inputs[index][2] = logEMAs[oldIndex];
   inputs[index][3] = rsi(oldIndex, prices);
@@ -124,7 +130,7 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
   inputs[index][6] = prices[index];
 }
 
-void free_2darray(char **array) {
+void free2dArray(char **array) {
   assert(array);
   for (int i = 0; array[i]; i++) {
     free(array[i]);
@@ -132,7 +138,7 @@ void free_2darray(char **array) {
   free(array);
 }
 
-double log_return(int index, double *prices) {
+double logReturn(int index, double *prices) {
   if (index > 0 && index < MAX_NUMBER_OF_DAYS) {
     double ret = prices[index] / prices[index - 1];
     return log(ret);
@@ -143,6 +149,7 @@ double log_return(int index, double *prices) {
 }
 
 double rsi(int index, double *prices) {
+  // RSI period chosen as 14 time periods which is the default
   if (index > RSI_PERIOD && index < MAX_NUMBER_OF_DAYS) {
     double sumGain = 0;
     double sumLoss = 0;
@@ -156,8 +163,8 @@ double rsi(int index, double *prices) {
       }
     }
     if (sumGain == 0) return 0;
-//    if (Math.Abs(sumLoss) < Tolerance) return 100;
 
+    // the index is calculated from relative strength
     double relativeStrength = sumGain / sumLoss;
     return 100.0 - (100.0 / (1 + relativeStrength));
   } else {
@@ -166,22 +173,23 @@ double rsi(int index, double *prices) {
   }
 }
 
-void calculate_log_return_ema(int index, double *prices, double *EMAs, int timePeriod) {
+void calculateLogReturnEMA(int index, double *prices, double *EMAs, int timePeriod) {
   if (index > 0 && index < MAX_NUMBER_OF_DAYS) {
     double k = 2.0f / (timePeriod + 1);
-    EMAs[index] = log_return(index, prices) * k + EMAs[index - 1] * (1 - k);
+    EMAs[index] = logReturn(index, prices) * k + EMAs[index - 1] * (1 - k);
   } else {
     printf("Out of bounds of array or not enough data in calculate_log_return_ema_ema function\n");
     EMAs[index] = 0;
   }
 }
 
-void calculate_ema(int index, double *prices, double *EMAs, int timePeriod) {
+void calculateEMA(int index, double *prices, double *EMAs, int timePeriod) {
   if (index > 0 && index < MAX_NUMBER_OF_DAYS) {
     double k = 2.0f / (timePeriod + 1);
+    // the previous EMA multiplied by a ratio < 1 hence, older EMAs are less significant
     EMAs[index] = prices[index] * k + EMAs[index - 1] * (1 - k);
   } else {
-    printf("Out of bounds of array or not enough data in calculate_ema function\n");
+    printf("Out of bounds of array or not enough data in calculateEMA function\n");
     EMAs[index] = 0;
   }
 }
