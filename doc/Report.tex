@@ -91,15 +91,13 @@ We had to adapt the neural network implementation as it originally only accommod
 To allow for any scalar value to be used, the inputs have to be normalised to values in this range
 and the resulting output must be denormalised using an inverse process to the normalisation.
 
-We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate, the number of epochs. These values could drastically change the result of training; too few epochs could cause underfitting. 
-
+We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate, the number of epochs and the ratio of training to testing data. These values could drastically change the result of training; too few epochs could cause underfitting. 
 Another challenge was in the web scraping. Originally, we attempted to write a web scraper in C, however C is a hardware-level language that is not designed for using web requests and accessing websites. Consequently, we implemented the web scraper in Python.
-
 
 On several occasions, we encountered memory errors that hindered our progress. These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unecessary. 
 
 \subsection{Testing}
-The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data preprocessing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the preprocessor was being written. These are included in the test file. 
+The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data pre-processing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the pre-processor was being written. These are included in the test file. 
 
 The testing was not as effective as an extensive testing suite or library, however, it was sufficient given the time and scope of the project. Clearly, in future we would add more tests for each parameter inputted into the model.
 
