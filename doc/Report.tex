@@ -12,43 +12,28 @@
 \maketitle
 
 \section{Assembler}
-We approached the assembler in a similar way to emulator where we split the 
-assemble module into smaller submodules: the main module where the assembly is done, 
+We approached the assembler in a similar way to emulator, where we split the 
+entire module into smaller submodules. In this case, the main module where the assembly is done, 
 a module for parsing operands, a module with miscellaneous utility functions, 
 a mnemonic parser for changing strings into enums and 
-a hash map module for the symbol table. Required functions were declared  within header files 
+a hash map module for the symbol table. Required functions were declared within header files 
 before implementation, albeit many declarations needed later revision.
 
 We also made use of, and updated, several modules that we had previously used in emulator: 
 the binary operations module, as we were still working with binary strings, 
 and the binary file I/O module, for writing to binary files.     
 
-We opted for a two-pass implementation of assembly to avoid any memory complications. The design was easier to implement, more modular and robust. Furthermore, there was no clear advantage to having one pass assembly. 
-The program initially produces the symbol table from the assembly code and counts the number of lines.
-Not only must the converted instructions be written to the binary file, but the contents of the reserve memory
-must also be written to the file. To avoid the continual reallocation of memory or the use of a linked list, 
-a static amount of memory is allocated for reserve memory. 
-Each instruction requires at most one reserve memory location, so at most the number of 
-reserve memory locations used is equal to the number of instructions; therefore, we allocated the 
-same amount of memory to the reserve memory as we did the instructions.
+We opted for a two-pass implementation of assembly to avoid any memory complications. The design was easier to implement, more modular and robust. Furthermore, there was no significant advantage to having one pass assembly. 
+The program reads through the input file once, building up the symbol table and storing the assembly instruction lines in an array. The output binary file produced contains not only the converted instructions, but the contents of the reserve memory too. To avoid the continual reallocation of memory or the use of a linked list, an fixed size array is allocated for reserve memory during assembly. Each instruction requires at most one reserve memory location, so the maximum number of reserve memory locations required is equal to the number of instructions; therefore, we allocated the same amount of memory to the reserve memory as we did the instructions.
 
-After initializing any data structures to be used, the program converts each assembly 
-code line into binary and adds them to an array of instructions. 
-To do this, it uses regular expressions to find the type of each instruction and
-it delegates assembly to the appropriate helper function accordingly.
-There are helper functions for each type of instruction. The single data transfer helper function 
-must be passed the next reserve memory location 
-so that the program is able to store any immediate values that are too large for a mov instruction.
+After initializing any data structures to be used, the second pass then consists of iterating through the assembly instruction lines in a sequential manner, and using an encoding function to assemble each instruction and store it in an instructions array. To do this, it uses regular expressions to find the type of each instruction, then uses tokenisation to parse the instruction to retrieve the required register numbers and flags, and then delegates assembly to the appropriate helper function accordingly. 
+The helper functions responsible for producing the binary instructions each return the instruction in the form of a WORD, a user-defined type representing a 32-bit word as in ARM. The single data transfer helper function is additionally passed the address of the instruction as well as next reserve memory location so that the program is able to store any immediate values that are too large for a mov instruction.
+The branch helper function is also passed the address of the instruction as well as the symbol table, so it can calculate the branch offset.
+There are three helper functions called from the assembly function for data processing: for move operations, logical test operations and general data processing operations. Both of these call a third helper function with appropriate parameters, which completes the conversion into machine code.
 
-There are three specific helper functions for assembling data processing instructions,
-one for each different instruction format.
-Each of them call and pass specific values to a general helper function that handles 
-the conversion to machine code. 
-After assembly, the machine code instructions and reserve memory are written to the binary file specified.
+All functions in the program have been carefully designed so they are self contained, taking in their required parameters as either pointers or values, dereferencing pointers as appropriate and returning their result values.
 
-Each member was assigned to implement either a helper function or an entire module, depending on the difficulty.
-In some cases, we worked as a whole group to code or debug some aspects of the program.
-This occurred when we needed group input on parts of the implementation. For example, a lot of the design decisions were made as a group and implementation of more complicated functions was carried out in person so that everyone was in the loop. Towards the end the group held a lengthy debugging session over a weekend where several bugs from all sections of the program were sought and quashed. 
+Each member was assigned to implement either a number of helper functions or an entire module, depending on the difficulty. Group members helped each other debug and test code to ensure code style was up to scratch and to catch any logical mishaps in the algorithms used. Understanding the overall workings of all parts of the program was important in ensuring that each group members individual contribution complemented the existing code and avoided code duplication. In some cases, we worked as a whole group to code or debug some aspects of the program. The majority of the design decisions were made as a group, and implementation of more complicated functions was carried out in person so that everyone was in the loop. 
 
 \section{Extension}
 \subsection{Description}
