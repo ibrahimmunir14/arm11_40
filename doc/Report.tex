@@ -84,7 +84,6 @@ The following files are contained in neuralNet in the src directory.
 
 \textbf{trainNeuralNet.c} main file for training and running the program
 
-
 \subsection{Challenges}
 The main challenge was that the group as a whole had little experience in the use and implementation of neural networks. 
 Therefore, we used this as a learning experience and an introduction to neural networks. 
@@ -104,6 +103,8 @@ On several occasions, we encountered memory errors that hindered our progress. T
 The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data preprocessing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the preprocessor was being written. These are included in the test file. 
 
 The testing was not as effective as an extensive testing suite or library, however, it was sufficient given the time and scope of the project. Clearly, in future we would add more tests for each parameter inputted into the model.
+
+One such result was an accuracy of 40\% for the network training on 3.5 years of Coca-Cola Company stock price data. The error margin was 3\% for the prediction, hence, it is better than random. Typically for a trade to be made a significant upside of greater than 3\% is needed (with trading costs themselves being around 1\% or 2\%). This means our error was not significant. The accuracy suggests the model could be combined with other methods of technical and fundamental analysis to create an overall strategy. 
 
 \section{Group Reflection}
 We communicated efficiently through the use of the VoIP application Discord. 
