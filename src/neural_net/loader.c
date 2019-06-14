@@ -37,9 +37,6 @@ double **makeFakeDataArray(void) {
 
     return data;
 }
-// number is between 0 and 1 to show confidence that price will be in a given range
-// training data should say 0 or 1 depending on if the resulting price is in the range for this NN
-// outputs: range [0-100] [100-200] [200-300]
 
 // processes array of data into array of structs of data_mapping_t
 dataMapping_t  *process(double **dataArrays, int numOfEntries) {

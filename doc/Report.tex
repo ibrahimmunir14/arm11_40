@@ -52,9 +52,6 @@ This occurred when we needed group input on parts of the implementation. For exa
 
 \section{Extension}
 \subsection{Description}
-[and example of use]
-
-
 Our extension is focussed on the statistical modelling and prediction of equity prices. We use a neural network with tuned inputs and an expected outcome to then predict the next day price of the specific instrument in question. We decided to focus on heavily traded asset classes such as S\&P500 stocks and foreign exchange. These are not too volatile hence are a good idea for a neural network to start training on. Neural networks are being increasingly used in forecasting time series due to their new unique method of technical analysis. When combined with traditional technical metrics, this could potentially lead to some alpha generation. Alpha guages the performance of an investment againbst a benchmark market index. 
 
 The idea for the extension was extremely ambitious as it takes teams of several talented quantitative researchers years to create a significantly profitable strategy that outperforms the market in all scenarios. We believe that a good start was made on the attempt to implement such a strategy in C. The project was applicable to the C language as extremely fast execution is required for the task and professionals are getting down to the assembly and memory management levels to give their strategy the extra edge. However, one point to consider is that a strategy is typically first implemented in a higher level language such as C++ before being translated to C. We did not have this luxury so we focussed on creating a simple backtest to train and test the neural network. This was done by importing a 5 year CSV using a python script on daily trade data. 
@@ -64,23 +61,17 @@ A backtest isn't sufficient to predict live stock prices but gives a good idea o
 The end result was to use a neural network to predict the next day's price using 6 inputs calculated from previous days prices and volumes. An example where it could be used would be to combine the model with several other models to create a comprehensive technical trading strategy. Since the financial markets are essentially a time-series problem at heart, the model would be applicable to other situations where some forecasting is required. 
 
 \subsection{Design}
-In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the preprocessing functiosn on the data to output a 2D-array containing the 6 neural network inputs and an array of prices. The train test data was split 80/20 so there were approximately 4 years of training and 1 year of testing. 
+In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the preprocessing functiosn on the data to output a 2D-array containing the 6 neural network inputs and an array of prices. The train test data was split 70/30.
 
 The inputs were specifically chosen as commonly used momentum based technical indicators which would aim to train the neural network on the direction the specific stock price would go towards. There were 6 inputs which were created using the functions in the preprocessing.c file. 
 
 The first input was log of the return with the return being a specific day's price divided by the day before's price. The second input was volume of shares traded on the day. The third input was an exponential moving average (EMA) of the log return. An EMA takes into account a specific time period of days prior to the current day and calculates an average with exponentially more weight on the prices of the more recent days. The fourth input was the relative strength index (RSI) which indicates whether a specific asset is over-bought or over-sold and signifies which lifecycle the momentum is in. The fifth input was a moving average convergence divergence (MACD), this is calculated by subtracting a longer time period EMA from a shorter time period EMA. This signifies a specific trend that is taking over in the short term. This in turn signifies a momentum change. The last input was rate of change of the stock price. This is quite similar to the log of return and may not add as much value as the rest of the indicators. However, it was important to add another input directly linked to short term price changes to emphasise the importance of the short term trend in price.
 
-SOMEONE TALK ABOUT THE NEURAL NETWORK 
+The weights are initialized randomly. As the neural network trains it learns by refining the link weights. This process is guided by the error, which is the difference between the desired and actual output. 
 
-The weights are initialized randomly
-
-After the neural network has been initialized, the 
-
--use neural network program to interpret data (create neural network using backpropagation)
-
+The weights are used in 2 ways, firstly for propogating signals forwards from the input to the output layers. Secondly, to propogate the error backwards from the output back into the network. This process is used to train the network and is known as backpropogation. 
 
 \subsection{Challenges}
-[discussion of any problems/challenges that had to be overcome during extenson implementation]
 The main challenge was that the group as a whole had little experience in the use and implementation of neural networks. 
 Therefore, we used this as a learning experience and an introduction to neural networks. 
 Much of the time implementing the extension involved understanding how they work.
@@ -89,57 +80,30 @@ We had to adapt the neural network implementation as it originally only accommod
 To allow for any scalar value to be used, the inputs have to be normalised to values between -1 and 1 
 and the resulting output must be denormalised using an inverse process to the normalisaion.
 
-We were unsure on what hyperparamters to use without preliminary calculations.
-This included the learning rate and the number of epochs. 
-These values could drastically change the result of training; too few epochs could cause underfitting. 
+We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate and the number of epochs. These values could drastically change the result of training; too few epochs could cause underfitting. 
 
-WHAT
-but too few epochs could cause underfitting.
-
-Another challenge was in the web scraping. 
-Originally, we attempted to write a web scraper in C, 
-however C is a hardware-level language that is not designed for using web requests and 
-accessing websites. Consequently, we implemented the web scraper in Python.
+Another challenge was in the web scraping. Originally, we attempted to write a web scraper in C, however C is a hardware-level language that is not designed for using web requests and accessing websites. Consequently, we implemented the web scraper in Python.
 
 
-On several occasions, we encountered memory errors that hindered our progress. 
-These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unecessary. 
+On several occasions, we encountered memory errors that hindered our progress. These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unecessary. 
 
 \subsection{Testing}
-[how the implementation was tested, discussion of how effective the testing was]
--test by comparing prediction with input data
--data is split into training and testing data
--training data is to train the neural network so that it makes the correct predictions
+The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data preprocessing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the preprocessor was being written. These are included in the test file. 
 
+The testing was not as effective as an extensive testing suite or library, however, it was sufficient given the time and scope of the project. Clearly, in future we would add more tests for each parameter inputted into the model.
 
 \section{Group Reflection}
-how well did the group programme? 
-discussion of how effective the communication and splitting work between the group was
-things to be done the same/differently in future
-
-effective communication - using discord so that even when we didn't meet up we could help each other with debugging using screen sharing
-
 We communicated efficiently through the use of the VoIP application Discord. 
 Discord allows for text messaging, voice calls and, most notably, screen sharing.
-Screen sharing allowed us to do pair programming while being in different locations.
+Screen sharing allowed us to do pair programming while being in different locations. This helped significantly with debugging as well. 
 
-During discussions, we would 
-We would organise regular meetings and coding sessions
-
-
-We thoroughly planned the implementation of emulator and assembler; we prepared header files containing function signatures
+During discussions, we would organise regular meetings and coding sessions. We thoroughly planned the implementation of emulator and assembler; we prepared header files containing function signatures
 for required functions that 
  required implementation. This way, we could assume functions were correct and could programme concurrently.
 This increased group productivity and 
 On the other hand, this only helped to an extent. Many function signatures needed later alterations 
-as the implementation may require different data and these changes needed to be propagated 
+as the implementation required different parameters and these changes needed to be propagated 
 across the different functions and modules that called it.
-
-
--more planning on headers/files
--regular meetings, very good, keep same
-
-
 
 \section{Individual Reflections}
 [at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
