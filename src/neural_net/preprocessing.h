@@ -18,7 +18,6 @@
 #define RSI_PERIOD (14)
 
 int input_creator(double **inputs);
-void free_array(double *array);
 void free_2darray(char **array);
 int parse_csv(char **dates, double *volumes, double *prices);
 double log_return(int index, double *prices);

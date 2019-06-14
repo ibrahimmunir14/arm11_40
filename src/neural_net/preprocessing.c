@@ -9,7 +9,6 @@ int numOfDays(int x) {
 }
 
 int input_creator(double **inputs) {
-//  double **inputs = calloc(MAX_NUMBER_OF_DAYS, sizeof(double*));
   double *prices = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
   char **dates = calloc(MAX_NUMBER_OF_DAYS, sizeof(char*));
   double *volumes = calloc(MAX_NUMBER_OF_DAYS, sizeof(double));
@@ -36,7 +35,7 @@ int input_creator(double **inputs) {
   parse_csv(dates, volumes, prices);
 
   // create 2d input array
-  for (int i = 0; i < numOfDays(0); i ++) {
+  for (int i = 1; i < numOfDays(0); i ++) {
     create_one_input_entry(i, inputs, prices, volumes, shortEMAs, longEMAs, logEMAs);
   }
 
@@ -77,7 +76,7 @@ int input_creator(double **inputs) {
 
 
 int parse_csv(char **dates, double *volumes, double *prices) {
-  FILE *file = fopen("neural_net/T.csv", "r");
+  FILE *file = fopen("neural_net/data/KO.csv", "r");
   if (!file) {
     perror("fopen failure");
     exit(EXIT_FAILURE);
@@ -111,16 +110,17 @@ void create_one_input_entry(int index, double **inputs, double *prices, double *
    * 6. ROC
    * 7. expected output price of that day
    * */
-  calculate_log_return_ema(index, prices, logEMAs, SHORT_EMA_PERIOD);
-  calculate_ema(index, prices, shortEMAs, SHORT_EMA_PERIOD);
-  calculate_ema(index, prices, longEMAs, LONG_EMA_PERIOD);
+  int oldIndex = index - 1;
+  calculate_log_return_ema(oldIndex, prices, logEMAs, SHORT_EMA_PERIOD);
+  calculate_ema(oldIndex, prices, shortEMAs, SHORT_EMA_PERIOD);
+  calculate_ema(oldIndex, prices, longEMAs, LONG_EMA_PERIOD);
   volumes = normalise(volumes, getMax(volumes, numOfDays(0)) - getMin(volumes, numOfDays(0)), getAvg(volumes, numOfDays(0)), numOfDays(0));
-  inputs[index][0] = log_return(index, prices);
-  inputs[index][1] = volumes[index];
-  inputs[index][2] = logEMAs[index];
-  inputs[index][3] = rsi(index, prices);
-  inputs[index][4] = macd(index, shortEMAs, longEMAs);
-  inputs[index][5] = roc(index, prices);
+  inputs[index][0] = log_return(oldIndex, prices);
+  inputs[index][1] = volumes[oldIndex];
+  inputs[index][2] = logEMAs[oldIndex];
+  inputs[index][3] = rsi(oldIndex, prices);
+  inputs[index][4] = macd(oldIndex, shortEMAs, longEMAs);
+  inputs[index][5] = roc(oldIndex, prices);
   inputs[index][6] = prices[index];
 }
 

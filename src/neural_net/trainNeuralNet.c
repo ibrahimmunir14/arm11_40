@@ -53,7 +53,7 @@ int main() {
       differencesSum += (testingData[testNum].expectedOutput - predictedPrice) * (testingData[testNum].expectedOutput - predictedPrice);
 
       double percentDiff = fabs(testingData[testNum].expectedOutput - predictedPrice) / testingData[testNum].expectedOutput;
-      if (percentDiff < 0.02) {
+      if (percentDiff < 0.03) {
         numAccurate++;
       }
 
