@@ -33,3 +33,7 @@ assemble
 *.nav
 *.toc
 
+*.idea
+cmake-build-debug
+CMakeLists.txt
+add01

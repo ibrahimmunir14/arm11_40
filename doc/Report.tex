@@ -1,21 +1,152 @@
 \documentclass[11pt]{article}
 
 \usepackage{fullpage}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
 
 \begin{document}
 
-\title{Our Extension...}
-\author{TODO}
+\title{ARM Project Final Report}
+\author{Group 40 - Amelia Khavari, Ibrahim Munir-Zubair, Luke Texon, Umer Hasan}
 
 \maketitle
 
-\section{Introduction}
+\section{Assembler}
+We approached the assembler in a similar way to emulator where we split the 
+assemble module into smaller submodules: the main module where the assembly is done, 
+a module for parsing operands, a module with miscellaneous utility functions, 
+a mnemonic parser for changing strings into enums and 
+a hash map module for the symbol table. Required functions were declared  within header files 
+before implementation, albeit many declarations needed later revision.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+We also made use of, and updated, several modules that we had previously used in emulator: 
+the binary operations module, as we were still working with binary strings, 
+and the binary file I/O module, for writing to binary files.     
+
+We opted for a two-pass implementation of assembly to avoid any memory complications. The design was easier to implement, more modular and robust. Furthermore, there was no clear advantage to having one pass assembly. 
+The program initially produces the symbol table from the assembly code and counts the number of lines.
+Not only must the converted instructions be written to the binary file, but the contents of the reserve memory
+must also be written to the file. To avoid the continual reallocation of memory or the use of a linked list, 
+a static amount of memory is allocated for reserve memory. 
+Each instruction requires at most one reserve memory location, so at most the number of 
+reserve memory locations used is equal to the number of instructions; therefore, we allocated the 
+same amount of memory to the reserve memory as we did the instructions.
+
+After initializing any data structures to be used, the program converts each assembly 
+code line into binary and adds them to an array of instructions. 
+To do this, it uses regular expressions to find the type of each instruction and
+it delegates assembly to the appropriate helper function accordingly.
+There are helper functions for each type of instruction. The single data transfer helper function 
+must be passed the next reserve memory location 
+so that the program is able to store any immediate values that are too large for a mov instruction.
+
+There are three specific helper functions for assembling data processing instructions,
+one for each different instruction format.
+Each of them call and pass specific values to a general helper function that handles 
+the conversion to machine code. 
+After assembly, the machine code instructions and reserve memory are written to the binary file specified.
+
+Each member was assigned to implement either a helper function or an entire module, depending on the difficulty.
+In some cases, we worked as a whole group to code or debug some aspects of the program.
+This occurred when we needed group input on parts of the implementation. For example, a lot of the design decisions were made as a group and implementation of more complicated functions was carried out in person so that everyone was in the loop. Towards the end the group held a lengthy debugging session over a weekend where several bugs from all sections of the program were sought and quashed. 
+
+\section{Extension}
+\subsection{Description}
+Our extension is focussed on the statistical modelling and prediction of equity prices. We use a neural network with tuned inputs and an expected outcome to then predict the next day price of the specific instrument in question. We decided to focus on heavily traded asset classes such as S\&P500 stocks and foreign exchange. These are not too volatile hence are a good idea for a neural network to start training on. Neural networks are being increasingly used in forecasting time series due to their new unique method of technical analysis. When combined with traditional technical metrics, this could potentially lead to some alpha generation. Alpha guages the performance of an investment againbst a benchmark market index. 
+
+The idea for the extension was extremely ambitious as it takes teams of several talented quantitative researchers years to create a significantly profitable strategy that outperforms the market in all scenarios. We believe that a good start was made on the attempt to implement such a strategy in C. The project was applicable to the C language as extremely fast execution is required for the task and professionals are getting down to the assembly and memory management levels to give their strategy the extra edge. However, one point to consider is that a strategy is typically first implemented in a higher level language such as C++ before being translated to C. We did not have this luxury so we focussed on creating a simple backtest to train and test the neural network. This was done by importing a 5 year CSV using a python script on daily trade data. 
+
+A backtest isn't sufficient to predict live stock prices but gives a good idea of whether the crude strategy is something which should be pursued and refined further. Typically a neural network accuracy of anywhere from 55\% to 70\% is industry standard. This is because it is noticeably better than a 50/50 and going past a 70\% accuracy is almost certainly a sign of overfitting the model to the data. 
+
+The end result was to use a neural network to predict the next day's price using 6 inputs calculated from previous days prices and volumes. An example where it could be used would be to combine the model with several other models to create a comprehensive technical trading strategy. Since the financial markets are essentially a time-series problem at heart, the model would be applicable to other situations where some forecasting is required. 
+
+\subsection{Design}
+In order to access the data, a python script was used to import CSVs into a folder. The C program then imports the CSV and runs the preprocessing functiosn on the data to output a 2D-array containing the 6 neural network inputs and an array of prices. The train test data was split 70/30.
+
+The inputs were specifically chosen as commonly used momentum based technical indicators which would aim to train the neural network on the direction the specific stock price would go towards. There were 6 inputs which were created using the functions in the preprocessing.c file. 
+
+The first input was log of the return with the return being a specific day's price divided by the day before's price. The second input was volume of shares traded on the day. The third input was an exponential moving average (EMA) of the log return. An EMA takes into account a specific time period of days prior to the current day and calculates an average with exponentially more weight on the prices of the more recent days. The fourth input was the relative strength index (RSI) which indicates whether a specific asset is over-bought or over-sold and signifies which lifecycle the momentum is in. The fifth input was a moving average convergence divergence (MACD), this is calculated by subtracting a longer time period EMA from a shorter time period EMA. This signifies a specific trend that is taking over in the short term. This in turn signifies a momentum change. The last input was rate of change of the stock price. This is quite similar to the log of return and may not add as much value as the rest of the indicators. However, it was important to add another input directly linked to short term price changes to emphasise the importance of the short term trend in price.
+
+The weights are initialized randomly. As the neural network trains it learns by refining the link weights. This process is guided by the error, which is the difference between the desired and actual output. 
+
+The weights are used in 2 ways, firstly for propogating signals forwards from the input to the output layers. Secondly, to propogate the error backwards from the output back into the network. This process is used to train the network and is known as backpropogation. 
+
+The following files are contained in neuralNet in the src directory.
+
+
+\textbf{layer.c, layer.h} contains impelementation of a single neural network layer 
+
+\textbf{loader.c loader.h} contains utility functions for training and implementing neural network
+
+\textbf{neuralNet.c neuralNet.h} contains primary functions memory management of neural network
+
+\textbf{preprocessing.c preprocessing.h} contains functions for importing the data and preprocessing neural network inputs
+
+\textbf{trainNeuralNet.c} main file for training and running the program
+
+
+\subsection{Challenges}
+The main challenge was that the group as a whole had little experience in the use and implementation of neural networks. 
+Therefore, we used this as a learning experience and an introduction to neural networks. 
+Much of the time implementing the extension involved understanding how they work.
+
+We had to adapt the neural network implementation as it originally only accommodated for values between -1 and 1.
+To allow for any scalar value to be used, the inputs have to be normalised to values between -1 and 1 
+and the resulting output must be denormalised using an inverse process to the normalisaion.
+
+We were unsure on what hyperparamters to use without preliminary calculations. This included the learning rate and the number of epochs. These values could drastically change the result of training; too few epochs could cause underfitting. 
+
+Another challenge was in the web scraping. Originally, we attempted to write a web scraper in C, however C is a hardware-level language that is not designed for using web requests and accessing websites. Consequently, we implemented the web scraper in Python.
+
+
+On several occasions, we encountered memory errors that hindered our progress. These normally occurred due to incorrect array access and were occasionally due to the excessive allocation of the heap. This was due to a new pointer being allocated in a for loop which was unecessary. 
+
+\subsection{Testing}
+The data was split into training and testing data as is common practice in machine learning projects. As for how the implementation was tested, there were test functions created and placed in a separte file for each section of the project. The data preprocessing was an easier section to check as it was mostly to do with file reading. This would clearly be successful if the arrays were populated. The mathematical functions were not complex hence did not need extensive testing. Some sample fake data was made to test and tune parameters on the neural network while the preprocessor was being written. These are included in the test file. 
+
+The testing was not as effective as an extensive testing suite or library, however, it was sufficient given the time and scope of the project. Clearly, in future we would add more tests for each parameter inputted into the model.
+
+\section{Group Reflection}
+We communicated efficiently through the use of the VoIP application Discord. 
+Discord allows for text messaging, voice calls and, most notably, screen sharing.
+Screen sharing allowed us to do pair programming while being in different locations. This helped significantly with debugging as well. 
+
+During discussions, we would organise regular meetings and coding sessions. We thoroughly planned the implementation of emulator and assembler; we prepared header files containing function signatures
+for required functions that 
+ required implementation. This way, we could assume functions were correct and could programme concurrently.
+This increased group productivity and 
+On the other hand, this only helped to an extent. Many function signatures needed later alterations 
+as the implementation required different parameters and these changes needed to be propagated 
+across the different functions and modules that called it.
+
+\section{Individual Reflections}
+[at least one paragraph per group member, use WebPA and other experiences to reflect on how you feel you fitted into the group e.g. what your strengths and weaknesses were, what you originally thought they were, things you would do differently or the same when working with a different group of people]
+\subsection{Amelia's Reflection}
+I feel our group has worked together very well as a team. Our team leader, Umer, made sure to split up the tasks evenly according to each team member's strengths giving everyone the opportunity to contribute and learn. Subtasks were delegated 
+Previous experience in neural networks enabled me to take control during parts of our extension. I 
+- great leader -> tasks split well, each had opportunity to take control of subtasks and lead those areas
+- good communication -> had regular meetings in person and online via Discord (an online chat platform)
+- efficient time management
+- positivity
+
+\subsection{Ibrahim's Reflection}
+
+\subsection{Luke's Reflection}
+I think the group project went well and I had a suitable role in the group.
+I like to believe my coding and debugging skills were valuable to the team.
+During this project, I realised that my speed of programming could be improved by a lot,
+normally coding slower than the rest of my teammates. I accommodated for this
+with my debugging skills and by thoroughly inspecting code.
+My literary skills also found a place in contributing to the report.
+In my next team, I would like to continue planning as we did in this project.
+Although, I would like to plan objectives and actions more thoroughly in future so that
+any unforeseen circumstances are covered and their negative effects on group 
+productivity are minimised. The way we divided the work between members is another
+method that I would like to continue in future projects.
+Overall, I am pleased with how the project went.
+
+\subsection{Umer's Reflection}
+Due to originally forming the group, I became the de-facto manager of the project. In my personal opinion, the project could not have gone any better given the scale of the task, the time given and the team size. Of course, with the first major programming project at Imperial there were bound to be never before seen challenges. However, I felt, for the most part, the team was motivated to deliver and worked well with others. As we progress through our degree, it is natural to become more proficient in management of online repositories and delegation of work within the team. One point especially to work on would be extensive design planning and considering which segments of the task each member would individually complete before combining these together. We attempted this during the assembler by first designing the header file of functions, nevertheless, there were extra functions that were added towards the end. There was also a lengthy discussion on the direction the team would take with the extension. The test in the last week also hindered this. In future a more rigid schedule would help. However, I fully stand by my statement that the experience was most likely the best I could have had in my first group project at Imperial. 
+
 
 \end{document}

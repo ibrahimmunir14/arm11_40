@@ -2,29 +2,30 @@
 
 \usepackage{fullpage}
 
+
 \begin{document}
 
-\title{ARM Checkpoint... }
-\author{TODO}
+\title{ARM Project Checkpoint}
+\author{Group 40 - Amelia Khavari, Ibrahim Munir-Zubair, Luke Texon, Umer Hasan}
 
 \maketitle
 
 \section{Group Organisation}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+We have prioritised splitting the work according to each group member's relevant strengths. However, we have made sure that each member has the chance to do involved C programming. This enables everyone to reach an acceptable standard of proficiency in the language. For part 1, the organisation was relatively straightforward with each member focussing on one out of the first three instruction types to be processed. The more challenging data processing instruction was carried out together. We have made sure to set regular meeting times at suitable intervals throughout the timeline which allows for independent work as well as group discussion on strategies for solving future design problems. Learning from part 1's extended use of helper functions, the header file for part 2 was created first and then functions were delegated. This avoided duplicate functions and enabled production to be parallelised since all function calls could be written.
+
+\section{Evaluating Group Dynamics}
+
+The group is relatively inexperienced in C, however, we have made good progress given that we are helping each other in areas we are more proficient in. Programming good practice is transferable across all languages and previous courses have meant that C has become easier to grasp. The group has set up a good communication channel through Discord, an online chat application which enables screen sharing. This feature is particularly useful for pair programming. Our schedule approaches each part one by one, moving on only after the previous part has been fully completed. This ensures the code will be efficient, clean and industry standard. As the code base becomes more advanced, it will require extensive checking for merge conflicts between features coded by different group members. This will, of course, require an enhanced level of communication and team chemistry which will be satisfied by distinctly allocating specific tasks to each member. Creation of further branches for testing purposes helped in the prevention of conflicts and made sure the main branch was compilable most of the time. Unfortunately, for some portion of the first week, one group member was away. This did not have severe consequences and we were able to finish part 1 on schedule. 
+
+\newpage
 
 \section{Implementation Strategies}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Currently, we have defined a struct to represent the state of the ARM Machine. The struct contains a pointer to an array representing byte-addressable memory, a pointer to an array representing register contents, and variables for the instructions to be executed and decoded. This state will be continually changed as the program iterates through the pipeline. There is a separate function for processing each type of instruction which makes development easier and the code modular. Not detailed here are several helper functions enabling the pipeline to process instructions correctly. A similar approach has been taken to part 2, with many of the typedefs and enumerations from part 1 being shared. Therefore, a shared header file was created for this as well as for useful binary operation functions.
+
+\section{Future Challenges}
+
+Having had all group members code features in C, one challenge ahead may be interfacing with the Raspberry Pi. Only one group member has utilised the product beforehand so will help in getting others acquainted with the Pi. Quite possibly the biggest challenge of the project will be the optional extension. Each group member has started individually brainstorming ideas and we plan to have a discussion following the successful completion of Part 2. Finding the correct idea which can be implemented given the time and experience level of the team will be quite challenging to pull off, let alone physically implementing the idea itself using C.
 
 \end{document}
